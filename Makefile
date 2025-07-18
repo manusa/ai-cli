@@ -52,11 +52,19 @@ tidy: ## Tidy up the go modules
 
 .PHONY: golangci-lint
 golangci-lint: ## Download and install golangci-lint if not already installed
-		@[ -f $(GOLANGCI_LINT) ] || { \
-    	set -e ;\
-    	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(GOLANGCI_LINT)) $(GOLANGCI_LINT_VERSION) ;\
-    	}
+ifeq ($(OS),Windows_NT)
+	@echo "Skipping lint on Windows, delegating to CI/CD pipeline"
+else
+	@[ -f $(GOLANGCI_LINT) ] || { \
+	set -e ;\
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(GOLANGCI_LINT)) $(GOLANGCI_LINT_VERSION) ;\
+	}
+endif
 
 .PHONY: lint
 lint: golangci-lint ## Lint the code
+ifeq ($(OS),Windows_NT)
+	@echo "Skipping lint on Windows, delegating to CI/CD pipeline"
+else
 	$(GOLANGCI_LINT) run --verbose --print-resources-usage
+endif
