@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"fmt"
 	"github.com/manusa/ai-cli/pkg/version"
 	"github.com/spf13/cobra"
 )
 
 type AiCliOptions struct {
+	Version bool
 }
 
 func NewAiCliOptions() *AiCliOptions {
@@ -33,6 +35,9 @@ func NewAiCli() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().BoolVar(&o.Version, "version", false, "Print version information and quit")
+
 	return cmd
 }
 
@@ -49,6 +54,11 @@ func (o *AiCliOptions) Validate() error {
 
 // Run executes the main logic of the command once its complete and validated
 func (o *AiCliOptions) Run() error {
-	println("AI CLI is running")
+
+	if o.Version {
+		_, _ = fmt.Printf("%s\n", version.Version)
+		return nil
+	}
+
 	return nil
 }
