@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/manusa/ai-cli/pkg/ui"
 	"github.com/manusa/ai-cli/pkg/version"
 	"github.com/spf13/cobra"
 )
@@ -60,5 +62,14 @@ func (o *AiCliOptions) Run() error {
 		return nil
 	}
 
+	p := tea.NewProgram(
+		ui.NewModel(),
+		tea.WithAltScreen(),
+		tea.WithMouseCellMotion(),
+		tea.WithReportFocus(),
+	)
+	if _, err := p.Run(); err != nil {
+		return fmt.Errorf("failed to run program: %w", err)
+	}
 	return nil
 }
