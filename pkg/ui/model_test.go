@@ -16,7 +16,7 @@ type testContext struct {
 
 func (c *testContext) beforeEach() {
 	c.m = NewModel()
-	c.tm = teatest.NewTestModel(c.t, c.m, teatest.WithInitialTermSize(80, 3))
+	c.tm = teatest.NewTestModel(c.t, c.m, teatest.WithInitialTermSize(80, 20))
 	teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool { return strings.Contains(string(b), "Welcome to the AI CLI!") })
 }
 
@@ -52,6 +52,25 @@ func TestExit(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestComposer(t *testing.T) {
+	testCase(t, func(c *testContext) {
+		// Set a term size to force footer rendering
+		c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
+		t.Run("Composer shows placeholder text", func(t *testing.T) {
+			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), "How can I help you today?")
+			})
+		})
+		t.Run("Composer is focused and ready to receive input", func(t *testing.T) {
+			c.tm.Type("GREETINGS PROFESSOR FALKEN")
+
+			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), "GREETINGS PROFESSOR FALKEN")
+			})
+		})
+	})
 }
 
 func TestFooter(t *testing.T) {

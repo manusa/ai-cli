@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -10,9 +11,12 @@ import (
 	"strings"
 )
 
+const composerHeight = 2
+
 type Model struct {
 	context  *context.ModelContext
 	viewport viewport.Model
+	composer textarea.Model
 	footer   tea.Model
 }
 
@@ -23,17 +27,27 @@ func NewModel() Model {
 	m := Model{
 		context:  ctx,
 		viewport: viewport.New(0, 0),
+		composer: textarea.New(),
 		footer:   footer.NewModel(ctx),
 	}
+	m.viewport.SetContent(lipgloss.NewStyle().Bold(true).Render("Welcome to the AI CLI!"))
+	m.composer.Placeholder = "How can I help you today?"
 	return m
 }
 
 func (m Model) Init() tea.Cmd {
-	tea.Batch(m.viewport.Init(), m.footer.Init())
-	return nil
+	m.composer.SetHeight(composerHeight)
+	return tea.Batch(
+		m.viewport.Init(),
+		m.footer.Init(),
+		textarea.Blink,
+		m.composer.Focus(),
+	)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmds []tea.Cmd
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -43,28 +57,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.context.Width = msg.Width
 		m.context.Height = msg.Height
+		m.composer.SetWidth(msg.Width)
 		m.viewport.Width = msg.Width
-		m.viewport.Height = msg.Height - lipgloss.Height(m.footer.View())
+		m.viewport.Height = msg.Height - composerHeight - lipgloss.Height(m.footer.View())
 	}
-	m.viewport.SetContent(lipgloss.NewStyle().Bold(true).Render("Welcome to the AI CLI!"))
-	m.viewport, _ = m.viewport.Update(msg)
-	m.footer, _ = m.footer.Update(msg)
-	return m, nil
-
-	// TODO: Probably need to check what's active and then return the cmd for that component.
-	//var viewportCmd, footerCmd tea.Cmd
-	//if m.footer, footerCmd = m.footer.Update(msg); footerCmd != nil {
-	//	return m, footerCmd
-	//}
-	//if m.viewport, viewportCmd = m.viewport.Update(msg); viewportCmd != nil {
-	//	return m, viewportCmd
-	//}
-	//return m, tea.Batch(footerCmd)
+	cmds = append(cmds, m.composer.Focus())
+	m.viewport, cmd = m.viewport.Update(msg)
+	cmds = append(cmds, cmd)
+	m.composer, cmd = m.composer.Update(msg)
+	cmds = append(cmds, cmd)
+	m.footer, cmd = m.footer.Update(msg)
+	cmds = append(cmds, cmd)
+	return m, tea.Batch(cmds...)
 }
 
 func (m Model) View() string {
 	view := strings.Builder{}
 	view.WriteString(m.viewport.View() + "\n")
+	view.WriteString(m.composer.View() + "\n")
 	view.WriteString(m.footer.View())
 	return view.String()
 }
