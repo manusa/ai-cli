@@ -16,7 +16,7 @@ type testContext struct {
 
 func (c *testContext) beforeEach() {
 	c.m = NewModel()
-	c.tm = teatest.NewTestModel(c.t, c.m)
+	c.tm = teatest.NewTestModel(c.t, c.m, teatest.WithInitialTermSize(80, 3))
 	teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool { return strings.Contains(string(b), "Welcome to the AI CLI!") })
 }
 
@@ -52,4 +52,17 @@ func TestExit(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestFooter(t *testing.T) {
+	testCase(t, func(c *testContext) {
+		// Set a term size to force footer rendering
+		c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
+		t.Run("Footer displays version", func(t *testing.T) {
+			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
+				return strings.HasSuffix(string(b), "0.0.0 \u001B[80D")
+			})
+		})
+
+	})
 }
