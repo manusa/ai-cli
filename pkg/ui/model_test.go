@@ -33,8 +33,9 @@ func testCase(t *testing.T, test func(c *testContext)) {
 
 func TestExit(t *testing.T) {
 	testCase(t, func(c *testContext) {
-		t.Run("Exit with q", func(t *testing.T) {
-			c.tm.Type("q")
+		t.Run("Exit with /quit", func(t *testing.T) {
+			c.tm.Type("/quit")
+			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 			c.tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
 		})
@@ -52,6 +53,25 @@ func TestExit(t *testing.T) {
 			})
 		})
 	}
+}
+
+// TODO: sample PoC to build some interaction
+func TestChat(t *testing.T) {
+	testCase(t, func(c *testContext) {
+		// Set a term size to force footer rendering
+		c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
+		t.Run("User types message with enter and is sent to AI", func(t *testing.T) {
+			c.tm.Type("Hello AItana")
+			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), "Hello AItana")
+			})
+			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
+				return strings.HasPrefix(string(b), "\u001B[23AHello AItana   ")
+			})
+		})
+	})
 }
 
 func TestComposer(t *testing.T) {

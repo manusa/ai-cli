@@ -30,7 +30,6 @@ func NewModel() Model {
 		composer: textarea.New(),
 		footer:   footer.NewModel(ctx),
 	}
-	m.viewport.SetContent(lipgloss.NewStyle().Bold(true).Render("Welcome to the AI CLI!"))
 	m.composer.Placeholder = "How can I help you today?"
 	return m
 }
@@ -51,8 +50,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q", "esc":
+		case "ctrl+c", "esc":
 			return m, tea.Quit
+		case "enter":
+			return m.handleEnter()
 		}
 	case tea.WindowSizeMsg:
 		m.context.Width = msg.Width
@@ -60,6 +61,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.composer.SetWidth(msg.Width)
 		m.viewport.Width = msg.Width
 		m.viewport.Height = msg.Height - composerHeight - lipgloss.Height(m.footer.View())
+	}
+	if m.context.Chat == "" {
+		m.viewport.SetContent(lipgloss.NewStyle().Bold(true).Render("Welcome to the AI CLI!"))
+	} else {
+		m.viewport.SetContent(m.context.Chat)
 	}
 	cmds = append(cmds, m.composer.Focus())
 	m.viewport, cmd = m.viewport.Update(msg)
@@ -77,4 +83,20 @@ func (m Model) View() string {
 	view.WriteString(m.composer.View() + "\n")
 	view.WriteString(m.footer.View())
 	return view.String()
+}
+
+func (m Model) handleEnter() (Model, tea.Cmd) {
+	v := m.composer.Value()
+	if v == "" {
+		return m, nil
+	}
+	if v == "/quit" {
+		return m, tea.Quit
+	}
+	m.composer.Reset()
+	if m.context.Chat != "" {
+		m.context.Chat += "\n"
+	}
+	m.context.Chat += v
+	return m, nil
 }
