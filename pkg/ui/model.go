@@ -30,12 +30,13 @@ func NewModel() Model {
 		composer: textarea.New(),
 		footer:   footer.NewModel(ctx),
 	}
+	m.composer.SetHeight(composerHeight)
 	m.composer.Placeholder = "How can I help you today?"
+	m.composer.FocusedStyle.CursorLine = lipgloss.NewStyle()
 	return m
 }
 
 func (m Model) Init() tea.Cmd {
-	m.composer.SetHeight(composerHeight)
 	return tea.Batch(
 		m.viewport.Init(),
 		m.footer.Init(),
@@ -98,5 +99,6 @@ func (m Model) handleEnter() (Model, tea.Cmd) {
 		m.context.Chat += "\n"
 	}
 	m.context.Chat += "👤 " + v
+	m.viewport.GotoBottom()
 	return m, nil
 }
