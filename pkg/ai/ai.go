@@ -111,13 +111,13 @@ func (a *Ai) Run() error {
 func (a *Ai) prompt(userInput Message) error {
 	a.setRunning(true)
 	defer func() { a.setRunning(false) }()
+	a.appendMessage(userInput)
 	// Send PROMPT
 	stream, err := a.sessionChat.SendStreaming(a.ctx, userInput.Text)
 	if err != nil {
 		a.setRunning(false)
 		return err
 	}
-	a.appendMessage(userInput)
 	// Process the stream
 	streamedResponse := strings.Builder{}
 	for response, err := range stream {

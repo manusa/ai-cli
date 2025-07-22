@@ -112,7 +112,10 @@ func (m Model) handleEnter() (Model, tea.Cmd) {
 
 func (m Model) renderMessages() string {
 	renderedMessages := strings.Builder{}
-	for _, msg := range m.context.Ai.Session().Messages() {
+	for idx, msg := range m.context.Ai.Session().Messages() {
+		if idx > 0 {
+			renderedMessages.WriteString("\n")
+		}
 		var text string
 		switch msg.Type {
 		case ai.MessageTypeSystem:
@@ -139,7 +142,23 @@ func (m Model) renderMessages() string {
 			}
 			text = strings.Join(chunks, "\n")
 		}
-		renderedMessages.WriteString(text + "\n")
+		renderedMessages.WriteString(strings.Trim(text, "\n") + "\n")
 	}
 	return renderedMessages.String()
+	// TODO: Glamour doesn't work well
+	//const glamourGutter = 2
+	//glamourRenderWidth := m.context.Width - glamourGutter
+	//renderer, err := glamour.NewTermRenderer(
+	//	glamour.WithAutoStyle(),
+	//	glamour.WithWordWrap(glamourRenderWidth),
+	//)
+	//if err != nil {
+	//	return renderedMessages.String() // Return raw text if rendering fails
+	//}
+	//defer func() { _ = renderer.Close() }()
+	//str, err := renderer.Render(renderedMessages.String())
+	//if err != nil {
+	//	return renderedMessages.String() // Return raw text if rendering fails
+	//}
+	//return str
 }

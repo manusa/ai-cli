@@ -79,7 +79,7 @@ func TestChat(t *testing.T) {
 			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
-				return strings.Contains(string(b), "\u001B[80D\u001B[23A👤 Hello AItana")
+				return strings.Contains(string(b), "\u001B[23A👤 Hello AItana")
 			}, teatest.WithDuration(30*time.Second))
 		})
 	})
