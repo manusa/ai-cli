@@ -33,6 +33,7 @@ func NewModel(ai *ai.Ai) Model {
 		footer:   footer.NewModel(ctx),
 	}
 	m.composer.SetHeight(composerHeight)
+	m.composer.ShowLineNumbers = false
 	m.composer.Placeholder = "How can I help you today?"
 	m.composer.FocusedStyle.CursorLine = lipgloss.NewStyle()
 	return m
@@ -64,12 +65,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.composer.SetWidth(msg.Width)
 		m.viewport.Width = msg.Width
 		m.viewport.Height = msg.Height - composerHeight - lipgloss.Height(m.footer.View())
+	case ai.Notification:
+		// AI is running and a new partial message is available
+		// Partial message rendering is handled by the ai.Session itself
+		m.viewport.GotoBottom()
+
 	}
-	if len(m.context.Ai.Session().Messages) == 0 {
+	// Update viewport
+	if !m.context.Ai.Session().HasMessages() && !m.context.Ai.Session().IsRunning() {
 		m.viewport.SetContent(lipgloss.NewStyle().Bold(true).Render("Welcome to the AI CLI!"))
 	} else {
-		m.viewport.SetContent(render(m.context.Ai.Session().Messages))
+		m.viewport.SetContent(m.renderMessages())
 	}
+
 	cmds = append(cmds, m.composer.Focus())
 	m.viewport, cmd = m.viewport.Update(msg)
 	cmds = append(cmds, cmd)
@@ -102,21 +110,36 @@ func (m Model) handleEnter() (Model, tea.Cmd) {
 	return m, nil
 }
 
-func render(messages []ai.Message) string {
+func (m Model) renderMessages() string {
 	renderedMessages := strings.Builder{}
-	for _, msg := range messages {
+	for _, msg := range m.context.Ai.Session().Messages() {
+		var text string
 		switch msg.Type {
 		case ai.MessageTypeSystem:
-			renderedMessages.WriteString("🤖 " + msg.Text + "\n")
+			text = "🤖 "
 		case ai.MessageTypeUser:
-			renderedMessages.WriteString("👤 " + msg.Text + "\n")
+			text = "👤 "
 		case ai.MessageTypeAssistant:
-			renderedMessages.WriteString("🤖 " + msg.Text + "\n")
+			text = "🤖 "
 		case ai.MessageTypeTool:
-			renderedMessages.WriteString("🔧 " + msg.Text + "\n")
-		default:
-			renderedMessages.WriteString(msg.Text + "\n")
+			text = "🔧 "
 		}
+		text += msg.Text
+		maxWidth := m.context.Width
+		// create chunks of text that fit within the maxWidth
+		if len(text) > maxWidth {
+			chunks := make([]string, 0)
+			for len(text) > maxWidth {
+				chunk := text[:maxWidth]
+				chunks = append(chunks, chunk)
+				text = text[maxWidth:]
+			}
+			if len(text) > 0 {
+				chunks = append(chunks, text)
+			}
+			text = strings.Join(chunks, "\n")
+		}
+		renderedMessages.WriteString(text + "\n")
 	}
 	return renderedMessages.String()
 }

@@ -14,6 +14,14 @@ type Message struct {
 	Text string
 }
 
+func NewSystemMessage(text string) Message {
+	return Message{Type: MessageTypeSystem, Text: text}
+}
+
+func NewAssistantMessage(text string) Message {
+	return Message{Type: MessageTypeAssistant, Text: text}
+}
+
 func NewUserMessage(text string) Message {
 	return Message{Type: MessageTypeUser, Text: text}
 }

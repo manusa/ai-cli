@@ -65,8 +65,11 @@ func (o *AiCliOptions) Run(cmd *cobra.Command) error {
 	}
 
 	cfg := config.New()
-	aiAgent := ai.New(cfg)
-	if err := aiAgent.Run(cmd.Context()); err != nil {
+	aiAgent, err := ai.New(cmd.Context(), cfg)
+	if err != nil {
+		return fmt.Errorf("failed to create AI agent: %w", err)
+	}
+	if err = aiAgent.Run(); err != nil {
 		return fmt.Errorf("failed to run AI: %w", err)
 	}
 	p := tea.NewProgram(
@@ -75,8 +78,23 @@ func (o *AiCliOptions) Run(cmd *cobra.Command) error {
 		tea.WithMouseCellMotion(),
 		tea.WithReportFocus(),
 	)
-	if _, err := p.Run(); err != nil {
+	// Agent-UI synchronization
+	go func() {
+		for {
+			select {
+			case <-cmd.Context().Done():
+				return
+			case msg, ok := <-aiAgent.Output:
+				if !ok {
+					return
+				}
+				p.Send(msg)
+			}
+		}
+	}()
+	if _, err = p.Run(); err != nil {
 		return fmt.Errorf("failed to run program: %w", err)
 	}
+
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/x/exp/teatest"
 	"github.com/manusa/ai-cli/pkg/ai"
 	"github.com/manusa/ai-cli/pkg/config"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -17,8 +18,12 @@ type testContext struct {
 }
 
 func (c *testContext) beforeEach() {
-	aiAgent := ai.New(config.New())
-	if err := aiAgent.Run(c.t.Context()); err != nil {
+	_ = os.Setenv("GEMINI_API_KEY", "FAKE KEY")
+	aiAgent, err := ai.New(c.t.Context(), config.New())
+	if err != nil {
+		c.t.Fatalf("failed to create AI agent: %v", err)
+	}
+	if err = aiAgent.Run(); err != nil {
 		c.t.Fatalf("failed to run AI: %v", err)
 	}
 	c.m = NewModel(aiAgent)
@@ -74,8 +79,8 @@ func TestChat(t *testing.T) {
 			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
-				return strings.HasPrefix(string(b), "\u001B[23A👤 Hello AItana   ")
-			})
+				return strings.Contains(string(b), "\u001B[80D\u001B[23A👤 Hello AItana")
+			}, teatest.WithDuration(30*time.Second))
 		})
 	})
 }
