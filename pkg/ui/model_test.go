@@ -108,6 +108,5 @@ func TestFooter(t *testing.T) {
 				return strings.HasSuffix(string(b), "0.0.0 \u001B[80D")
 			})
 		})
-
 	})
 }

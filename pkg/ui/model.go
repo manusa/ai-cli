@@ -68,7 +68,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if len(m.context.Ai.Session().Messages) == 0 {
 		m.viewport.SetContent(lipgloss.NewStyle().Bold(true).Render("Welcome to the AI CLI!"))
 	} else {
-		m.viewport.SetContent(strings.Join(m.context.Ai.Session().Messages, "\n"))
+		m.viewport.SetContent(render(m.context.Ai.Session().Messages))
 	}
 	cmds = append(cmds, m.composer.Focus())
 	m.viewport, cmd = m.viewport.Update(msg)
@@ -97,7 +97,26 @@ func (m Model) handleEnter() (Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 	m.composer.Reset()
-	m.context.Ai.Input <- "👤 " + v
+	m.context.Ai.Input <- ai.NewUserMessage(v)
 	m.viewport.GotoBottom()
 	return m, nil
+}
+
+func render(messages []ai.Message) string {
+	renderedMessages := strings.Builder{}
+	for _, msg := range messages {
+		switch msg.Type {
+		case ai.MessageTypeSystem:
+			renderedMessages.WriteString("🤖 " + msg.Text + "\n")
+		case ai.MessageTypeUser:
+			renderedMessages.WriteString("👤 " + msg.Text + "\n")
+		case ai.MessageTypeAssistant:
+			renderedMessages.WriteString("🤖 " + msg.Text + "\n")
+		case ai.MessageTypeTool:
+			renderedMessages.WriteString("🔧 " + msg.Text + "\n")
+		default:
+			renderedMessages.WriteString(msg.Text + "\n")
+		}
+	}
+	return renderedMessages.String()
 }

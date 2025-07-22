@@ -10,7 +10,7 @@ import (
 
 type Ai struct {
 	config       *config.Config
-	Input        chan any
+	Input        chan Message
 	Output       chan any
 	session      *Session
 	sessionMutex sync.RWMutex
@@ -19,7 +19,7 @@ type Ai struct {
 func New(cfg *config.Config) *Ai {
 	return &Ai{
 		config:       cfg,
-		Input:        make(chan any, 10),
+		Input:        make(chan Message),
 		Output:       make(chan any, 10),
 		session:      &Session{},
 		sessionMutex: sync.RWMutex{},
@@ -33,7 +33,7 @@ func (a *Ai) Session() *Session {
 	return &sessionShallowCopy
 }
 
-func (a *Ai) appendMessage(message string) {
+func (a *Ai) appendMessage(message Message) {
 	a.sessionMutex.Lock()
 	defer a.sessionMutex.Unlock()
 	a.session.Messages = append(a.session.Messages, message)
@@ -46,11 +46,7 @@ func (a *Ai) Run(ctx context.Context) error {
 			case <-ctx.Done():
 				return
 			case userInput := <-a.Input:
-				prompt, ok := userInput.(string)
-				if !ok {
-					return
-				}
-				a.appendMessage(prompt)
+				a.appendMessage(userInput)
 			}
 		}
 	}()
