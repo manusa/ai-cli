@@ -97,6 +97,6 @@ func (m Model) handleEnter() (Model, tea.Cmd) {
 	if m.context.Chat != "" {
 		m.context.Chat += "\n"
 	}
-	m.context.Chat += v
+	m.context.Chat += "👤 " + v
 	return m, nil
 }

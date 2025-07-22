@@ -68,7 +68,7 @@ func TestChat(t *testing.T) {
 			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
 			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
-				return strings.HasPrefix(string(b), "\u001B[23AHello AItana   ")
+				return strings.HasPrefix(string(b), "\u001B[23A👤 Hello AItana   ")
 			})
 		})
 	})
