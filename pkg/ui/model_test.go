@@ -3,6 +3,8 @@ package ui
 import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/exp/teatest"
+	"github.com/manusa/ai-cli/pkg/ai"
+	"github.com/manusa/ai-cli/pkg/config"
 	"strings"
 	"testing"
 	"time"
@@ -15,7 +17,11 @@ type testContext struct {
 }
 
 func (c *testContext) beforeEach() {
-	c.m = NewModel()
+	aiAgent := ai.New(config.New())
+	if err := aiAgent.Run(c.t.Context()); err != nil {
+		c.t.Fatalf("failed to run AI: %v", err)
+	}
+	c.m = NewModel(aiAgent)
 	c.tm = teatest.NewTestModel(c.t, c.m, teatest.WithInitialTermSize(80, 20))
 	teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool { return strings.Contains(string(b), "Welcome to the AI CLI!") })
 }

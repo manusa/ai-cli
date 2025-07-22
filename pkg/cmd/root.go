@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/manusa/ai-cli/pkg/ai"
+	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/ui"
 	"github.com/manusa/ai-cli/pkg/version"
 	"github.com/spf13/cobra"
@@ -30,7 +32,7 @@ func NewAiCli() *cobra.Command {
 			if err := o.Validate(); err != nil {
 				return err
 			}
-			if err := o.Run(); err != nil {
+			if err := o.Run(cmd); err != nil {
 				return err
 			}
 
@@ -55,15 +57,20 @@ func (o *AiCliOptions) Validate() error {
 }
 
 // Run executes the main logic of the command once its complete and validated
-func (o *AiCliOptions) Run() error {
+func (o *AiCliOptions) Run(cmd *cobra.Command) error {
 
 	if o.Version {
 		_, _ = fmt.Printf("%s\n", version.Version)
 		return nil
 	}
 
+	cfg := config.New()
+	aiAgent := ai.New(cfg)
+	if err := aiAgent.Run(cmd.Context()); err != nil {
+		return fmt.Errorf("failed to run AI: %w", err)
+	}
 	p := tea.NewProgram(
-		ui.NewModel(),
+		ui.NewModel(aiAgent),
 		tea.WithAltScreen(),
 		tea.WithMouseCellMotion(),
 		tea.WithReportFocus(),

@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/manusa/ai-cli/pkg/ai"
 	"github.com/manusa/ai-cli/pkg/ui/components/footer"
 	"github.com/manusa/ai-cli/pkg/ui/context"
 	"github.com/manusa/ai-cli/pkg/version"
@@ -20,8 +21,9 @@ type Model struct {
 	footer   tea.Model
 }
 
-func NewModel() Model {
+func NewModel(ai *ai.Ai) Model {
 	ctx := &context.ModelContext{
+		Ai:      ai,
 		Version: version.Version,
 	}
 	m := Model{
@@ -63,10 +65,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.Width = msg.Width
 		m.viewport.Height = msg.Height - composerHeight - lipgloss.Height(m.footer.View())
 	}
-	if m.context.Chat == "" {
+	if len(m.context.Ai.Session().Messages) == 0 {
 		m.viewport.SetContent(lipgloss.NewStyle().Bold(true).Render("Welcome to the AI CLI!"))
 	} else {
-		m.viewport.SetContent(m.context.Chat)
+		m.viewport.SetContent(strings.Join(m.context.Ai.Session().Messages, "\n"))
 	}
 	cmds = append(cmds, m.composer.Focus())
 	m.viewport, cmd = m.viewport.Update(msg)
@@ -95,10 +97,7 @@ func (m Model) handleEnter() (Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 	m.composer.Reset()
-	if m.context.Chat != "" {
-		m.context.Chat += "\n"
-	}
-	m.context.Chat += "👤 " + v
+	m.context.Ai.Input <- "👤 " + v
 	m.viewport.GotoBottom()
 	return m, nil
 }
