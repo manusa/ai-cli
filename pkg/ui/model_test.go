@@ -103,11 +103,11 @@ func TestViewport(t *testing.T) {
 			c.tm.Send(tea.WindowSizeMsg{Width: 20, Height: 10})
 
 			expectedViewport := "" +
-				"👤 1                \r\n" +
-				"2                   \r\n" +
-				"3                   \r\n" +
-				"4                   \r\n" +
-				"5                   "
+				" 👤 1               \r\n" +
+				" 2                  \r\n" +
+				" 3                  \r\n" +
+				" 4                  \r\n" +
+				" 5                  "
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), expectedViewport)
 			})
@@ -116,10 +116,10 @@ func TestViewport(t *testing.T) {
 			c.tm.Send(ai.Notification{})
 
 			expectedViewport := "" +
-				"20                  \r\n" +
-				"                    \r\n" +
-				"🤖 AI is not runni  \r\n" +
-				"ng, this is a test"
+				" 20                 \r\n" +
+				" 🤖 AI is not       \r\n" +
+				" running, this is a \r\n" +
+				" test"
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), expectedViewport)
 			})

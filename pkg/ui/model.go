@@ -141,14 +141,7 @@ func (m Model) renderMessages() string {
 		if idx > 0 {
 			renderedMessages.WriteString("\n")
 		}
-		text := emoji(msg.Type) + " " + msg.Text
-		chunks := make([]string, 0)
-		for _, line := range strings.Split(text, "\n") {
-			chunks = append(chunks, split(line, m.context.Width)...)
-
-		}
-		text = strings.Join(chunks, "\n")
-		renderedMessages.WriteString(strings.Trim(text, "\n") + "\n")
+		renderedMessages.WriteString(render(msg, m.context.Width))
 	}
 	return renderedMessages.String()
 	// TODO: Glamour doesn't work well
@@ -195,18 +188,7 @@ func emoji(messageType ai.MessageType) string {
 	return ">"
 }
 
-func split(str string, maxWidth int) []string {
-	if len(str) <= maxWidth {
-		return []string{str}
-	}
-	var chunks []string
-	for len(str) > maxWidth {
-		chunk := str[:maxWidth]
-		chunks = append(chunks, chunk)
-		str = str[maxWidth:]
-	}
-	if len(str) > 0 {
-		chunks = append(chunks, str)
-	}
-	return chunks
+func render(msg ai.Message, maxWidth int) string {
+	messageStyle := lipgloss.NewStyle().Width(maxWidth-2).Margin(0, 1)
+	return messageStyle.Render(emoji(msg.Type), strings.Trim(msg.Text, "\n"))
 }
