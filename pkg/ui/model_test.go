@@ -79,7 +79,7 @@ func TestAiInteractions(t *testing.T) {
 
 			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), "\u001B[23A👤 Hello AItana")
-			}, teatest.WithDuration(30*time.Second))
+			})
 		})
 	})
 }
@@ -100,17 +100,23 @@ func TestComposer(t *testing.T) {
 				" │                          │ \r\n" +
 				" ╰──────────────────────────╯ \r\n"
 			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
-				debug := string(b)
-				debug += "\n"
 				return strings.Contains(string(b), expectedTextArea)
-			}, teatest.WithDuration(30*time.Second))
+			})
 		})
 		t.Run("Composer is focused and ready to receive input", func(t *testing.T) {
 			c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
 			c.tm.Type("GREETINGS PROFESSOR FALKEN")
 
 			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
-				return strings.Contains(string(b), "GREETINGS PROFESSOR FALKEN")
+				return strings.Contains(string(b), "│GREETINGS PROFESSOR FALKEN")
+			})
+		})
+		t.Run("Composer wraps text when it exceeds width", func(t *testing.T) {
+			c.tm.Send(tea.WindowSizeMsg{Width: 23, Height: 24})
+
+			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), " │GREETINGS          │ ") &&
+					strings.Contains(string(b), " │PROFESSOR FALKEN   │ ")
 			})
 		})
 	})
