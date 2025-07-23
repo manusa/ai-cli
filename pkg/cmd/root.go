@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/GoogleCloudPlatform/kubectl-ai/gollm"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/manusa/ai-cli/pkg/ai"
 	"github.com/manusa/ai-cli/pkg/config"
@@ -64,12 +65,16 @@ func (o *AiCliOptions) Run(cmd *cobra.Command) error {
 		return nil
 	}
 
-	cfg := config.New()
-	aiAgent, err := ai.New(cmd.Context(), cfg)
+	cfg := config.New() // TODO, will need to infer or load from a file
+
+	llm, err := gollm.NewGeminiAPIClient(cmd.Context(), gollm.GeminiAPIClientOptions{
+		APIKey: cfg.GoogleApiKey,
+	})
 	if err != nil {
-		return fmt.Errorf("failed to create AI agent: %w", err)
+		return fmt.Errorf("failed to create LLM client: %w", err)
 	}
-	if err = aiAgent.Run(); err != nil {
+	aiAgent := ai.New(llm, cfg)
+	if err = aiAgent.Run(cmd.Context()); err != nil {
 		return fmt.Errorf("failed to run AI: %w", err)
 	}
 	p := tea.NewProgram(
@@ -92,6 +97,7 @@ func (o *AiCliOptions) Run(cmd *cobra.Command) error {
 			}
 		}
 	}()
+	// Run TUI
 	if _, err = p.Run(); err != nil {
 		return fmt.Errorf("failed to run program: %w", err)
 	}

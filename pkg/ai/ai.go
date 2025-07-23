@@ -8,13 +8,11 @@ import (
 	"github.com/manusa/ai-cli/pkg/config"
 	"strings"
 	"sync"
-	"time"
 )
 
 type Notification struct{}
 
 type Ai struct {
-	ctx    context.Context
 	config *config.Config
 	llm    gollm.Client
 	Input  chan Message
@@ -30,18 +28,11 @@ type Ai struct {
 	sessionMutex sync.RWMutex
 }
 
-func New(ctx context.Context, cfg *config.Config) (*Ai, error) {
-	llm, err := gollm.NewGeminiAPIClient(ctx, gollm.GeminiAPIClientOptions{
-		APIKey: cfg.GoogleApiKey,
-	})
-	if err != nil {
-		return nil, err
-	}
+func New(llm gollm.Client, cfg *config.Config) *Ai {
 	session := &Session{
 		systemPrompt: NewSystemMessage("You are a helpful AI assistant."),
 	}
 	return &Ai{
-		ctx:          ctx,
 		config:       cfg,
 		llm:          llm,
 		Input:        make(chan Message),
@@ -49,7 +40,7 @@ func New(ctx context.Context, cfg *config.Config) (*Ai, error) {
 		sessionChat:  llm.StartChat(session.SystemPrompt(), cfg.GeminiModel),
 		session:      session,
 		sessionMutex: sync.RWMutex{},
-	}, nil
+	}
 }
 
 func (a *Ai) Session() *Session {
@@ -59,7 +50,8 @@ func (a *Ai) Session() *Session {
 	return &sessionShallowCopy
 }
 
-func (a *Ai) Notify() {
+// notify sends a notification to the Output channel to inform the UI about changes in the session state.
+func (a *Ai) notify() {
 	go func() { a.Output <- Notification{} }()
 }
 
@@ -67,39 +59,35 @@ func (a *Ai) appendMessage(message Message) {
 	a.sessionMutex.Lock()
 	defer a.sessionMutex.Unlock()
 	a.session.messages = append(a.session.messages, message)
+	a.notify()
 }
 
 func (a *Ai) setMessageInProgress(message Message) {
 	a.sessionMutex.Lock()
 	defer a.sessionMutex.Unlock()
 	a.session.messageInProgress = message
-	a.Notify()
+	a.notify()
 }
 
 func (a *Ai) setRunning(running bool) {
 	a.sessionMutex.Lock()
 	defer a.sessionMutex.Unlock()
 	a.session.running = running
-	a.Notify()
+	a.notify()
 }
 
-func (a *Ai) Run() error {
+func (a *Ai) Run(ctx context.Context) error {
 	go func() {
 		for {
-			if !a.Session().IsRunning() {
-				select {
-				case <-a.ctx.Done():
-					return
-				case userInput := <-a.Input:
-					err := a.prompt(userInput)
-					if err != nil {
-						// TODO: Figure out a nice way to display errors to the user
-						continue
-					}
+			select {
+			case <-ctx.Done():
+				return
+			case userInput := <-a.Input:
+				err := a.prompt(ctx, userInput)
+				if err != nil {
+					// TODO: Figure out a nice way to display errors to the user
+					continue
 				}
-			} else {
-				// Loop while running
-				time.Sleep(100 * time.Millisecond)
 			}
 		}
 	}()
@@ -108,12 +96,12 @@ func (a *Ai) Run() error {
 
 // Prompt sends a prompt to the AI model.
 // TODO: Just a PoC
-func (a *Ai) prompt(userInput Message) error {
+func (a *Ai) prompt(ctx context.Context, userInput Message) error {
 	a.setRunning(true)
 	defer func() { a.setRunning(false) }()
 	a.appendMessage(userInput)
 	// Send PROMPT
-	stream, err := a.sessionChat.SendStreaming(a.ctx, userInput.Text)
+	stream, err := a.sessionChat.SendStreaming(ctx, userInput.Text)
 	if err != nil {
 		a.setRunning(false)
 		return err

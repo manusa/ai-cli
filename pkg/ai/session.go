@@ -1,6 +1,5 @@
 package ai
 
-// TODO: Might need to be moved to a separate package
 type Session struct {
 	systemPrompt      Message
 	messages          []Message

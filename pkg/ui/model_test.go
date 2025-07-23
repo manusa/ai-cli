@@ -5,6 +5,7 @@ import (
 	"github.com/charmbracelet/x/exp/teatest"
 	"github.com/manusa/ai-cli/pkg/ai"
 	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/test"
 	"os"
 	"strings"
 	"testing"
@@ -19,11 +20,9 @@ type testContext struct {
 
 func (c *testContext) beforeEach() {
 	_ = os.Setenv("GEMINI_API_KEY", "FAKE KEY")
-	aiAgent, err := ai.New(c.t.Context(), config.New())
-	if err != nil {
-		c.t.Fatalf("failed to create AI agent: %v", err)
-	}
-	if err = aiAgent.Run(); err != nil {
+	llm := &test.TestClient{}
+	aiAgent := ai.New(llm, config.New())
+	if err := aiAgent.Run(c.t.Context()); err != nil {
 		c.t.Fatalf("failed to run AI: %v", err)
 	}
 	c.m = NewModel(aiAgent)
@@ -67,7 +66,7 @@ func TestExit(t *testing.T) {
 }
 
 // TODO: sample PoC to build some interaction
-func TestChat(t *testing.T) {
+func TestAiInteractions(t *testing.T) {
 	testCase(t, func(c *testContext) {
 		// Set a term size to force footer rendering
 		c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})

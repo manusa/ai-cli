@@ -71,8 +71,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 
 	}
+	session := m.context.Ai.Session()
 	// Update viewport
-	if !m.context.Ai.Session().HasMessages() && !m.context.Ai.Session().IsRunning() {
+	if !session.HasMessages() && !session.IsRunning() {
 		m.viewport.SetContent(lipgloss.NewStyle().Bold(true).Render("Welcome to the AI CLI!"))
 	} else {
 		m.viewport.SetContent(m.renderMessages())
@@ -81,8 +82,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	cmds = append(cmds, m.composer.Focus())
 	m.viewport, cmd = m.viewport.Update(msg)
 	cmds = append(cmds, cmd)
-	m.composer, cmd = m.composer.Update(msg)
-	cmds = append(cmds, cmd)
+	if !session.IsRunning() {
+		// Ignore input while AI is running
+		m.composer, cmd = m.composer.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 	m.footer, cmd = m.footer.Update(msg)
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
@@ -97,6 +101,10 @@ func (m Model) View() string {
 }
 
 func (m Model) handleEnter() (Model, tea.Cmd) {
+	if m.context.Ai.Session().IsRunning() {
+		// AI is running, ignore the input
+		return m, nil
+	}
 	v := m.composer.Value()
 	if v == "" {
 		return m, nil
@@ -116,32 +124,13 @@ func (m Model) renderMessages() string {
 		if idx > 0 {
 			renderedMessages.WriteString("\n")
 		}
-		var text string
-		switch msg.Type {
-		case ai.MessageTypeSystem:
-			text = "🤖 "
-		case ai.MessageTypeUser:
-			text = "👤 "
-		case ai.MessageTypeAssistant:
-			text = "🤖 "
-		case ai.MessageTypeTool:
-			text = "🔧 "
+		text := emoji(msg.Type) + " " + msg.Text
+		chunks := make([]string, 0)
+		for _, line := range strings.Split(text, "\n") {
+			chunks = append(chunks, split(line, m.context.Width)...)
+
 		}
-		text += msg.Text
-		maxWidth := m.context.Width
-		// create chunks of text that fit within the maxWidth
-		if len(text) > maxWidth {
-			chunks := make([]string, 0)
-			for len(text) > maxWidth {
-				chunk := text[:maxWidth]
-				chunks = append(chunks, chunk)
-				text = text[maxWidth:]
-			}
-			if len(text) > 0 {
-				chunks = append(chunks, text)
-			}
-			text = strings.Join(chunks, "\n")
-		}
+		text = strings.Join(chunks, "\n")
 		renderedMessages.WriteString(strings.Trim(text, "\n") + "\n")
 	}
 	return renderedMessages.String()
@@ -161,4 +150,34 @@ func (m Model) renderMessages() string {
 	//	return renderedMessages.String() // Return raw text if rendering fails
 	//}
 	//return str
+}
+
+func emoji(messageType ai.MessageType) string {
+	switch messageType {
+	case ai.MessageTypeSystem:
+		return "🤖"
+	case ai.MessageTypeUser:
+		return "👤"
+	case ai.MessageTypeAssistant:
+		return "🤖"
+	case ai.MessageTypeTool:
+		return "🔧"
+	}
+	return ">"
+}
+
+func split(str string, maxWidth int) []string {
+	if len(str) <= maxWidth {
+		return []string{str}
+	}
+	var chunks []string
+	for len(str) > maxWidth {
+		chunk := str[:maxWidth]
+		chunks = append(chunks, chunk)
+		str = str[maxWidth:]
+	}
+	if len(str) > 0 {
+		chunks = append(chunks, str)
+	}
+	return chunks
 }
