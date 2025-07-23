@@ -86,7 +86,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	// Update viewport
 	adjustViewportSize(&m)
-	if !session.HasMessages() && !session.IsRunning() {
+	if !session.HasMessages() {
 		m.viewport.SetContent(lipgloss.NewStyle().Bold(true).Render("Welcome to the AI CLI!"))
 	} else {
 		m.viewport.SetContent(m.renderMessages())
@@ -189,6 +189,8 @@ func emoji(messageType ai.MessageType) string {
 		return "🤖"
 	case ai.MessageTypeTool:
 		return "🔧"
+	case ai.MessageTypeError:
+		return "❗"
 	}
 	return ">"
 }

@@ -69,6 +69,13 @@ func (a *Ai) setMessageInProgress(message Message) {
 	a.notify()
 }
 
+func (a *Ai) setError(err error) {
+	a.sessionMutex.Lock()
+	defer a.sessionMutex.Unlock()
+	a.session.error = err
+	a.notify()
+}
+
 func (a *Ai) setRunning(running bool) {
 	a.sessionMutex.Lock()
 	defer a.sessionMutex.Unlock()
@@ -83,11 +90,7 @@ func (a *Ai) Run(ctx context.Context) error {
 			case <-ctx.Done():
 				return
 			case userInput := <-a.Input:
-				err := a.prompt(ctx, userInput)
-				if err != nil {
-					// TODO: Figure out a nice way to display errors to the user
-					continue
-				}
+				a.prompt(ctx, userInput)
 			}
 		}
 	}()
@@ -96,21 +99,24 @@ func (a *Ai) Run(ctx context.Context) error {
 
 // Prompt sends a prompt to the AI model.
 // TODO: Just a PoC
-func (a *Ai) prompt(ctx context.Context, userInput Message) error {
+func (a *Ai) prompt(ctx context.Context, userInput Message) {
 	a.setRunning(true)
 	defer func() { a.setRunning(false) }()
 	a.appendMessage(userInput)
 	// Send PROMPT
 	stream, err := a.sessionChat.SendStreaming(ctx, userInput.Text)
 	if err != nil {
+		a.setError(err)
 		a.setRunning(false)
-		return err
+		return
 	}
 	// Process the stream
 	streamedResponse := strings.Builder{}
 	for response, err := range stream {
 		if err != nil {
-			return err
+			a.setError(err)
+			a.setRunning(false)
+			return
 		}
 		if response == nil {
 			// End of stream
@@ -133,5 +139,4 @@ func (a *Ai) prompt(ctx context.Context, userInput Message) error {
 	}
 	a.setMessageInProgress(NewAssistantMessage(""))
 	a.setRunning(false)
-	return nil
 }

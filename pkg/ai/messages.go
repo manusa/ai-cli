@@ -7,6 +7,7 @@ const (
 	MessageTypeUser      MessageType = "user"
 	MessageTypeAssistant MessageType = "assistant"
 	MessageTypeTool      MessageType = "tool"
+	MessageTypeError     MessageType = "error"
 )
 
 type Message struct {
@@ -24,6 +25,10 @@ func NewAssistantMessage(text string) Message {
 
 func NewUserMessage(text string) Message {
 	return Message{Type: MessageTypeUser, Text: text}
+}
+
+func NewErrorMessage(text string) Message {
+	return Message{Type: MessageTypeError, Text: text}
 }
 
 func (m *Message) Role() string {
