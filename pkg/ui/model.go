@@ -36,6 +36,7 @@ func NewModel(ai *ai.Ai) Model {
 		composer: textarea.New(),
 		footer:   footer.NewModel(ctx),
 	}
+	m.viewport.KeyMap = ViewportKeyMap()
 	m.composer.SetHeight(2)
 	m.composer.ShowLineNumbers = false
 	m.composer.Placeholder = "How can I help you today?"
