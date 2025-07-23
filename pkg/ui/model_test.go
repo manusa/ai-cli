@@ -12,8 +12,9 @@ import (
 )
 
 type testContext struct {
-	m  Model
-	tm *teatest.TestModel
+	m             Model
+	tm            *teatest.TestModel
+	SynchronizeUi bool
 }
 
 func (c *testContext) beforeEach(t *testing.T) {
@@ -26,6 +27,22 @@ func (c *testContext) beforeEach(t *testing.T) {
 	c.m = NewModel(aiAgent)
 	c.tm = teatest.NewTestModel(t, c.m, teatest.WithInitialTermSize(80, 20))
 	teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool { return strings.Contains(string(b), "Welcome to the AI CLI!") })
+	// Agent-UI synchronization
+	if c.SynchronizeUi {
+		go func() {
+			for {
+				select {
+				case <-t.Context().Done():
+					return
+				case msg, ok := <-aiAgent.Output:
+					if !ok {
+						return
+					}
+					c.tm.Send(msg)
+				}
+			}
+		}()
+	}
 }
 
 func (c *testContext) afterEach() {
@@ -82,6 +99,8 @@ func TestViewport(t *testing.T) {
 				return strings.Contains(string(b), "│20              │") // clear buffer
 			})
 			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+			// Set a term size to force viewport rerendering
+			c.tm.Send(tea.WindowSizeMsg{Width: 20, Height: 10})
 
 			expectedViewport := "" +
 				"👤 1                \r\n" +

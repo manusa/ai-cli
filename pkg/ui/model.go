@@ -69,16 +69,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleEnter()
 		}
 	case tea.WindowSizeMsg:
-		spinnerHeight := 0
-		if session.IsRunning() {
-			spinnerHeight = lipgloss.Height(m.spinner.View())
-		}
-		composerHeight := m.composer.Height() + m.composer.FocusedStyle.Base.GetVerticalFrameSize()
 		m.context.Width = msg.Width
 		m.context.Height = msg.Height
 		m.composer.SetWidth(msg.Width - composerPaddingHorizontal*2)
-		m.viewport.Width = msg.Width
-		m.viewport.Height = msg.Height - spinnerHeight - composerHeight - lipgloss.Height(m.footer.View())
 	case spinner.TickMsg:
 		m.spinner, cmd = m.spinner.Update(msg)
 		return m, cmd
@@ -92,6 +85,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 	}
 	// Update viewport
+	adjustViewportSize(&m)
 	if !session.HasMessages() && !session.IsRunning() {
 		m.viewport.SetContent(lipgloss.NewStyle().Bold(true).Render("Welcome to the AI CLI!"))
 	} else {
@@ -173,6 +167,16 @@ func (m Model) renderMessages() string {
 	//	return renderedMessages.String() // Return raw text if rendering fails
 	//}
 	//return str
+}
+
+func adjustViewportSize(m *Model) {
+	spinnerHeight := 0
+	if m.context.Ai.Session().IsRunning() {
+		spinnerHeight = lipgloss.Height(m.spinner.View())
+	}
+	composerHeight := m.composer.Height() + m.composer.FocusedStyle.Base.GetVerticalFrameSize()
+	m.viewport.Width = m.context.Width
+	m.viewport.Height = m.context.Height - spinnerHeight - composerHeight - lipgloss.Height(m.footer.View())
 }
 
 func emoji(messageType ai.MessageType) string {
