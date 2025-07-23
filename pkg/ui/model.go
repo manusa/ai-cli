@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"github.com/charmbracelet/bubbles/cursor"
+	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
@@ -12,11 +14,12 @@ import (
 	"strings"
 )
 
-const composerHeight = 2
+const composerPaddingHorizontal = 1
 
 type Model struct {
 	context  *context.ModelContext
 	viewport viewport.Model
+	spinner  spinner.Model
 	composer textarea.Model
 	footer   tea.Model
 }
@@ -29,10 +32,11 @@ func NewModel(ai *ai.Ai) Model {
 	m := Model{
 		context:  ctx,
 		viewport: viewport.New(0, 0),
+		spinner:  spinner.New(spinner.WithSpinner(spinner.Points)),
 		composer: textarea.New(),
 		footer:   footer.NewModel(ctx),
 	}
-	m.composer.SetHeight(composerHeight)
+	m.composer.SetHeight(2)
 	m.composer.ShowLineNumbers = false
 	m.composer.Placeholder = "How can I help you today?"
 	m.composer.Prompt = ""
@@ -43,16 +47,18 @@ func NewModel(ai *ai.Ai) Model {
 
 func (m Model) Init() tea.Cmd {
 	return tea.Batch(
-		m.viewport.Init(),
-		m.footer.Init(),
 		textarea.Blink,
+		m.viewport.Init(),
+		m.spinner.Tick,
 		m.composer.Focus(),
+		m.footer.Init(),
 	)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
+	session := m.context.Ai.Session()
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -62,18 +68,28 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.handleEnter()
 		}
 	case tea.WindowSizeMsg:
+		spinnerHeight := 0
+		if session.IsRunning() {
+			spinnerHeight = lipgloss.Height(m.spinner.View())
+		}
+		composerHeight := m.composer.Height() + m.composer.FocusedStyle.Base.GetVerticalFrameSize()
 		m.context.Width = msg.Width
 		m.context.Height = msg.Height
-		m.composer.SetWidth(msg.Width)
+		m.composer.SetWidth(msg.Width - composerPaddingHorizontal*2)
 		m.viewport.Width = msg.Width
-		m.viewport.Height = msg.Height - composerHeight - lipgloss.Height(m.footer.View())
+		m.viewport.Height = msg.Height - spinnerHeight - composerHeight - lipgloss.Height(m.footer.View())
+	case spinner.TickMsg:
+		m.spinner, cmd = m.spinner.Update(msg)
+		return m, cmd
+	case cursor.BlinkMsg:
+		// Only affects the composer textarea, minimize the impact on performance
+		m.composer, cmd = m.composer.Update(msg)
+		return m, cmd
 	case ai.Notification:
 		// AI is running and a new partial message is available
 		// Partial message rendering is handled by the ai.Session itself
 		m.viewport.GotoBottom()
-
 	}
-	session := m.context.Ai.Session()
 	// Update viewport
 	if !session.HasMessages() && !session.IsRunning() {
 		m.viewport.SetContent(lipgloss.NewStyle().Bold(true).Render("Welcome to the AI CLI!"))
@@ -95,9 +111,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() string {
+	center := lipgloss.NewStyle().Width(m.context.Width).AlignHorizontal(lipgloss.Center)
 	view := strings.Builder{}
 	view.WriteString(m.viewport.View() + "\n")
-	view.WriteString(m.composer.View() + "\n")
+	if m.context.Ai.Session().IsRunning() {
+		view.WriteString(center.Render(m.spinner.View()) + "\n")
+	}
+	view.WriteString(center.Render(m.composer.View()) + "\n")
 	view.WriteString(m.footer.View())
 	return view.String()
 }
