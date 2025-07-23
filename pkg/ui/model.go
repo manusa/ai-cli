@@ -40,6 +40,7 @@ func NewModel(ai *ai.Ai) Model {
 	m.composer.ShowLineNumbers = false
 	m.composer.Placeholder = "How can I help you today?"
 	m.composer.Prompt = ""
+	m.composer.Cursor.SetMode(cursor.CursorStatic)
 	m.composer.FocusedStyle.CursorLine = lipgloss.NewStyle() // Removes highlighted line
 	m.composer.FocusedStyle.Base = m.composer.FocusedStyle.Base.Border(lipgloss.RoundedBorder())
 	return m
