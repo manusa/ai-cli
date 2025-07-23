@@ -86,14 +86,27 @@ func TestAiInteractions(t *testing.T) {
 
 func TestComposer(t *testing.T) {
 	testCase(t, func(c *testContext) {
-		// Set a term size to force footer rendering
-		c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
 		t.Run("Composer shows placeholder text", func(t *testing.T) {
+			c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
 			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), "How can I help you today?")
 			})
 		})
+		t.Run("Composer has rounded borders", func(t *testing.T) {
+			c.tm.Send(tea.WindowSizeMsg{Width: 30, Height: 24})
+			expectedTextArea := "" +
+				" ╭──────────────────────────╮ \r\n" +
+				" │How can I help you today? │ \r\n" +
+				" │                          │ \r\n" +
+				" ╰──────────────────────────╯ \r\n"
+			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
+				debug := string(b)
+				debug += "\n"
+				return strings.Contains(string(b), expectedTextArea)
+			}, teatest.WithDuration(30*time.Second))
+		})
 		t.Run("Composer is focused and ready to receive input", func(t *testing.T) {
+			c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
 			c.tm.Type("GREETINGS PROFESSOR FALKEN")
 
 			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
