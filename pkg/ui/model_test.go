@@ -6,28 +6,26 @@ import (
 	"github.com/manusa/ai-cli/pkg/ai"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/test"
-	"os"
 	"strings"
 	"testing"
 	"time"
 )
 
 type testContext struct {
-	t  *testing.T
 	m  Model
 	tm *teatest.TestModel
 }
 
-func (c *testContext) beforeEach() {
-	_ = os.Setenv("GEMINI_API_KEY", "FAKE KEY")
-	llm := &test.TestClient{}
+func (c *testContext) beforeEach(t *testing.T) {
+	t.Helper()
+	llm := &test.Client{}
 	aiAgent := ai.New(llm, config.New())
-	if err := aiAgent.Run(c.t.Context()); err != nil {
-		c.t.Fatalf("failed to run AI: %v", err)
+	if err := aiAgent.Run(t.Context()); err != nil {
+		t.Fatalf("failed to run AI: %v", err)
 	}
 	c.m = NewModel(aiAgent)
-	c.tm = teatest.NewTestModel(c.t, c.m, teatest.WithInitialTermSize(80, 20))
-	teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool { return strings.Contains(string(b), "Welcome to the AI CLI!") })
+	c.tm = teatest.NewTestModel(t, c.m, teatest.WithInitialTermSize(80, 20))
+	teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool { return strings.Contains(string(b), "Welcome to the AI CLI!") })
 }
 
 func (c *testContext) afterEach() {
@@ -35,8 +33,11 @@ func (c *testContext) afterEach() {
 }
 
 func testCase(t *testing.T, test func(c *testContext)) {
-	ctx := &testContext{t: t}
-	ctx.beforeEach()
+	testCaseWithContext(t, &testContext{}, test)
+}
+
+func testCaseWithContext(t *testing.T, ctx *testContext, test func(c *testContext)) {
+	ctx.beforeEach(t)
 	t.Cleanup(ctx.afterEach)
 	test(ctx)
 }
@@ -65,20 +66,43 @@ func TestExit(t *testing.T) {
 	}
 }
 
-// TODO: sample PoC to build some interaction
-func TestAiInteractions(t *testing.T) {
+func TestViewport(t *testing.T) {
 	testCase(t, func(c *testContext) {
-		// Set a term size to force footer rendering
-		c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
-		t.Run("User types message with enter and is sent to AI", func(t *testing.T) {
-			c.tm.Type("Hello AItana")
-			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
-				return strings.Contains(string(b), "Hello AItana")
+		t.Run("Viewport shows welcome message", func(t *testing.T) {
+			// Set a term size to force viewport rendering
+			c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), "Welcome to the AI CLI!")
+			})
+		})
+		t.Run("Viewport truncates long messages", func(t *testing.T) {
+			c.tm.Send(tea.WindowSizeMsg{Width: 20, Height: 10})
+			c.tm.Type("1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20")
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), "│20              │") // clear buffer
 			})
 			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 
-			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
-				return strings.Contains(string(b), "\u001B[23A👤 Hello AItana")
+			expectedViewport := "" +
+				"👤 1                \r\n" +
+				"2                   \r\n" +
+				"3                   \r\n" +
+				"4                   \r\n" +
+				"5                   "
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), expectedViewport)
+			})
+		})
+		t.Run("AI notification scrolls viewport to bottom", func(t *testing.T) {
+			c.tm.Send(ai.Notification{})
+
+			expectedViewport := "" +
+				"20                  \r\n" +
+				"                    \r\n" +
+				"🤖 AI is not runni  \r\n" +
+				"ng, this is a test"
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), expectedViewport)
 			})
 		})
 	})
@@ -88,7 +112,7 @@ func TestComposer(t *testing.T) {
 	testCase(t, func(c *testContext) {
 		t.Run("Composer shows placeholder text", func(t *testing.T) {
 			c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
-			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), "How can I help you today?")
 			})
 		})
@@ -99,7 +123,7 @@ func TestComposer(t *testing.T) {
 				" │How can I help you today? │ \r\n" +
 				" │                          │ \r\n" +
 				" ╰──────────────────────────╯ \r\n"
-			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), expectedTextArea)
 			})
 		})
@@ -107,14 +131,14 @@ func TestComposer(t *testing.T) {
 			c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
 			c.tm.Type("GREETINGS PROFESSOR FALKEN")
 
-			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), "│GREETINGS PROFESSOR FALKEN")
 			})
 		})
 		t.Run("Composer wraps text when it exceeds width", func(t *testing.T) {
 			c.tm.Send(tea.WindowSizeMsg{Width: 23, Height: 24})
 
-			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), " │GREETINGS          │ ") &&
 					strings.Contains(string(b), " │PROFESSOR FALKEN   │ ")
 			})
@@ -127,7 +151,7 @@ func TestFooter(t *testing.T) {
 		// Set a term size to force footer rendering
 		c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
 		t.Run("Footer displays version", func(t *testing.T) {
-			teatest.WaitFor(c.t, c.tm.Output(), func(b []byte) bool {
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.HasSuffix(string(b), "0.0.0 \u001B[80D")
 			})
 		})

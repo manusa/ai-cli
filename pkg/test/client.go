@@ -5,103 +5,112 @@ import (
 	"github.com/GoogleCloudPlatform/kubectl-ai/gollm"
 )
 
-type TestClient struct{}
-
-var _ gollm.Client = &TestClient{}
-
-func (t TestClient) Close() error {
-	return nil
-}
-
-func (t TestClient) StartChat(systemPrompt, model string) gollm.Chat {
-	return &TestChat{}
-}
-
-func (t TestClient) GenerateCompletion(ctx context.Context, req *gollm.CompletionRequest) (gollm.CompletionResponse, error) {
-	panic("not implemented")
-}
-
-func (t TestClient) SetResponseSchema(schema *gollm.Schema) error {
-	panic("not implemented")
-}
-
-func (t TestClient) ListModels(ctx context.Context) ([]string, error) {
-	panic("not implemented")
-}
-
-type TestChat struct {
-}
-
-var _ gollm.Chat = &TestChat{}
-
-func (t TestChat) Send(_ context.Context, _ ...any) (gollm.ChatResponse, error) {
-	panic("not implemented")
-}
-
-func (t TestChat) SendStreaming(ctx context.Context, contents ...any) (gollm.ChatResponseIterator, error) {
-	response := &TestChatResponse{
+func NewTextResponse(text string) *ChatResponse {
+	return &ChatResponse{
 		candidates: []gollm.Candidate{
-			TestCandidate{
+			&Candidate{
 				parts: []gollm.Part{
-					TestPart{text: "AI is not running, this is a test"},
+					&Part{text: text},
 				},
 			},
 		},
 	}
+}
+
+type Client struct {
+	StreamingResponse func(ctx context.Context, contents ...any) (gollm.ChatResponseIterator, error)
+}
+
+var _ gollm.Client = &Client{}
+
+func (t *Client) Close() error {
+	return nil
+}
+
+func (t *Client) StartChat(systemPrompt, model string) gollm.Chat {
+	return &Chat{tc: t}
+}
+
+func (t *Client) GenerateCompletion(ctx context.Context, req *gollm.CompletionRequest) (gollm.CompletionResponse, error) {
+	panic("not implemented")
+}
+
+func (t *Client) SetResponseSchema(schema *gollm.Schema) error {
+	panic("not implemented")
+}
+
+func (t *Client) ListModels(ctx context.Context) ([]string, error) {
+	panic("not implemented")
+}
+
+type Chat struct {
+	tc *Client
+}
+
+var _ gollm.Chat = &Chat{}
+
+func (t *Chat) Send(_ context.Context, _ ...any) (gollm.ChatResponse, error) {
+	panic("not implemented")
+}
+
+func (t *Chat) SendStreaming(ctx context.Context, contents ...any) (gollm.ChatResponseIterator, error) {
+	if t.tc.StreamingResponse != nil {
+		return t.tc.StreamingResponse(ctx, contents)
+	}
 	return func(yield func(gollm.ChatResponse, error) bool) {
-		if !yield(response, nil) {
+		if !yield(NewTextResponse("AI is not running, this is a test"), nil) {
 			return
 		}
 	}, nil
 }
 
-func (t TestChat) SetFunctionDefinitions(_ []*gollm.FunctionDefinition) error {
+func (t *Chat) SetFunctionDefinitions(_ []*gollm.FunctionDefinition) error {
 	panic("not implemented")
 }
 
-func (t TestChat) IsRetryableError(_ error) bool {
+func (t *Chat) IsRetryableError(_ error) bool {
 	panic("not implemented")
 }
 
-type TestChatResponse struct {
+type ChatResponse struct {
 	usageMetadata any
 	candidates    []gollm.Candidate
 }
 
-var _ gollm.ChatResponse = &TestChatResponse{}
+var _ gollm.ChatResponse = &ChatResponse{}
 
-func (t *TestChatResponse) UsageMetadata() any {
+func (t *ChatResponse) UsageMetadata() any {
 	return t.usageMetadata
 }
 
-func (t *TestChatResponse) Candidates() []gollm.Candidate {
+func (t *ChatResponse) Candidates() []gollm.Candidate {
 	return t.candidates
 }
 
-type TestCandidate struct {
+type Candidate struct {
 	parts []gollm.Part
 }
 
-var _ gollm.Candidate = &TestCandidate{}
+var _ gollm.Candidate = &Candidate{}
 
-func (t TestCandidate) String() string {
+func (t *Candidate) String() string {
 	panic("not implemented")
 }
 
-func (t TestCandidate) Parts() []gollm.Part {
+func (t *Candidate) Parts() []gollm.Part {
 	return t.parts
 }
 
-type TestPart struct {
+type Part struct {
 	text string
 }
 
-var _ gollm.Part = &TestPart{}
+var _ gollm.Part = &Part{}
 
-func (t TestPart) AsText() (string, bool) {
+func (t *Part) AsText() (string, bool) {
 	return t.text, true
 }
 
-func (t TestPart) AsFunctionCalls() ([]gollm.FunctionCall, bool) {
+func (t *Part) AsFunctionCalls() ([]gollm.FunctionCall, bool) {
 	return nil, false
 }
