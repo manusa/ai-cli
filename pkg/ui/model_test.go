@@ -19,7 +19,7 @@ type testContext struct {
 
 func (c *testContext) beforeEach(t *testing.T) {
 	t.Helper()
-	llm := &test.Client{}
+	llm := &test.ChatModel{}
 	aiAgent := ai.New(llm, config.New())
 	if err := aiAgent.Run(t.Context()); err != nil {
 		t.Fatalf("failed to run AI: %v", err)

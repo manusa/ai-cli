@@ -4,8 +4,10 @@ package ai
 
 import (
 	"context"
-	"github.com/GoogleCloudPlatform/kubectl-ai/gollm"
+	"github.com/cloudwego/eino/components/model"
+	"github.com/cloudwego/eino/schema"
 	"github.com/manusa/ai-cli/pkg/config"
+	"io"
 	"strings"
 	"sync"
 )
@@ -13,31 +15,21 @@ import (
 type Notification struct{}
 
 type Ai struct {
-	config *config.Config
-	llm    gollm.Client
-	Input  chan Message
-	Output chan Notification
-	/*
-		sessionChat and session must be kept in sync.
-		sessionChat is used internally by gollm and doesn't provide an API to access the chat history
-		session is our internal model with the chat history and state
-		since both histories must be synchronized, whenever our session is reset, sessionChat must be reset too
-	*/
-	sessionChat  gollm.Chat
+	config       *config.Config
+	llm          model.ToolCallingChatModel
+	Input        chan Message
+	Output       chan Notification
 	session      *Session
 	sessionMutex sync.RWMutex
 }
 
-func New(llm gollm.Client, cfg *config.Config) *Ai {
-	session := &Session{
-		systemPrompt: NewSystemMessage("You are a helpful AI assistant."),
-	}
+func New(llm model.ToolCallingChatModel, cfg *config.Config) *Ai {
+	session := &Session{}
 	return &Ai{
 		config:       cfg,
 		llm:          llm,
 		Input:        make(chan Message),
 		Output:       make(chan Notification),
-		sessionChat:  llm.StartChat(session.SystemPrompt(), cfg.GeminiModel),
 		session:      session,
 		sessionMutex: sync.RWMutex{},
 	}
@@ -104,7 +96,7 @@ func (a *Ai) prompt(ctx context.Context, userInput Message) {
 	defer func() { a.setRunning(false) }()
 	a.appendMessage(userInput)
 	// Send PROMPT
-	stream, err := a.sessionChat.SendStreaming(ctx, userInput.Text)
+	stream, err := a.llm.Stream(ctx, a.schemaMessages())
 	if err != nil {
 		a.setError(err)
 		a.setRunning(false)
@@ -112,26 +104,20 @@ func (a *Ai) prompt(ctx context.Context, userInput Message) {
 	}
 	// Process the stream
 	streamedResponse := strings.Builder{}
-	for response, err := range stream {
+	defer stream.Close()
+	for {
+		message, err := stream.Recv()
+		if err == io.EOF {
+			// End of stream
+			break
+		}
 		if err != nil {
 			a.setError(err)
 			a.setRunning(false)
 			return
 		}
-		if response == nil {
-			// End of stream
-			break
-		}
-		if len(response.Candidates()) == 0 {
-			// No candidates, continue to next response ??? TODO
-			continue
-		}
-		for _, part := range response.Candidates()[0].Parts() {
-			if text, ok := part.AsText(); ok {
-				streamedResponse.WriteString(text)
-				a.setMessageInProgress(NewAssistantMessage(streamedResponse.String())) // Partial message
-			}
-		}
+		streamedResponse.WriteString(message.Content)
+		a.setMessageInProgress(NewAssistantMessage(streamedResponse.String())) // Partial message
 	}
 	if streamedResponse.Len() != 0 {
 		assistantMessage := NewAssistantMessage(streamedResponse.String())
@@ -139,4 +125,24 @@ func (a *Ai) prompt(ctx context.Context, userInput Message) {
 	}
 	a.setMessageInProgress(NewAssistantMessage(""))
 	a.setRunning(false)
+}
+
+func (a *Ai) schemaMessages() []*schema.Message {
+	session := a.Session()
+	var schemaMessages []*schema.Message
+	if session.SystemPrompt() != "" {
+		schemaMessages = append(schemaMessages, schema.SystemMessage(session.SystemPrompt()))
+	}
+	for _, message := range session.Messages() {
+		switch message.Type {
+		case MessageTypeUser:
+			schemaMessages = append(schemaMessages, schema.UserMessage(message.Text))
+		case MessageTypeAssistant:
+			schemaMessages = append(schemaMessages, schema.AssistantMessage(message.Text, nil))
+		case MessageTypeTool:
+			// TODO
+			//schemaMessages = append(schemaMessages, schema.ErrorMessage(message.Text))
+		}
+	}
+	return schemaMessages
 }
