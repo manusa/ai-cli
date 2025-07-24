@@ -190,6 +190,9 @@ func emoji(messageType ai.MessageType) string {
 }
 
 func render(msg ai.Message, maxWidth int) string {
+	if msg.Type == ai.MessageTypeTool {
+		return MessageToolCall.MaxWidth(maxWidth).Render("🔧 " + msg.Text)
+	}
 	messageStyle := lipgloss.NewStyle().Width(maxWidth-2).Margin(0, 1)
 	return messageStyle.Render(emoji(msg.Type), strings.Trim(msg.Text, "\n"))
 }

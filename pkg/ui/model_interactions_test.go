@@ -78,7 +78,7 @@ func TestInteractionsTool(t *testing.T) {
 	}
 	testCaseWithContext(t, ctx, func(c *testContext) {
 		c.tm.Send(tea.WindowSizeMsg{Width: 30, Height: 24})
-		t.Run("AI returns an error", func(t *testing.T) {
+		t.Run("AI returns a tool call", func(t *testing.T) {
 			c.tm.Type("Hello Alex")
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), "Hello Alex")
@@ -87,7 +87,9 @@ func TestInteractionsTool(t *testing.T) {
 
 			expectedViewport := "" +
 				" 👤 Hello Alex                \r\n" +
-				" 🔧 file_list                 \r\n" +
+				" ┌──────────────┐             \r\n" +
+				" │ 🔧 file_list │             \r\n" +
+				" └──────────────┘             \r\n" +
 				" 🤖 Here is the list of files \r\n"
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), expectedViewport)
