@@ -45,10 +45,50 @@ func TestInteractionsError(t *testing.T) {
 				return strings.Contains(string(b), "Hello Alex")
 			})
 			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
 			expectedViewport := "" +
 				" 👤 Hello Alex                \r\n" +
 				" ❗ [NodeRunError]            \r\n" +
 				" error generating response    \r\n"
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), expectedViewport)
+			})
+		})
+	})
+}
+
+func TestInteractionsTool(t *testing.T) {
+	toolRequested := false
+	ctx := &testContext{
+		SynchronizeUi: true,
+		llm: &test.ChatModel{
+			StreamReader: func(_ []*schema.Message, _ ...model.Option) (*schema.StreamReader[*schema.Message], error) {
+				// First invocation returns a message with a tool call
+				msg := schema.AssistantMessage("The list of files", []schema.ToolCall{
+					{ID: "1337", Function: schema.FunctionCall{Name: "file_list"}},
+				})
+				// Second invocation returns the assistant's message after processing the tool call
+				if toolRequested {
+					msg = schema.AssistantMessage("Here is the list of files", nil)
+				}
+				toolRequested = true
+				return schema.StreamReaderFromArray([]*schema.Message{msg}), nil
+			},
+		},
+	}
+	testCaseWithContext(t, ctx, func(c *testContext) {
+		c.tm.Send(tea.WindowSizeMsg{Width: 30, Height: 24})
+		t.Run("AI returns an error", func(t *testing.T) {
+			c.tm.Type("Hello Alex")
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), "Hello Alex")
+			})
+			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+			expectedViewport := "" +
+				" 👤 Hello Alex                \r\n" +
+				" 🔧 file_list                 \r\n" +
+				" 🤖 Here is the list of files \r\n"
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), expectedViewport)
 			})
