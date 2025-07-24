@@ -4,8 +4,14 @@ package ai
 
 import (
 	"context"
+	"github.com/cloudwego/eino/callbacks"
 	"github.com/cloudwego/eino/components/model"
+	"github.com/cloudwego/eino/components/tool"
+	"github.com/cloudwego/eino/compose"
+	"github.com/cloudwego/eino/flow/agent"
+	"github.com/cloudwego/eino/flow/agent/react"
 	"github.com/cloudwego/eino/schema"
+	callbackutils "github.com/cloudwego/eino/utils/callbacks"
 	"github.com/manusa/ai-cli/pkg/config"
 	"io"
 	"strings"
@@ -95,8 +101,23 @@ func (a *Ai) prompt(ctx context.Context, userInput Message) {
 	a.setRunning(true)
 	defer func() { a.setRunning(false) }()
 	a.appendMessage(userInput)
+	reactAgent, err := a.setUpAgent(ctx)
+	if err != nil {
+		a.setError(err)
+		a.setRunning(false)
+		return
+	}
 	// Send PROMPT
-	stream, err := a.llm.Stream(ctx, a.schemaMessages())
+	stream, err := reactAgent.Stream(
+		ctx,
+		a.schemaMessages(),
+		agent.WithComposeOptions(compose.WithCallbacks(callbackutils.NewHandlerHelper().Tool(&callbackutils.ToolCallbackHandler{
+			OnEnd: func(ctx context.Context, info *callbacks.RunInfo, output *tool.CallbackOutput) context.Context {
+				a.appendMessage(NewToolMessage(info.Name))
+				return ctx
+			},
+		}).Handler())),
+	)
 	if err != nil {
 		a.setError(err)
 		a.setRunning(false)
@@ -119,12 +140,12 @@ func (a *Ai) prompt(ctx context.Context, userInput Message) {
 		streamedResponse.WriteString(message.Content)
 		a.setMessageInProgress(NewAssistantMessage(streamedResponse.String())) // Partial message
 	}
+	a.setRunning(false)
 	if streamedResponse.Len() != 0 {
 		assistantMessage := NewAssistantMessage(streamedResponse.String())
 		a.appendMessage(assistantMessage)
 	}
 	a.setMessageInProgress(NewAssistantMessage(""))
-	a.setRunning(false)
 }
 
 func (a *Ai) schemaMessages() []*schema.Message {
@@ -145,4 +166,18 @@ func (a *Ai) schemaMessages() []*schema.Message {
 		}
 	}
 	return schemaMessages
+}
+
+func (a *Ai) setUpAgent(ctx context.Context) (*react.Agent, error) {
+	llmWithTools, err := a.llm.WithTools([]*schema.ToolInfo{&FileList.ToolInfo})
+	if err != nil {
+		return nil, err
+	}
+	return react.NewAgent(ctx, &react.AgentConfig{
+		ToolCallingModel: llmWithTools,
+		MaxStep:          10,
+		ToolsConfig: compose.ToolsNodeConfig{
+			Tools: []tool.BaseTool{*FileList},
+		},
+	})
 }

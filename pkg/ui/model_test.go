@@ -106,13 +106,13 @@ func TestViewport(t *testing.T) {
 				" 👤 1               \r\n" +
 				" 2                  \r\n" +
 				" 3                  \r\n" +
-				" 4                  \r\n" +
-				" 5                  "
+				" 4                  \r\n"
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), expectedViewport)
 			})
 		})
 		t.Run("AI notification scrolls viewport to bottom", func(t *testing.T) {
+			c.tm.Send(ai.Notification{})
 			c.tm.Send(ai.Notification{})
 
 			expectedViewport := "" +

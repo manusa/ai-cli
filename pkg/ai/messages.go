@@ -31,6 +31,11 @@ func NewErrorMessage(text string) Message {
 	return Message{Type: MessageTypeError, Text: text}
 }
 
+func NewToolMessage(text string) Message {
+	// TODO: probably want fine-grained fields
+	return Message{Type: MessageTypeTool, Text: text}
+}
+
 func (m *Message) Role() string {
 	return string(m.Type)
 }

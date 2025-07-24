@@ -16,7 +16,7 @@ func (c *ChatModel) Generate(_ context.Context, _ []*schema.Message, _ ...model.
 	panic("not implemented")
 }
 
-func (c *ChatModel) Stream(ctx context.Context, input []*schema.Message, opts ...model.Option) (*schema.StreamReader[*schema.Message], error) {
+func (c *ChatModel) Stream(_ context.Context, input []*schema.Message, opts ...model.Option) (*schema.StreamReader[*schema.Message], error) {
 	if c.StreamReader != nil {
 		return c.StreamReader(input, opts...)
 	}
@@ -24,5 +24,6 @@ func (c *ChatModel) Stream(ctx context.Context, input []*schema.Message, opts ..
 }
 
 func (c *ChatModel) WithTools(_ []*schema.ToolInfo) (model.ToolCallingChatModel, error) {
-	panic("not implemented")
+	// TODO
+	return c, nil
 }
