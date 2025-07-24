@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"errors"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/exp/teatest"
-	"github.com/manusa/ai-cli/pkg/ai"
+	"github.com/cloudwego/eino/components/model"
+	"github.com/cloudwego/eino/schema"
+	"github.com/manusa/ai-cli/pkg/test"
 	"strings"
 	"testing"
 )
@@ -17,10 +20,37 @@ func TestInteractionsUser(t *testing.T) {
 				return strings.Contains(string(b), "Hello AItana")
 			})
 			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-			c.tm.Send(ai.Notification{}) // TODO, enable AI sync in context
 
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), "👤 Hello AItana")
+			})
+		})
+	})
+}
+
+func TestInteractionsError(t *testing.T) {
+	ctx := &testContext{
+		SynchronizeUi: true,
+		llm: &test.ChatModel{
+			StreamReader: func(_ []*schema.Message, _ ...model.Option) (*schema.StreamReader[*schema.Message], error) {
+				return nil, errors.New("error generating response")
+			},
+		},
+	}
+	testCaseWithContext(t, ctx, func(c *testContext) {
+		c.tm.Send(tea.WindowSizeMsg{Width: 30, Height: 24})
+		t.Run("AI returns an error", func(t *testing.T) {
+			c.tm.Type("Hello Alex")
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), "Hello Alex")
+			})
+			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+			expectedViewport := "" +
+				" 👤 Hello Alex                \r\n" +
+				" ❗ [NodeRunError]            \r\n" +
+				" error generating response    \r\n"
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), expectedViewport)
 			})
 		})
 	})

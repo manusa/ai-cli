@@ -15,11 +15,15 @@ type testContext struct {
 	m             Model
 	tm            *teatest.TestModel
 	SynchronizeUi bool
+	llm           *test.ChatModel
 }
 
 func (c *testContext) beforeEach(t *testing.T) {
 	t.Helper()
-	llm := &test.ChatModel{}
+	llm := c.llm
+	if llm == nil {
+		llm = &test.ChatModel{}
+	}
 	aiAgent := ai.New(llm, config.New())
 	if err := aiAgent.Run(t.Context()); err != nil {
 		t.Fatalf("failed to run AI: %v", err)
@@ -50,7 +54,7 @@ func (c *testContext) afterEach() {
 }
 
 func testCase(t *testing.T, test func(c *testContext)) {
-	testCaseWithContext(t, &testContext{}, test)
+	testCaseWithContext(t, &testContext{SynchronizeUi: true}, test)
 }
 
 func testCaseWithContext(t *testing.T, ctx *testContext, test func(c *testContext)) {
@@ -84,7 +88,7 @@ func TestExit(t *testing.T) {
 }
 
 func TestViewport(t *testing.T) {
-	testCase(t, func(c *testContext) {
+	testCaseWithContext(t, &testContext{SynchronizeUi: false}, func(c *testContext) {
 		t.Run("Viewport shows welcome message", func(t *testing.T) {
 			// Set a term size to force viewport rendering
 			c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
