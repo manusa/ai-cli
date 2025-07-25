@@ -22,4 +22,4 @@ Homepage = "https://github.com/manusa/ai-cli"
 Repository = "https://github.com/manusa/ai-cli"
 
 [project.scripts]
-python-ai-cli = "ai_cli:main"
+python-ai-cli = "python_ai_cli:main"

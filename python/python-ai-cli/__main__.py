@@ -1,4 +1,4 @@
-from .ai_cli import main
+from .python_ai_cli import main
 
 if __name__ == "__main__":
     main()
