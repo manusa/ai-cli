@@ -161,8 +161,9 @@ func TestViewport(t *testing.T) {
 				" 18                           \r\n" +
 				" 19                           \r\n" +
 				" 20                           \r\n" +
-				" 🤖 AI is not running, this   \r\n" +
-				" is a test                    \r\n"
+				" 🤖 AI                        \r\n" +
+				"    \u001B[38;5;252mAI is not running, this\u001B[38;5;252m \u001B[0m\u001B[38;5;252m \u001B[0m \r\n" +
+				"    \u001B[0m\u001B[38;5;252mis a test                \u001B[0m \r\n"
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), expectedViewport) &&
 					!strings.Contains(string(b), " 👤 1               \r\n")

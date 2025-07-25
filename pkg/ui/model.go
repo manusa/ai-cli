@@ -7,12 +7,14 @@ import (
 	"github.com/charmbracelet/bubbles/textarea"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/glamour"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/manusa/ai-cli/pkg/ai"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/ui/components/footer"
 	"github.com/manusa/ai-cli/pkg/ui/context"
 	"github.com/manusa/ai-cli/pkg/version"
+	"github.com/muesli/termenv"
 	"strings"
 )
 
@@ -32,8 +34,9 @@ type Model struct {
 
 func NewModel(ai *ai.Ai) Model {
 	ctx := &context.ModelContext{
-		Ai:      ai,
-		Version: version.Version,
+		Ai:                ai,
+		Version:           version.Version,
+		HasDarkBackground: termenv.HasDarkBackground(),
 	}
 	m := Model{
 		context:  ctx,
@@ -158,25 +161,9 @@ func (m Model) renderMessages() string {
 		if idx > 0 {
 			renderedMessages.WriteString("\n")
 		}
-		renderedMessages.WriteString(render(msg, m.context.Width))
+		renderedMessages.WriteString(render(m.context, msg))
 	}
 	return renderedMessages.String()
-	// TODO: Glamour doesn't work well
-	//const glamourGutter = 2
-	//glamourRenderWidth := m.context.Width - glamourGutter
-	//renderer, err := glamour.NewTermRenderer(
-	//	glamour.WithAutoStyle(),
-	//	glamour.WithWordWrap(glamourRenderWidth),
-	//)
-	//if err != nil {
-	//	return renderedMessages.String() // Return raw text if rendering fails
-	//}
-	//defer func() { _ = renderer.Close() }()
-	//str, err := renderer.Render(renderedMessages.String())
-	//if err != nil {
-	//	return renderedMessages.String() // Return raw text if rendering fails
-	//}
-	//return str
 }
 
 func adjustViewportSize(m *Model) {
@@ -205,9 +192,31 @@ func emoji(messageType api.MessageType) string {
 	return ">"
 }
 
-func render(msg api.Message, maxWidth int) string {
-	if msg.Type == api.MessageTypeTool {
-		return MessageToolCall.MaxWidth(maxWidth).Render("🔧 " + msg.Text)
+func render(context *context.ModelContext, msg api.Message) string {
+	// TODO use constants for gutters
+	maxWidth := context.Width
+	switch msg.Type {
+	case api.MessageTypeTool:
+		return MessageToolCall.MaxWidth(maxWidth - 2).Render("🔧 " + msg.Text)
+	case api.MessageTypeAssistant:
+		glamourStyle := GlamourLightStyle
+		if context.HasDarkBackground {
+			glamourStyle = GlamourDarkStyle
+		}
+		tr, err := glamour.NewTermRenderer(
+			glamour.WithStyles(glamourStyle),
+			glamour.WithWordWrap(maxWidth-5),
+			glamour.WithEmoji(),
+		)
+		defer func() { _ = tr.Close() }()
+		if err != nil {
+			break
+		}
+		if out, err := tr.Render(strings.Trim(msg.Text, "\n")); err == nil {
+			out = lipgloss.NewStyle().Foreground(lipgloss.Color("#4e9a06")).Render("🤖 AI") + "\n" +
+				lipgloss.NewStyle().MarginLeft(3).Render(strings.Trim(out, "\n"))
+			return lipgloss.NewStyle().Width(maxWidth-2).Margin(0, 1).Render(out)
+		}
 	}
 	messageStyle := lipgloss.NewStyle().Width(maxWidth-2).Margin(0, 1)
 	return messageStyle.Render(emoji(msg.Type), strings.Trim(msg.Text, "\n"))
