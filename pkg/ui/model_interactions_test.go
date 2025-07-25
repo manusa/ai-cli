@@ -91,11 +91,10 @@ func TestInteractionsTool(t *testing.T) {
 
 			expectedViewport := "" +
 				" 👤 Hello Alex                  \r\n" +
-				" ┌──────────────┐               \r\n" +
-				" │ 🔧 file_list │               \r\n" +
-				" └──────────────┘               \r\n" +
-				" 🤖 AI                          \r\n" +
-				"    \u001B[38;5;252mHere is the list of files  \u001B[0m "
+				"    ┌──────────────┐            \r\n" +
+				"    │ 🔧 file_list │            \r\n" +
+				"    └──────────────┘            \r\n" +
+				" 🤖 \u001B[38;5;252mHere is the list of files  \u001B[0m "
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), expectedViewport)
 			})

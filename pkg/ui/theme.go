@@ -15,7 +15,6 @@ var DefaultTheme = &Theme{
 
 var (
 	MessageToolCall = lipgloss.NewStyle().
-			Margin(0, 1).
 			Border(lipgloss.NormalBorder()).
 			BorderForeground(DefaultTheme.PrimaryBorder).
 			Padding(0, 1)

@@ -193,11 +193,15 @@ func emoji(messageType api.MessageType) string {
 }
 
 func render(context *context.ModelContext, msg api.Message) string {
-	// TODO use constants for gutters
 	maxWidth := context.Width
+	marginSize := 5
+	guttered := lipgloss.NewStyle().Margin(0, 1, 0, 4).Width(maxWidth - marginSize)
 	switch msg.Type {
+	case api.MessageTypeUser:
+		out := guttered.Render(strings.Trim(msg.Text, "\n"))
+		return out[:1] + "👤" + out[3:]
 	case api.MessageTypeTool:
-		return MessageToolCall.MaxWidth(maxWidth - 2).Render("🔧 " + msg.Text)
+		return guttered.Render(MessageToolCall.MaxWidth(maxWidth - marginSize).Render("🔧 " + msg.Text))
 	case api.MessageTypeAssistant:
 		glamourStyle := GlamourLightStyle
 		if context.HasDarkBackground {
@@ -205,7 +209,7 @@ func render(context *context.ModelContext, msg api.Message) string {
 		}
 		tr, err := glamour.NewTermRenderer(
 			glamour.WithStyles(glamourStyle),
-			glamour.WithWordWrap(maxWidth-5),
+			glamour.WithWordWrap(maxWidth-marginSize),
 			glamour.WithEmoji(),
 		)
 		defer func() { _ = tr.Close() }()
@@ -213,9 +217,8 @@ func render(context *context.ModelContext, msg api.Message) string {
 			break
 		}
 		if out, err := tr.Render(strings.Trim(msg.Text, "\n")); err == nil {
-			out = lipgloss.NewStyle().Foreground(lipgloss.Color("#4e9a06")).Render("🤖 AI") + "\n" +
-				lipgloss.NewStyle().MarginLeft(3).Render(strings.Trim(out, "\n"))
-			return lipgloss.NewStyle().Width(maxWidth-2).Margin(0, 1).Render(out)
+			out = guttered.Render(strings.Trim(out, "\n"))
+			return out[:1] + "🤖" + out[3:]
 		}
 	}
 	messageStyle := lipgloss.NewStyle().Width(maxWidth-2).Margin(0, 1)
