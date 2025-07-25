@@ -88,7 +88,7 @@ func TestExit(t *testing.T) {
 }
 
 func TestViewport(t *testing.T) {
-	testCaseWithContext(t, &testContext{SynchronizeUi: false}, func(c *testContext) {
+	testCase(t, func(c *testContext) {
 		t.Run("Viewport shows welcome message", func(t *testing.T) {
 			// Set a term size to force viewport rendering
 			c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
@@ -96,15 +96,29 @@ func TestViewport(t *testing.T) {
 				return strings.Contains(string(b), "Welcome to the AI CLI!")
 			})
 		})
-		t.Run("Viewport truncates long messages", func(t *testing.T) {
-			c.tm.Send(tea.WindowSizeMsg{Width: 20, Height: 10})
-			c.tm.Type("1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20")
+	})
+	testCase(t, func(c *testContext) {
+		c.tm.Send(tea.WindowSizeMsg{Width: 20, Height: 17})
+		c.tm.Type("1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20")
+		teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+			return strings.Contains(string(b), "│20              │") // clear buffer
+		})
+		c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+		t.Run("AI notification scrolls viewport to bottom", func(t *testing.T) {
+			expectedViewport := "" +
+				" 18                 \r\n" +
+				" 19                 \r\n" +
+				" 20                 \r\n" +
+				" 🤖 AI is not       \r\n" +
+				" running, this is a \r\n" +
+				" test"
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
-				return strings.Contains(string(b), "│20              │") // clear buffer
+				return strings.Contains(string(b), expectedViewport) &&
+					!strings.Contains(string(b), " 👤 1               \r\n")
 			})
-			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
-			// Set a term size to force viewport rerendering
-			c.tm.Send(tea.WindowSizeMsg{Width: 20, Height: 10})
+		})
+		t.Run("PgUp scrolls viewport one page up", func(t *testing.T) {
+			c.tm.Send(tea.KeyMsg{Type: tea.KeyPgUp})
 
 			expectedViewport := "" +
 				" 👤 1               \r\n" +
@@ -112,20 +126,8 @@ func TestViewport(t *testing.T) {
 				" 3                  \r\n" +
 				" 4                  \r\n"
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
-				return strings.Contains(string(b), expectedViewport)
-			})
-		})
-		t.Run("AI notification scrolls viewport to bottom", func(t *testing.T) {
-			c.tm.Send(ai.Notification{})
-			c.tm.Send(ai.Notification{})
-
-			expectedViewport := "" +
-				" 20                 \r\n" +
-				" 🤖 AI is not       \r\n" +
-				" running, this is a \r\n" +
-				" test"
-			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
-				return strings.Contains(string(b), expectedViewport)
+				return strings.Contains(string(b), expectedViewport) &&
+					!strings.Contains(string(b), "🤖")
 			})
 		})
 	})
