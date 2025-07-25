@@ -1,7 +1,7 @@
 """
 AI CLI
 """
-from .ai_cli import main
+from .ai_client import main
 
 __all__ = ['main']
 

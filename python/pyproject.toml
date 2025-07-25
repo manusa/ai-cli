@@ -3,7 +3,7 @@ requires = ["setuptools>=42", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "ai-cli"
+name = "ai-client"
 version = "0.0.0"
 description = "AI CLI"
 readme = {file="README.md", content-type="text/markdown"}
@@ -22,4 +22,4 @@ Homepage = "https://github.com/manusa/ai-cli"
 Repository = "https://github.com/manusa/ai-cli"
 
 [project.scripts]
-ai-cli = "ai_cli:main"
+ai-client = "ai_client:main"
