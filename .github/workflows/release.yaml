@@ -39,3 +39,15 @@ jobs:
           files: |
             LICENSE
             ai-cli-*
+  python:
+    name: Release Python
+    # Python logic requires the tag/release version to be available from GitHub
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: Publish Python
+        run:
+          make python-publish

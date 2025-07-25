@@ -25,6 +25,9 @@ CLEAN_TARGETS :=
 CLEAN_TARGETS += '$(BINARY_NAME)'
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),$(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,)))
 
+# GIT_TAG_VERSION should not append the -dirty flag
+GIT_TAG_VERSION ?= $(shell echo $(shell git describe --tags --always) | sed 's/^v//')
+
 # The help will print out all targets with their descriptions organized bellow their categories. The categories are represented by `##@` and the target descriptions by `##`.
 # The awk commands is responsible to read the entire set of makefiles included in this invocation, looking for lines of the file as xyz: ## something, and then pretty-format the target and help. Then, if there's a line with ##@ something, that gets pretty-printed as a category.
 # More info over the usage of ANSI control characters for terminal formatting: https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_parameters
@@ -81,3 +84,10 @@ ifeq ($(OS),Windows_NT)
 else
 	$(GOLANGCI_LINT) run --verbose --print-resources-usage
 endif
+
+.PHONY: python-publish
+python-publish: ## Publish the python packages
+	cd ./python && \
+	sed -i "s/version = \".*\"/version = \"$(GIT_TAG_VERSION)\"/" pyproject.toml && \
+	uv build && \
+	uv publish
