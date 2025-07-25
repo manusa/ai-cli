@@ -8,6 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/manusa/ai-cli/pkg/ai"
+	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/ui/components/footer"
 	"github.com/manusa/ai-cli/pkg/ui/context"
 	"github.com/manusa/ai-cli/pkg/version"
@@ -136,7 +137,7 @@ func (m Model) handleEnter() (Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 	m.composer.Reset()
-	m.context.Ai.Input <- ai.NewUserMessage(v)
+	m.context.Ai.Input <- api.NewUserMessage(v)
 	m.viewport.GotoBottom()
 	return m, nil
 }
@@ -178,24 +179,24 @@ func adjustViewportSize(m *Model) {
 	m.viewport.Height = m.context.Height - spinnerHeight - composerHeight - lipgloss.Height(m.footer.View())
 }
 
-func emoji(messageType ai.MessageType) string {
+func emoji(messageType api.MessageType) string {
 	switch messageType {
-	case ai.MessageTypeSystem:
+	case api.MessageTypeSystem:
 		return "🤖"
-	case ai.MessageTypeUser:
+	case api.MessageTypeUser:
 		return "👤"
-	case ai.MessageTypeAssistant:
+	case api.MessageTypeAssistant:
 		return "🤖"
-	case ai.MessageTypeTool:
+	case api.MessageTypeTool:
 		return "🔧"
-	case ai.MessageTypeError:
+	case api.MessageTypeError:
 		return "❗"
 	}
 	return ">"
 }
 
-func render(msg ai.Message, maxWidth int) string {
-	if msg.Type == ai.MessageTypeTool {
+func render(msg api.Message, maxWidth int) string {
+	if msg.Type == api.MessageTypeTool {
 		return MessageToolCall.MaxWidth(maxWidth).Render("🔧 " + msg.Text)
 	}
 	messageStyle := lipgloss.NewStyle().Width(maxWidth-2).Margin(0, 1)

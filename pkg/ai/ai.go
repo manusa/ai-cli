@@ -12,6 +12,7 @@ import (
 	"github.com/cloudwego/eino/flow/agent/react"
 	"github.com/cloudwego/eino/schema"
 	callbackutils "github.com/cloudwego/eino/utils/callbacks"
+	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"io"
 	"strings"
@@ -23,7 +24,7 @@ type Notification struct{}
 type Ai struct {
 	config       *config.Config
 	llm          model.ToolCallingChatModel
-	Input        chan Message
+	Input        chan api.Message
 	Output       chan Notification
 	session      *Session
 	sessionMutex sync.RWMutex
@@ -34,7 +35,7 @@ func New(llm model.ToolCallingChatModel, cfg *config.Config) *Ai {
 	return &Ai{
 		config:       cfg,
 		llm:          llm,
-		Input:        make(chan Message),
+		Input:        make(chan api.Message),
 		Output:       make(chan Notification),
 		session:      session,
 		sessionMutex: sync.RWMutex{},
@@ -53,14 +54,14 @@ func (a *Ai) notify() {
 	go func() { a.Output <- Notification{} }()
 }
 
-func (a *Ai) appendMessage(message Message) {
+func (a *Ai) appendMessage(message api.Message) {
 	a.sessionMutex.Lock()
 	defer a.sessionMutex.Unlock()
 	a.session.messages = append(a.session.messages, message)
 	a.notify()
 }
 
-func (a *Ai) setMessageInProgress(message Message) {
+func (a *Ai) setMessageInProgress(message api.Message) {
 	a.sessionMutex.Lock()
 	defer a.sessionMutex.Unlock()
 	a.session.messageInProgress = message
@@ -107,7 +108,7 @@ func (a *Ai) Run(ctx context.Context) error {
 
 // Prompt sends a prompt to the AI model.
 // TODO: Just a PoC
-func (a *Ai) prompt(ctx context.Context, userInput Message) {
+func (a *Ai) prompt(ctx context.Context, userInput api.Message) {
 	a.setRunning(true)
 	defer func() { a.setRunning(false) }()
 	a.appendMessage(userInput)
@@ -123,7 +124,7 @@ func (a *Ai) prompt(ctx context.Context, userInput Message) {
 		a.schemaMessages(),
 		agent.WithComposeOptions(compose.WithCallbacks(callbackutils.NewHandlerHelper().Tool(&callbackutils.ToolCallbackHandler{
 			OnEnd: func(ctx context.Context, info *callbacks.RunInfo, output *tool.CallbackOutput) context.Context {
-				a.appendMessage(NewToolMessage(info.Name))
+				a.appendMessage(api.NewToolMessage(info.Name))
 				return ctx
 			},
 		}).Handler())),
@@ -148,14 +149,14 @@ func (a *Ai) prompt(ctx context.Context, userInput Message) {
 			return
 		}
 		streamedResponse.WriteString(message.Content)
-		a.setMessageInProgress(NewAssistantMessage(streamedResponse.String())) // Partial message
+		a.setMessageInProgress(api.NewAssistantMessage(streamedResponse.String())) // Partial message
 	}
 	a.setRunning(false)
 	if streamedResponse.Len() != 0 {
-		assistantMessage := NewAssistantMessage(streamedResponse.String())
+		assistantMessage := api.NewAssistantMessage(streamedResponse.String())
 		a.appendMessage(assistantMessage)
 	}
-	a.setMessageInProgress(NewAssistantMessage(""))
+	a.setMessageInProgress(api.NewAssistantMessage(""))
 }
 
 func (a *Ai) schemaMessages() []*schema.Message {
@@ -166,11 +167,11 @@ func (a *Ai) schemaMessages() []*schema.Message {
 	}
 	for _, message := range session.Messages() {
 		switch message.Type {
-		case MessageTypeUser:
+		case api.MessageTypeUser:
 			schemaMessages = append(schemaMessages, schema.UserMessage(message.Text))
-		case MessageTypeAssistant:
+		case api.MessageTypeAssistant:
 			schemaMessages = append(schemaMessages, schema.AssistantMessage(message.Text, nil))
-		case MessageTypeTool:
+		case api.MessageTypeTool:
 			// TODO
 			//schemaMessages = append(schemaMessages, schema.ErrorMessage(message.Text))
 		}

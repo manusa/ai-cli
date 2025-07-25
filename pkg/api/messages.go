@@ -1,4 +1,4 @@
-package ai
+package api
 
 type MessageType string
 
