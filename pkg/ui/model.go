@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"github.com/charmbracelet/bubbles/cursor"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textarea"
@@ -15,7 +16,11 @@ import (
 	"strings"
 )
 
-const composerPaddingHorizontal = 1
+const (
+	minWidth                  = 30
+	minHeight                 = 10
+	composerPaddingHorizontal = 1
+)
 
 type Model struct {
 	context  *context.ModelContext
@@ -109,6 +114,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m Model) View() string {
 	center := lipgloss.NewStyle().Width(m.context.Width).AlignHorizontal(lipgloss.Center)
+	if m.context.Width < minWidth || m.context.Height < minHeight {
+		return center.Height(m.context.Height).AlignVertical(lipgloss.Center).
+			Render("Terminal size is too small.\n" +
+				"Minimum size is " + fmt.Sprintf("%dx%d.", minWidth, minHeight))
+	}
 	view := strings.Builder{}
 	view.WriteString(m.viewport.View() + "\n")
 	if m.context.Ai.Session().IsRunning() {

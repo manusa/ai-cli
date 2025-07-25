@@ -113,6 +113,32 @@ func TestClear(t *testing.T) {
 	})
 }
 
+func TestTerminalSizeWarning(t *testing.T) {
+	testCase(t, func(c *testContext) {
+		t.Run("shows warning when terminal height is too small", func(t *testing.T) {
+			c.tm.Send(tea.WindowSizeMsg{Width: 30, Height: 9})
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), "Terminal size is too small.") &&
+					strings.Contains(string(b), "Minimum size is 30x10.")
+			})
+		})
+		t.Run("shows warning when terminal is width is too small", func(t *testing.T) {
+			c.tm.Send(tea.WindowSizeMsg{Width: 29, Height: 24})
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), "Terminal size is too small") &&
+					strings.Contains(string(b), "Minimum size is 30x10.")
+			})
+		})
+		t.Run("does not show warning when terminal size is sufficient", func(t *testing.T) {
+			c.tm.Send(tea.WindowSizeMsg{Width: 30, Height: 10})
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				return !strings.Contains(string(b), "Terminal size is too small") &&
+					strings.Contains(string(b), "Welcome to the AI CLI!")
+			})
+		})
+	})
+}
+
 func TestViewport(t *testing.T) {
 	testCase(t, func(c *testContext) {
 		t.Run("Viewport shows welcome message", func(t *testing.T) {
@@ -124,20 +150,19 @@ func TestViewport(t *testing.T) {
 		})
 	})
 	testCase(t, func(c *testContext) {
-		c.tm.Send(tea.WindowSizeMsg{Width: 20, Height: 17})
+		c.tm.Send(tea.WindowSizeMsg{Width: 30, Height: 17})
 		c.tm.Type("1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20")
 		teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
-			return strings.Contains(string(b), "│20              │") // clear buffer
+			return strings.Contains(string(b), "│20                        │") // clear buffer
 		})
 		c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
 		t.Run("AI notification scrolls viewport to bottom", func(t *testing.T) {
 			expectedViewport := "" +
-				" 18                 \r\n" +
-				" 19                 \r\n" +
-				" 20                 \r\n" +
-				" 🤖 AI is not       \r\n" +
-				" running, this is a \r\n" +
-				" test"
+				" 18                           \r\n" +
+				" 19                           \r\n" +
+				" 20                           \r\n" +
+				" 🤖 AI is not running, this   \r\n" +
+				" is a test                    \r\n"
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), expectedViewport) &&
 					!strings.Contains(string(b), " 👤 1               \r\n")
@@ -147,10 +172,10 @@ func TestViewport(t *testing.T) {
 			c.tm.Send(tea.KeyMsg{Type: tea.KeyPgUp})
 
 			expectedViewport := "" +
-				" 👤 1               \r\n" +
-				" 2                  \r\n" +
-				" 3                  \r\n" +
-				" 4                  \r\n"
+				" 👤 1                         \r\n" +
+				" 2                            \r\n" +
+				" 3                            \r\n" +
+				" 4                            \r\n"
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), expectedViewport) &&
 					!strings.Contains(string(b), "🤖")
@@ -187,11 +212,11 @@ func TestComposer(t *testing.T) {
 			})
 		})
 		t.Run("Composer wraps text when it exceeds width", func(t *testing.T) {
-			c.tm.Send(tea.WindowSizeMsg{Width: 23, Height: 24})
+			c.tm.Send(tea.WindowSizeMsg{Width: 30, Height: 24})
 
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
-				return strings.Contains(string(b), " │GREETINGS          │ ") &&
-					strings.Contains(string(b), " │PROFESSOR FALKEN   │ ")
+				return strings.Contains(string(b), " │GREETINGS PROFESSOR       │ ") &&
+					strings.Contains(string(b), " │FALKEN                    │ ")
 			})
 		})
 	})
