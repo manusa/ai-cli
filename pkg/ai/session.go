@@ -24,8 +24,8 @@ func (s *Session) Messages() []Message {
 	return ret
 }
 
-func (s *Session) SystemPrompt() string {
-	return s.systemPrompt.Text
+func (s *Session) SystemPrompt() Message {
+	return s.systemPrompt
 }
 
 func (s *Session) IsRunning() bool {

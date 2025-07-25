@@ -87,6 +87,32 @@ func TestExit(t *testing.T) {
 	}
 }
 
+func TestClear(t *testing.T) {
+	testCase(t, func(c *testContext) {
+		c.tm.Type("Hello AItana")
+		c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+		teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+			return strings.Contains(string(b), "👤 ")
+		})
+		c.tm.Type("/clear")
+		c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+
+		t.Run("resets viewport", func(t *testing.T) {
+			// Set a term size to force viewport rendering
+			c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), "Welcome to the AI CLI!")
+			})
+		})
+		t.Run("resets composer", func(t *testing.T) {
+			c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), "How can I help you today?")
+			})
+		})
+	})
+}
+
 func TestViewport(t *testing.T) {
 	testCase(t, func(c *testContext) {
 		t.Run("Viewport shows welcome message", func(t *testing.T) {

@@ -124,10 +124,15 @@ func (m Model) handleEnter() (Model, tea.Cmd) {
 		return m, nil
 	}
 	v := m.composer.Value()
-	if v == "" {
-		return m, nil
-	}
-	if v == "/quit" {
+	switch v {
+	case "":
+		return m, nil // Ignore empty input
+	case "/clear":
+		m.context.Ai.Reset()
+		m.composer.Reset()
+		m.viewport.GotoTop()
+		return m, tea.ClearScreen
+	case "/quit":
 		return m, tea.Quit
 	}
 	m.composer.Reset()

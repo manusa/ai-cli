@@ -81,6 +81,16 @@ func (a *Ai) setRunning(running bool) {
 	a.notify()
 }
 
+// Reset resets the AI session, keeping the system prompt intact.
+func (a *Ai) Reset() {
+	a.sessionMutex.Lock()
+	defer a.sessionMutex.Unlock()
+	a.session = &Session{
+		systemPrompt: a.session.SystemPrompt(),
+	}
+	a.notify()
+}
+
 func (a *Ai) Run(ctx context.Context) error {
 	go func() {
 		for {
@@ -151,8 +161,8 @@ func (a *Ai) prompt(ctx context.Context, userInput Message) {
 func (a *Ai) schemaMessages() []*schema.Message {
 	session := a.Session()
 	var schemaMessages []*schema.Message
-	if session.SystemPrompt() != "" {
-		schemaMessages = append(schemaMessages, schema.SystemMessage(session.SystemPrompt()))
+	if session.SystemPrompt().Text != "" {
+		schemaMessages = append(schemaMessages, schema.SystemMessage(session.SystemPrompt().Text))
 	}
 	for _, message := range session.Messages() {
 		switch message.Type {
