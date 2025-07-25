@@ -9,11 +9,11 @@ Set TypingSpeed 30ms
 
 Type "./ai-cli"
 Enter
-Sleep 1000ms
+Wait+Screen@1000ms /Welcome to the AI CLI!/
 Type "Hello, I'm recording a demo of the AI CLI."
 Enter
 Sleep 2000ms
 
 Type "List the files in the current directory and show the output the name and size as a markdown table. Use emojis to indicate if it's a file or directory."
 Enter
-Sleep 15000ms
+Sleep 10000ms
