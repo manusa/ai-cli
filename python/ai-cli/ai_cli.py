@@ -12,7 +12,7 @@ if sys.version_info >= (3, 8):
 else:
     from importlib_metadata import version
 
-__version__ = version("ai-client")
+__version__ = version("ai-cli")
 
 def get_platform_binary():
     """Determine the correct binary for the current platform."""
