@@ -2,14 +2,14 @@ package cmd
 
 import (
 	"fmt"
+
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/cloudwego/eino-ext/components/model/gemini"
 	"github.com/manusa/ai-cli/pkg/ai"
 	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/model"
 	"github.com/manusa/ai-cli/pkg/ui"
 	"github.com/manusa/ai-cli/pkg/version"
 	"github.com/spf13/cobra"
-	"google.golang.org/genai"
 )
 
 type AiCliOptions struct {
@@ -68,13 +68,7 @@ func (o *AiCliOptions) Run(cmd *cobra.Command) error {
 
 	cfg := config.New() // TODO, will need to infer or load from a file
 
-	geminiCli, err := genai.NewClient(cmd.Context(), &genai.ClientConfig{
-		APIKey: cfg.GoogleApiKey,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create Gemini client: %w", err)
-	}
-	llm, err := gemini.NewChatModel(cmd.Context(), &gemini.Config{Client: geminiCli, Model: "gemini-2.0-flash"})
+	llm, err := model.Discover(cmd.Context(), cfg)
 	if err != nil {
 		return fmt.Errorf("failed to create LLM client: %w", err)
 	}
