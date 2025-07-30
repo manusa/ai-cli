@@ -180,7 +180,7 @@ func (a *Ai) schemaMessages() []*schema.Message {
 }
 
 func (a *Ai) setUpAgent(ctx context.Context) (*react.Agent, error) {
-	llmWithTools, err := a.llm.WithTools([]*schema.ToolInfo{&FileList.ToolInfo})
+	llmWithTools, err := a.llm.WithTools([]*schema.ToolInfo{FileList.toolInfo})
 	if err != nil {
 		return nil, err
 	}
