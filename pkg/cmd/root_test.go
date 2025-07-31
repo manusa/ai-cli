@@ -21,7 +21,7 @@ func captureOutput(f func() error) (string, error) {
 
 func TestVersion(t *testing.T) {
 	rootCmd := NewAiCli()
-	rootCmd.SetArgs([]string{"--version"})
+	rootCmd.SetArgs([]string{"version"})
 	o, err := captureOutput(rootCmd.Execute)
 	if o != "0.0.0\n" {
 		t.Fatalf("Expected all available profiles, got %s %v", o, err)
