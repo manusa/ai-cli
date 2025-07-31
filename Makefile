@@ -82,7 +82,7 @@ lint: golangci-lint ## Lint the code
 ifeq ($(OS),Windows_NT)
 	@echo "Skipping lint on Windows, delegating to CI/CD pipeline"
 else
-	$(GOLANGCI_LINT) run --verbose --print-resources-usage
+	$(GOLANGCI_LINT) run --verbose
 endif
 
 .PHONY: python-publish
