@@ -8,8 +8,12 @@ import (
 )
 
 func main() {
-	flags := pflag.NewFlagSet("kubernetes-mcp-server", pflag.ExitOnError)
+	flags := pflag.NewFlagSet("ai-cli", pflag.ExitOnError)
 	pflag.CommandLine = flags
+
+	if len(os.Args) == 2 && os.Args[1] == "--version" {
+		os.Args[1] = "version" // Normalize the version flag to match the sub-command
+	}
 
 	root := cmd.NewAiCli()
 	if err := root.Execute(); err != nil {
