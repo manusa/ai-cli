@@ -1,4 +1,4 @@
-package model
+package inference
 
 import (
 	"context"
@@ -13,8 +13,8 @@ type MyAvailableProvider struct{}
 
 var myAvailableProvider = MyAvailableProvider{}
 
-func (myDistantProvider MyAvailableProvider) Attributes() ModelAttributes {
-	return ModelAttributes{
+func (myDistantProvider MyAvailableProvider) Attributes() InferenceAttributes {
+	return InferenceAttributes{
 		Name:    "myAvailable",
 		Distant: true,
 	}
@@ -24,7 +24,7 @@ func (myProvider MyAvailableProvider) IsAvailable(cfg *config.Config) bool {
 	return true
 }
 
-func (myProvider MyAvailableProvider) GetModel(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
+func (myProvider MyAvailableProvider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
 	return nil, nil
 }
 
@@ -32,8 +32,8 @@ type MyNonAvailableProvider struct{}
 
 var myNonAvailableProvider = MyNonAvailableProvider{}
 
-func (myNonAvailableProvider MyNonAvailableProvider) Attributes() ModelAttributes {
-	return ModelAttributes{
+func (myNonAvailableProvider MyNonAvailableProvider) Attributes() InferenceAttributes {
+	return InferenceAttributes{
 		Name:    "myNonAvailable",
 		Distant: true,
 	}
@@ -43,7 +43,7 @@ func (myProvider MyNonAvailableProvider) IsAvailable(cfg *config.Config) bool {
 	return false
 }
 
-func (myProvider MyNonAvailableProvider) GetModel(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
+func (myProvider MyNonAvailableProvider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
 	return nil, nil
 }
 
@@ -52,7 +52,7 @@ func TestGetAvailableModels(t *testing.T) {
 	Register(myNonAvailableProvider)
 	Register(myAvailableProvider)
 	cfg := config.New()
-	discovered, err := getAvailableModels(cfg)
+	discovered, err := getAvailableInferences(cfg)
 	if err != nil {
 		t.Fatalf("failed to discover model: %v", err)
 	}

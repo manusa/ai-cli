@@ -5,9 +5,9 @@ import (
 	"fmt"
 
 	"github.com/cloudwego/eino-ext/components/model/gemini"
-	einoModel "github.com/cloudwego/eino/components/model"
+	"github.com/cloudwego/eino/components/model"
 	"github.com/manusa/ai-cli/pkg/config"
-	"github.com/manusa/ai-cli/pkg/model"
+	"github.com/manusa/ai-cli/pkg/inference"
 	"google.golang.org/genai"
 )
 
@@ -16,11 +16,11 @@ type GeminiProvider struct{}
 var geminiProvider = GeminiProvider{}
 
 func init() {
-	model.Register(geminiProvider)
+	inference.Register(geminiProvider)
 }
 
-func (geminiProvider GeminiProvider) Attributes() model.ModelAttributes {
-	return model.ModelAttributes{
+func (geminiProvider GeminiProvider) Attributes() inference.InferenceAttributes {
+	return inference.InferenceAttributes{
 		Name:    "gemini",
 		Distant: true,
 	}
@@ -30,7 +30,7 @@ func (geminiProvider GeminiProvider) IsAvailable(cfg *config.Config) bool {
 	return cfg.GoogleApiKey != ""
 }
 
-func (geminiProvider GeminiProvider) GetModel(ctx context.Context, cfg *config.Config) (einoModel.ToolCallingChatModel, error) {
+func (geminiProvider GeminiProvider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
 	geminiCli, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey: cfg.GoogleApiKey,
 	})
