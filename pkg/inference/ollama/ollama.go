@@ -14,6 +14,7 @@ import (
 )
 
 const baseURL = "http://localhost:11434" // TODO: make this configurable
+const defaultModel = "llama3.2:3b"
 
 type Provider struct{}
 
@@ -65,10 +66,14 @@ func (ollamaProvider *Provider) IsAvailable(_ *config.Config) bool {
 	return resp.StatusCode == http.StatusOK
 }
 
-func (ollamaProvider *Provider) GetInference(ctx context.Context, _ *config.Config) (model.ToolCallingChatModel, error) {
+func (ollamaProvider *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
+	model := defaultModel
+	if cfg.Model != nil {
+		model = *cfg.Model
+	}
 	return ollama.NewChatModel(ctx, &ollama.ChatModelConfig{
 		BaseURL: baseURL,
-		Model:   "llama3.2:3b",
+		Model:   model,
 	})
 }
 
