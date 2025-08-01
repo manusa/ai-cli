@@ -13,6 +13,7 @@ var providers = map[string]Provider{}
 
 type Attributes struct {
 	api.BasicFeatureAttributes
+	// TODO: maybe rename to local or remote
 	Distant bool
 }
 

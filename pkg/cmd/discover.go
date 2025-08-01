@@ -66,6 +66,7 @@ func (o *DiscoverCmdOptions) Run(cmd *cobra.Command) error {
 	switch o.outputFormat {
 	case "json":
 		// TODO: implement proper JSON marshalling
+		// TODO: json should show all inference servers, tools, etc.
 		_, _ = fmt.Printf(`{"inference": "%s"}`, discoveredFeatures.Inference.Attributes().Name())
 	case "text":
 		_, _ = fmt.Printf("Available Inference Providers:\n")
