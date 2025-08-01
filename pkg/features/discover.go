@@ -1,4 +1,4 @@
-package feature
+package features
 
 import (
 	"fmt"
@@ -9,9 +9,9 @@ import (
 )
 
 type Features struct {
-	Inferences []inference.Provider // List of available inference providers
-	Inference  inference.Provider   // The selected inference provider based on user preferences or auto-detection
-	Tools      []tools.Provider     // List of tools available from the selected inference provider
+	Inferences []inference.Provider `json:"inferences"` // List of available inference providers
+	Inference  inference.Provider   `json:"inference"`  // The selected inference provider based on user preferences or auto-detection
+	Tools      []tools.Provider     `json:"tools"`      // List of tools available from the selected inference provider
 }
 
 func Discover(cfg *config.Config) (*Features, error) {

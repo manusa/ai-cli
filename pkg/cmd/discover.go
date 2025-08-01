@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/features"
 	"github.com/spf13/cobra"
 )
 
@@ -12,10 +15,12 @@ func NewDiscoverCmdOptions() *DiscoverCmdOptions {
 	return &DiscoverCmdOptions{}
 }
 
+// NewDiscoverCmd creates a new command to discover AI capabilities for the current system
+// TODO: rename to "capabilities" or "features"?
 func NewDiscoverCmd() *cobra.Command {
 	o := NewDiscoverCmdOptions()
 	cmd := &cobra.Command{
-		Use:   "discover",
+		Use:   "discover", // TODO: rename to "capabilities" or "features"?
 		Short: "Discover AI capabilities for the current system",
 		Long:  "Discover available AI capabilities (llm providers, models, applicable tools) for the current system",
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -52,6 +57,24 @@ func (o *DiscoverCmdOptions) Validate() error {
 
 // Run executes the main logic of the command once its complete and validated
 func (o *DiscoverCmdOptions) Run(cmd *cobra.Command) error {
-
+	discoveredFeatures, err := features.Discover(config.New())
+	if err != nil {
+		return fmt.Errorf("failed to discover features: %w", err)
+	}
+	switch o.outputFormat {
+	case "json":
+		// TODO: implement proper JSON marshalling
+		_, _ = fmt.Printf(`{"inference": "%s"}`, discoveredFeatures.Inference.Attributes().Name())
+	case "text":
+		_, _ = fmt.Printf("Available Inference Providers:\n")
+		for _, provider := range discoveredFeatures.Inferences {
+			fmt.Printf("  - %s\n", provider.Attributes().Name())
+		}
+		_, _ = fmt.Printf("Selected Inference Provider: %s\n", discoveredFeatures.Inferences[0].Attributes().Name())
+		_, _ = fmt.Printf("Available Tools Providers:\n")
+		for _, provider := range discoveredFeatures.Tools {
+			fmt.Printf("  - %s\n", provider.Attributes().Name())
+		}
+	}
 	return nil
 }

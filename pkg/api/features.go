@@ -12,7 +12,7 @@ type FeatureAttributes interface {
 }
 
 type BasicFeatureAttributes struct {
-	FeatureName string
+	FeatureName string `json:"name"`
 }
 
 func (b BasicFeatureAttributes) Name() string {

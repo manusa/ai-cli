@@ -7,7 +7,7 @@ import (
 	"github.com/manusa/ai-cli/pkg/ai"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
-	"github.com/manusa/ai-cli/pkg/feature"
+	"github.com/manusa/ai-cli/pkg/features"
 	"github.com/manusa/ai-cli/pkg/ui"
 	"github.com/spf13/cobra"
 )
@@ -58,16 +58,16 @@ func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
 
 	cfg := config.New() // TODO, will need to infer or load from a file
 
-	features, err := feature.Discover(cfg)
+	availableFeatures, err := features.Discover(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to discover system features: %w", err)
 	}
-	llm, err := features.Inference.GetInference(cmd.Context(), cfg)
+	llm, err := availableFeatures.Inference.GetInference(cmd.Context(), cfg)
 	if err != nil {
 		return fmt.Errorf("failed to get inference: %w", err)
 	}
 	var allTools []*api.Tool
-	for _, toolProvider := range features.Tools {
+	for _, toolProvider := range availableFeatures.Tools {
 		tools, err := toolProvider.GetTools(cmd.Context(), cfg)
 		if err != nil {
 			return fmt.Errorf("failed to get tools from provider %s: %w", toolProvider.Attributes().Name(), err)
