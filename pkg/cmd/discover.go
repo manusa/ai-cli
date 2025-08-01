@@ -52,6 +52,7 @@ func (o *DiscoverCmdOptions) Complete(_ *cobra.Command, _ []string) error {
 
 // Validate ensures that all required arguments and flag values are provided
 func (o *DiscoverCmdOptions) Validate() error {
+	// TODO: validate output format
 	return nil
 }
 
@@ -61,6 +62,7 @@ func (o *DiscoverCmdOptions) Run(cmd *cobra.Command) error {
 	if err != nil {
 		return fmt.Errorf("failed to discover features: %w", err)
 	}
+	// TODO: maybe create an output package to handle different output formats globally
 	switch o.outputFormat {
 	case "json":
 		// TODO: implement proper JSON marshalling
