@@ -12,7 +12,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ChatCmdOptions struct{}
+type ChatCmdOptions struct {
+	inference string
+	model     string
+}
 
 func NewChatCmdOptions() *ChatCmdOptions {
 	return &ChatCmdOptions{}
@@ -39,6 +42,10 @@ func NewChatCmd() *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&o.inference, "inference", "", "Inference server to use")
+	cmd.Flags().StringVar(&o.model, "model", "", "Model to use")
+
 	return cmd
 }
 
@@ -58,11 +65,18 @@ func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
 
 	cfg := config.New() // TODO, will need to infer or load from a file
 
+	if o.inference != "" {
+		cfg.Inference = &o.inference
+	}
+	if o.model != "" {
+		cfg.Model = &o.model
+	}
+
 	availableFeatures := features.Discover(cfg)
 	if availableFeatures.Inference == nil {
 		return fmt.Errorf("no suitable inference found")
 	}
-	llm, err := availableFeatures.Inference.GetInference(cmd.Context(), cfg)
+	llm, err := (*availableFeatures.Inference).GetInference(cmd.Context(), cfg)
 	if err != nil {
 		return fmt.Errorf("failed to get inference: %w", err)
 	}

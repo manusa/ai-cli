@@ -82,8 +82,58 @@ func TestDiscoverInference(t *testing.T) {
 				"expected the available provider to be returned")
 		})
 		t.Run("With one available provider Inference is set to that provider", func(t *testing.T) {
-			assert.Equal(t, "availableProvider", features.Inference.Attributes().Name(),
+			assert.Equal(t, "availableProvider", (*features.Inference).Attributes().Name(),
 				"expected the available provider to be returned")
+		})
+	})
+}
+
+func TestDiscoverKnownExplicitInference(t *testing.T) {
+	// With one available inference provider, it should return that provider when specified in the config
+	testCase(t, func(c *testContext) {
+		inference.Register(&InferenceProvider{Name: "availableProvider", Available: true})
+		inference.Register(&InferenceProvider{Name: "unavailableProvider", Available: false})
+		cfg := config.New()
+		cfg.Inference = func(s string) *string {
+			return &s
+		}("availableProvider")
+		features := Discover(cfg)
+		t.Run("With one available provider returns features", func(t *testing.T) {
+			assert.NotNil(t, features, "expected an inference to be returned")
+		})
+		t.Run("With one available provider Inferences has one provider", func(t *testing.T) {
+			assert.Len(t, features.Inferences, 1, "expected one inference provider to be returned")
+			assert.Equal(t, "availableProvider", features.Inferences[0].Attributes().Name(),
+				"expected the available provider to be returned")
+		})
+		t.Run("With one available provider Inference is set to that provider", func(t *testing.T) {
+			assert.Equal(t, "availableProvider", (*features.Inference).Attributes().Name(),
+				"expected the available provider to be returned")
+		})
+	})
+}
+
+func TestDiscoverUnknownExplicitInference(t *testing.T) {
+	// With one available inference provider, it should not return another provider specified in the config
+	testCase(t, func(c *testContext) {
+		inference.Register(&InferenceProvider{Name: "availableProvider", Available: true})
+		inference.Register(&InferenceProvider{Name: "unavailableProvider", Available: false})
+		cfg := config.New()
+		cfg.Inference = func(s string) *string {
+			return &s
+		}("otherProvider")
+		features := Discover(cfg)
+		t.Run("With one available provider returns features", func(t *testing.T) {
+			assert.NotNil(t, features, "expected an inference to be returned")
+		})
+		t.Run("With one available provider Inferences has one provider", func(t *testing.T) {
+			assert.Len(t, features.Inferences, 1, "expected no inference provider to be returned")
+			assert.Equal(t, "availableProvider", features.Inferences[0].Attributes().Name(),
+				"expected the available provider to be returned")
+		})
+		t.Run("With one available provider Inference is not set to unknown provider", func(t *testing.T) {
+			assert.Nil(t, features.Inference,
+				"expected no available provider to be returned")
 		})
 	})
 }
