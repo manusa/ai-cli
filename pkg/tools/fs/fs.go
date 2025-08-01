@@ -1,10 +1,37 @@
-package tools
+package fs
 
 import (
+	"context"
 	"encoding/json"
-	"github.com/manusa/ai-cli/pkg/api"
 	"os"
+
+	"github.com/manusa/ai-cli/pkg/api"
+	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/tools"
 )
+
+type Provider struct {
+}
+
+var _ tools.Provider = &Provider{}
+
+func (p *Provider) Attributes() tools.Attributes {
+	return tools.Attributes{
+		BasicFeatureAttributes: api.BasicFeatureAttributes{
+			FeatureName: "fs",
+		},
+	}
+}
+
+func (p *Provider) IsAvailable(_ *config.Config) bool {
+	return true
+}
+
+func (p *Provider) GetTools(_ context.Context, _ *config.Config) ([]*api.Tool, error) {
+	return []*api.Tool{
+		FileList,
+	}, nil
+}
 
 var FileList = &api.Tool{
 	Name: "file_list",
@@ -45,4 +72,10 @@ var FileList = &api.Tool{
 		}
 		return string(fileNamesJSON), nil
 	},
+}
+
+var instance = &Provider{}
+
+func init() {
+	tools.Register(instance)
 }

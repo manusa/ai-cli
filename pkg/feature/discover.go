@@ -4,43 +4,27 @@ import (
 	"fmt"
 
 	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/inference"
+	"github.com/manusa/ai-cli/pkg/tools"
 )
 
-var providers = map[string]FeatureProvider{}
-
-type FeatureAttributes struct {
-	Name string
+type Features struct {
+	Inferences []inference.Provider // List of available inference providers
+	Inference  inference.Provider   // The selected inference provider based on user preferences or auto-detection
+	Tools      []tools.Provider     // List of tools available from the selected inference provider
 }
 
-type FeatureProvider interface {
-	Attributes() FeatureAttributes
-	IsAvailable(cfg *config.Config) bool
-}
-
-type Feature struct {
-	FeatureAttributes
-}
-
-// Register a new feature provider
-func Register(provider FeatureProvider) {
-	if _, ok := providers[provider.Attributes().Name]; ok {
-		panic(fmt.Sprintf("feature provider already registered: %s", provider.Attributes().Name))
+func Discover(cfg *config.Config) (*Features, error) {
+	inferences := inference.Discover(cfg)
+	if len(inferences) == 0 {
+		return nil, fmt.Errorf("no suitable inference found")
 	}
-	providers[provider.Attributes().Name] = provider
-}
-
-// cleanup for tests
-//func cleanup() {
-//	providers = map[string]FeatureProvider{}
-//}
-
-// getAvailableModels gets all available models from all providers
-func GetAvailableFeatures(cfg *config.Config) ([]FeatureAttributes, error) {
-	features := []FeatureAttributes{}
-	for _, provider := range providers {
-		if provider.IsAvailable(cfg) {
-			features = append(features, provider.Attributes())
-		}
-	}
-	return features, nil
+	// TODO: Implement user preferences or auto-detection logic to select the best inference
+	// For now, we just select the first available inference
+	selectedInference := inferences[0]
+	return &Features{
+		Inferences: inferences,
+		Inference:  selectedInference,
+		Tools:      tools.Discover(cfg),
+	}, nil
 }

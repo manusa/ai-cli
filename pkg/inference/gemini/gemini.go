@@ -6,31 +6,30 @@ import (
 
 	"github.com/cloudwego/eino-ext/components/model/gemini"
 	"github.com/cloudwego/eino/components/model"
+	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference"
 	"google.golang.org/genai"
 )
 
-type GeminiProvider struct{}
+type Provider struct{}
 
-var geminiProvider = GeminiProvider{}
+var _ inference.Provider = &Provider{}
 
-func init() {
-	inference.Register(geminiProvider)
-}
-
-func (geminiProvider GeminiProvider) Attributes() inference.InferenceAttributes {
-	return inference.InferenceAttributes{
-		Name:    "gemini",
+func (geminiProvider *Provider) Attributes() inference.Attributes {
+	return inference.Attributes{
+		BasicFeatureAttributes: api.BasicFeatureAttributes{
+			FeatureName: "gemini",
+		},
 		Distant: true,
 	}
 }
 
-func (geminiProvider GeminiProvider) IsAvailable(cfg *config.Config) bool {
+func (geminiProvider *Provider) IsAvailable(cfg *config.Config) bool {
 	return cfg.GoogleApiKey != ""
 }
 
-func (geminiProvider GeminiProvider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
+func (geminiProvider *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
 	geminiCli, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey: cfg.GoogleApiKey,
 	})
@@ -38,4 +37,10 @@ func (geminiProvider GeminiProvider) GetInference(ctx context.Context, cfg *conf
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 	return gemini.NewChatModel(ctx, &gemini.Config{Client: geminiCli, Model: "gemini-2.0-flash"})
+}
+
+var instance = &Provider{}
+
+func init() {
+	inference.Register(instance)
 }
