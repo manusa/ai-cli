@@ -1,8 +1,6 @@
 package features
 
 import (
-	"fmt"
-
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference"
 	"github.com/manusa/ai-cli/pkg/tools"
@@ -14,18 +12,17 @@ type Features struct {
 	Tools      []tools.Provider     `json:"tools"`      // List of tools available from the selected inference provider
 }
 
-func Discover(cfg *config.Config) (*Features, error) {
+func Discover(cfg *config.Config) *Features {
 	inferences := inference.Discover(cfg)
-	// TODO: Error should be at the chat or usage level
-	if len(inferences) == 0 {
-		return nil, fmt.Errorf("no suitable inference found")
-	}
+	var selectedInference inference.Provider
 	// TODO: Implement user preferences or auto-detection logic to select the best inference
 	// For now, we just select the first available inference
-	selectedInference := inferences[0]
+	if len(inferences) > 0 {
+		selectedInference = inferences[0]
+	}
 	return &Features{
 		Inferences: inferences,
 		Inference:  selectedInference,
 		Tools:      tools.Discover(cfg),
-	}, nil
+	}
 }

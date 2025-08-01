@@ -58,9 +58,9 @@ func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
 
 	cfg := config.New() // TODO, will need to infer or load from a file
 
-	availableFeatures, err := features.Discover(cfg)
-	if err != nil {
-		return fmt.Errorf("failed to discover system features: %w", err)
+	availableFeatures := features.Discover(cfg)
+	if availableFeatures.Inference == nil {
+		return fmt.Errorf("no suitable inference found")
 	}
 	llm, err := availableFeatures.Inference.GetInference(cmd.Context(), cfg)
 	if err != nil {
