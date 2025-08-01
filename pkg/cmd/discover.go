@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"strings"
+
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/features"
 	"github.com/spf13/cobra"
@@ -72,6 +75,11 @@ func (o *DiscoverCmdOptions) Run(cmd *cobra.Command) error {
 		_, _ = fmt.Printf("Available Inference Providers:\n")
 		for _, provider := range discoveredFeatures.Inferences {
 			fmt.Printf("  - %s\n", provider.Attributes().Name())
+			models, err := provider.GetModels(context.Background(), config.New())
+			if err != nil {
+				fmt.Printf("    (error getting models: %v)\n", err)
+			}
+			fmt.Printf("    Models:\n    - %s\n", strings.Join(models, "\n    - "))
 		}
 		_, _ = fmt.Printf("Selected Inference Provider: %s\n", discoveredFeatures.Inferences[0].Attributes().Name())
 		_, _ = fmt.Printf("Available Tools Providers:\n")

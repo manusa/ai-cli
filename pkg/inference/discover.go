@@ -19,6 +19,7 @@ type Attributes struct {
 
 type Provider interface {
 	api.Feature[Attributes]
+	GetModels(ctx context.Context, cfg *config.Config) ([]string, error)
 	GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error)
 }
 
