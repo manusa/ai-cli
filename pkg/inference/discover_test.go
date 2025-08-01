@@ -2,6 +2,7 @@ package inference
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/cloudwego/eino/components/model"
@@ -36,6 +37,8 @@ func (t *TestProvider) GetModels(_ context.Context, _ *config.Config) ([]string,
 func (t *TestProvider) GetInference(_ context.Context, _ *config.Config) (model.ToolCallingChatModel, error) {
 	return nil, nil
 }
+
+func (t *TestProvider) MarshalJSON() ([]byte, error) { return json.Marshal(t.Attributes()) }
 
 type testContext struct {
 }
@@ -97,6 +100,22 @@ func TestDiscover(t *testing.T) {
 			assert.Len(t, inferences, 1, "expected one available provider to be registered")
 			assert.Equal(t, "availableProvider", inferences[0].Attributes().Name(),
 				"expected the available provider to be returned")
+		})
+	})
+}
+
+func TestDiscoverMarshalling(t *testing.T) {
+	testCase(t, func(c *testContext) {
+		Register(&TestProvider{Name: "provider-one", Distant: false, Available: true})
+		Register(&TestProvider{Name: "provider-two", Distant: false, Available: true})
+		inferences := Discover(config.New())
+		bytes, err := json.Marshal(inferences)
+		t.Run("Marshalling returns no error", func(t *testing.T) {
+			assert.Nil(t, err, "expected no error when marshalling inferences")
+		})
+		t.Run("Marshalling returns expected JSON", func(t *testing.T) {
+			assert.JSONEq(t, `[{"name":"provider-one","Distant":false},{"name":"provider-two","Distant":false}]`, string(bytes),
+				"expected JSON to match the expected format")
 		})
 	})
 }

@@ -35,7 +35,7 @@ func (ollamaProvider *Provider) Attributes() inference.Attributes {
 	}
 }
 
-func (ollamaProvider *Provider) GetModels(ctx context.Context, cfg *config.Config) ([]string, error) {
+func (ollamaProvider *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, error) {
 	resp, err := http.Get(baseURL + "/v1/models")
 	if err != nil {
 		return nil, err
@@ -50,13 +50,13 @@ func (ollamaProvider *Provider) GetModels(ctx context.Context, cfg *config.Confi
 		return nil, err
 	}
 	modelsNames := make([]string, len(modelsList.Data))
-	for i, model := range modelsList.Data {
-		modelsNames[i] = model.Id
+	for i, m := range modelsList.Data {
+		modelsNames[i] = m.Id
 	}
 	return modelsNames, nil
 }
 
-func (ollamaProvider *Provider) IsAvailable(cfg *config.Config) bool {
+func (ollamaProvider *Provider) IsAvailable(_ *config.Config) bool {
 	resp, err := http.Get(baseURL + "/v1/models")
 	if err != nil {
 		return false
@@ -65,11 +65,15 @@ func (ollamaProvider *Provider) IsAvailable(cfg *config.Config) bool {
 	return resp.StatusCode == http.StatusOK
 }
 
-func (ollamaProvider *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
+func (ollamaProvider *Provider) GetInference(ctx context.Context, _ *config.Config) (model.ToolCallingChatModel, error) {
 	return ollama.NewChatModel(ctx, &ollama.ChatModelConfig{
 		BaseURL: baseURL,
 		Model:   "llama3.2:3b",
 	})
+}
+
+func (ollamaProvider *Provider) MarshalJSON() ([]byte, error) {
+	return json.Marshal(ollamaProvider.Attributes())
 }
 
 var instance = &Provider{}

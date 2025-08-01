@@ -2,15 +2,19 @@ package features
 
 import (
 	"context"
+	"encoding/json"
+	"os"
 	"testing"
 
-	"github.com/manusa/ai-cli/pkg/api"
-	"github.com/manusa/ai-cli/pkg/inference"
-	"github.com/manusa/ai-cli/pkg/tools"
-	"github.com/stretchr/testify/assert"
-
 	"github.com/cloudwego/eino/components/model"
+	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/inference"
+	"github.com/manusa/ai-cli/pkg/inference/gemini"
+	"github.com/manusa/ai-cli/pkg/inference/ollama"
+	"github.com/manusa/ai-cli/pkg/tools"
+	"github.com/manusa/ai-cli/pkg/tools/fs"
+	"github.com/stretchr/testify/assert"
 )
 
 type testContext struct {
@@ -61,22 +65,14 @@ func (t *InferenceProvider) GetInference(_ context.Context, _ *config.Config) (m
 	return nil, nil
 }
 
+func (t *InferenceProvider) MarshalJSON() ([]byte, error) { return nil, nil }
+
 func TestDiscoverInference(t *testing.T) {
-	// With no inference providers registered, it should return an error
-	testCase(t, func(c *testContext) {
-		t.Run("With no inference providers registered returns an error", func(t *testing.T) {
-			_, err := Discover(config.New())
-			assert.NotNil(t, err, "expected an error when no providers are registered")
-		})
-	})
 	// With one available inference provider, it should return that provider
 	testCase(t, func(c *testContext) {
 		inference.Register(&InferenceProvider{Name: "availableProvider", Available: true})
 		inference.Register(&InferenceProvider{Name: "unavailableProvider", Available: false})
-		features, err := Discover(config.New())
-		t.Run("With one available provider has no error", func(t *testing.T) {
-			assert.Nil(t, err, "expected no error")
-		})
+		features := Discover(config.New())
 		t.Run("With one available provider returns features", func(t *testing.T) {
 			assert.NotNil(t, features, "expected an inference to be returned")
 		})
@@ -88,6 +84,26 @@ func TestDiscoverInference(t *testing.T) {
 		t.Run("With one available provider Inference is set to that provider", func(t *testing.T) {
 			assert.Equal(t, "availableProvider", features.Inference.Attributes().Name(),
 				"expected the available provider to be returned")
+		})
+	})
+}
+
+func TestDiscoverMarshal(t *testing.T) {
+	testCase(t, func(c *testContext) {
+		_ = os.Setenv("GEMINI_API_KEY", "test-key")
+		t.Cleanup(func() { _ = os.Unsetenv("GEMINI_API_KEY") })
+		inference.Register(&gemini.Provider{})
+		inference.Register(&ollama.Provider{})
+		tools.Register(&fs.Provider{})
+		features := Discover(config.New())
+		bytes, err := json.Marshal(features)
+		t.Run("Marshalling returns no error", func(t *testing.T) {
+			assert.Nil(t, err, "expected no error when marshalling inferences")
+		})
+		t.Run("Marshalling returns expected JSON", func(t *testing.T) {
+			assert.JSONEq(t, `{"inference":{"name":"gemini","Distant":true},"inferences":[{"name":"gemini","Distant":true}],"tools":[{"name":"fs"}]}`,
+				string(bytes),
+				"expected JSON to match the expected format")
 		})
 	})
 }

@@ -3,6 +3,8 @@ package inference
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/cloudwego/eino/components/model"
 	"github.com/manusa/ai-cli/pkg/api"
@@ -21,6 +23,11 @@ type Provider interface {
 	api.Feature[Attributes]
 	GetModels(ctx context.Context, cfg *config.Config) ([]string, error)
 	GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error)
+	MarshalJSON() ([]byte, error)
+}
+
+type BasicProvider struct {
+	Attributes Attributes `json:"attributes"`
 }
 
 // Register a new inference provider
@@ -47,5 +54,8 @@ func Discover(cfg *config.Config) []Provider {
 			inferences = append(inferences, provider)
 		}
 	}
+	slices.SortFunc(inferences, func(a, b Provider) int {
+		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
+	})
 	return inferences
 }

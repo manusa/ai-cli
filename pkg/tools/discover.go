@@ -3,6 +3,8 @@ package tools
 import (
 	"context"
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
@@ -17,6 +19,7 @@ type Attributes struct {
 type Provider interface {
 	api.Feature[Attributes]
 	GetTools(ctx context.Context, cfg *config.Config) ([]*api.Tool, error)
+	MarshalJSON() ([]byte, error)
 }
 
 // Register a new tools provider
@@ -40,5 +43,8 @@ func Discover(cfg *config.Config) []Provider {
 			tools = append(tools, provider)
 		}
 	}
+	slices.SortFunc(tools, func(a, b Provider) int {
+		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
+	})
 	return tools
 }

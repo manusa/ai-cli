@@ -33,6 +33,10 @@ func (p *Provider) GetTools(_ context.Context, _ *config.Config) ([]*api.Tool, e
 	}, nil
 }
 
+func (p *Provider) MarshalJSON() ([]byte, error) {
+	return json.Marshal(p.Attributes())
+}
+
 var FileList = &api.Tool{
 	Name: "file_list",
 	Description: "List files in the provided directory or the current working directory if none is provided." +
