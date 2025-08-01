@@ -29,6 +29,10 @@ func (t *TestProvider) IsAvailable(_ *config.Config) bool {
 	return t.Available
 }
 
+func (t *TestProvider) GetModels(_ context.Context, _ *config.Config) ([]string, error) {
+	return []string{}, nil
+}
+
 func (t *TestProvider) GetInference(_ context.Context, _ *config.Config) (model.ToolCallingChatModel, error) {
 	return nil, nil
 }

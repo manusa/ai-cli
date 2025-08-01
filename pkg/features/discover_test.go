@@ -2,11 +2,12 @@ package features
 
 import (
 	"context"
+	"testing"
+
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/inference"
 	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/stretchr/testify/assert"
-	"testing"
 
 	"github.com/cloudwego/eino/components/model"
 	"github.com/manusa/ai-cli/pkg/config"
@@ -46,6 +47,10 @@ func (t *InferenceProvider) Attributes() inference.Attributes {
 			FeatureName: t.Name,
 		},
 	}
+}
+
+func (t *InferenceProvider) GetModels(_ context.Context, _ *config.Config) ([]string, error) {
+	return []string{}, nil
 }
 
 func (t *InferenceProvider) IsAvailable(_ *config.Config) bool {

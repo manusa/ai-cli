@@ -29,6 +29,10 @@ func (geminiProvider *Provider) IsAvailable(cfg *config.Config) bool {
 	return cfg.GoogleApiKey != ""
 }
 
+func (geminiProvider *Provider) GetModels(ctx context.Context, cfg *config.Config) ([]string, error) {
+	return []string{"gemini-2.0-flash"}, nil
+}
+
 func (geminiProvider *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
 	geminiCli, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey: cfg.GoogleApiKey,
