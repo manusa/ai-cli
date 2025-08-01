@@ -24,6 +24,6 @@ func TestVersion(t *testing.T) {
 	rootCmd.SetArgs([]string{"version"})
 	o, err := captureOutput(rootCmd.Execute)
 	if o != "0.0.0\n" {
-		t.Fatalf("Expected all available profiles, got %s %v", o, err)
+		t.Fatalf("Expected version for command 'ai-cli version', got %s %v", o, err)
 	}
 }
