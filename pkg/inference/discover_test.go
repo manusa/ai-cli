@@ -114,7 +114,7 @@ func TestDiscoverMarshalling(t *testing.T) {
 			assert.Nil(t, err, "expected no error when marshalling inferences")
 		})
 		t.Run("Marshalling returns expected JSON", func(t *testing.T) {
-			assert.JSONEq(t, `[{"name":"provider-one","Distant":false},{"name":"provider-two","Distant":false}]`, string(bytes),
+			assert.JSONEq(t, `[{"name":"provider-one","distant":false},{"name":"provider-two","distant":false}]`, string(bytes),
 				"expected JSON to match the expected format")
 		})
 	})

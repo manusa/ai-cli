@@ -16,7 +16,7 @@ var providers = map[string]Provider{}
 type Attributes struct {
 	api.BasicFeatureAttributes
 	// TODO: maybe rename to local or remote
-	Distant bool
+	Distant bool `json:"distant"` // Indicates if the inference provider is a remote service or a local one
 }
 
 type Provider interface {
