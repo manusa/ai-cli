@@ -1,14 +1,17 @@
 package ui
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/exp/teatest"
-	"github.com/manusa/ai-cli/pkg/ai"
-	"github.com/manusa/ai-cli/pkg/config"
-	"github.com/manusa/ai-cli/pkg/test"
 	"strings"
 	"testing"
 	"time"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/exp/teatest"
+	"github.com/manusa/ai-cli/pkg/ai"
+	"github.com/manusa/ai-cli/pkg/api"
+	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/test"
+	"github.com/manusa/ai-cli/pkg/tools/fs"
 )
 
 type testContext struct {
@@ -24,7 +27,7 @@ func (c *testContext) beforeEach(t *testing.T) {
 	if llm == nil {
 		llm = &test.ChatModel{}
 	}
-	aiAgent := ai.New(llm, config.New())
+	aiAgent := ai.New(llm, []*api.Tool{fs.FileList}, config.New())
 	if err := aiAgent.Run(t.Context()); err != nil {
 		t.Fatalf("failed to run AI: %v", err)
 	}

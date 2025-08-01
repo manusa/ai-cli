@@ -1,36 +1,34 @@
-package inference
+package tools
 
 import (
 	"context"
+	"github.com/manusa/ai-cli/pkg/api"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
-	"github.com/cloudwego/eino/components/model"
-	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
-	"github.com/stretchr/testify/assert"
 )
 
 type TestProvider struct {
 	Name      string
-	Distant   bool
 	Available bool
+	Tools     []*api.Tool
 }
 
-func (t *TestProvider) Attributes() Attributes {
+func (t TestProvider) Attributes() Attributes {
 	return Attributes{
 		BasicFeatureAttributes: api.BasicFeatureAttributes{
 			FeatureName: t.Name,
 		},
-		Distant: t.Distant,
 	}
 }
 
-func (t *TestProvider) IsAvailable(_ *config.Config) bool {
+func (t TestProvider) IsAvailable(_ *config.Config) bool {
 	return t.Available
 }
 
-func (t *TestProvider) GetInference(_ context.Context, _ *config.Config) (model.ToolCallingChatModel, error) {
-	return nil, nil
+func (t TestProvider) GetTools(_ context.Context, _ *config.Config) ([]*api.Tool, error) {
+	return t.Tools, nil
 }
 
 type testContext struct {
@@ -59,7 +57,7 @@ func TestRegister(t *testing.T) {
 	// Registering a provider should add it to the providers map
 	testCase(t, func(c *testContext) {
 		t.Run("Registering a provider adds it to the providers map", func(t *testing.T) {
-			Register(&TestProvider{Name: "testProvider", Distant: false, Available: true})
+			Register(TestProvider{Name: "testProvider", Available: true})
 			assert.Contains(t, providers, "testProvider",
 				"expected provider %s to be registered in the providers %v", "testProvider", providers)
 		})
@@ -67,7 +65,7 @@ func TestRegister(t *testing.T) {
 	// Registering a provider with the same name should panic
 	testCase(t, func(c *testContext) {
 		t.Run("Registering a provider with the same name panics", func(t *testing.T) {
-			provider := &TestProvider{Name: "duplicateProvider", Distant: false, Available: true}
+			provider := TestProvider{Name: "duplicateProvider", Available: true}
 			Register(provider)
 			assert.Panics(t, func() {
 				Register(provider)
@@ -86,8 +84,8 @@ func TestDiscover(t *testing.T) {
 	})
 	// With one available provider, it should return that provider
 	testCase(t, func(c *testContext) {
-		Register(&TestProvider{Name: "availableProvider", Distant: false, Available: true})
-		Register(&TestProvider{Name: "unavailableProvider", Distant: false, Available: false})
+		Register(TestProvider{Name: "availableProvider", Available: true})
+		Register(TestProvider{Name: "unavailableProvider", Available: false})
 		inferences := Discover(config.New())
 		t.Run("With one available provider returns that provider", func(t *testing.T) {
 			assert.Len(t, inferences, 1, "expected one available provider to be registered")

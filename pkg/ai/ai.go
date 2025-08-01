@@ -24,17 +24,19 @@ type Notification struct{}
 type Ai struct {
 	config       *config.Config
 	llm          model.ToolCallingChatModel
+	tools        []*api.Tool
 	Input        chan api.Message
 	Output       chan Notification
 	session      *Session
 	sessionMutex sync.RWMutex
 }
 
-func New(llm model.ToolCallingChatModel, cfg *config.Config) *Ai {
+func New(llm model.ToolCallingChatModel, tools []*api.Tool, cfg *config.Config) *Ai {
 	session := &Session{}
 	return &Ai{
 		config:       cfg,
 		llm:          llm,
+		tools:        tools,
 		Input:        make(chan api.Message),
 		Output:       make(chan Notification),
 		session:      session,
@@ -180,7 +182,14 @@ func (a *Ai) schemaMessages() []*schema.Message {
 }
 
 func (a *Ai) setUpAgent(ctx context.Context) (*react.Agent, error) {
-	llmWithTools, err := a.llm.WithTools([]*schema.ToolInfo{FileList.toolInfo})
+	baseTools := make([]tool.BaseTool, 0, len(a.tools))
+	toolInfos := make([]*schema.ToolInfo, 0, len(a.tools))
+	for _, t := range a.tools {
+		it := toInvokableTool(t)
+		baseTools = append(baseTools, it)
+		toolInfos = append(toolInfos, it.toolInfo)
+	}
+	llmWithTools, err := a.llm.WithTools(toolInfos)
 	if err != nil {
 		return nil, err
 	}
@@ -188,7 +197,7 @@ func (a *Ai) setUpAgent(ctx context.Context) (*react.Agent, error) {
 		ToolCallingModel: llmWithTools,
 		MaxStep:          10,
 		ToolsConfig: compose.ToolsNodeConfig{
-			Tools: []tool.BaseTool{*FileList},
+			Tools: baseTools,
 		},
 	})
 }

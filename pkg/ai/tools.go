@@ -6,7 +6,6 @@ import (
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/schema"
 	"github.com/manusa/ai-cli/pkg/api"
-	"github.com/manusa/ai-cli/pkg/tools"
 )
 
 type invokableTool struct {
@@ -55,5 +54,3 @@ func toInvokableTool(t *api.Tool) *invokableTool {
 	}
 	return &invokableTool{function: t.Function, toolInfo: toolInfo}
 }
-
-var FileList = toInvokableTool(tools.FileList)

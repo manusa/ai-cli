@@ -1,10 +1,9 @@
-package inference
+package tools
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/cloudwego/eino/components/model"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 )
@@ -13,22 +12,17 @@ var providers = map[string]Provider{}
 
 type Attributes struct {
 	api.BasicFeatureAttributes
-	// TODO: maybe rename to local or remote
-	Distant bool
 }
 
 type Provider interface {
 	api.Feature[Attributes]
-	GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error)
+	GetTools(ctx context.Context, cfg *config.Config) ([]*api.Tool, error)
 }
 
-// Register a new inference provider
+// Register a new tools provider
 func Register(provider Provider) {
-	if provider == nil {
-		panic("cannot register a nil inference provider")
-	}
 	if _, ok := providers[provider.Attributes().Name()]; ok {
-		panic(fmt.Sprintf("inference provider already registered: %s", provider.Attributes().Name()))
+		panic(fmt.Sprintf("tool provider already registered: %s", provider.Attributes().Name()))
 	}
 	providers[provider.Attributes().Name()] = provider
 }
@@ -38,13 +32,13 @@ func Clear() {
 	providers = map[string]Provider{}
 }
 
-// Discover the available inference providers based on the user preferences
+// Discover the available tools based on the user preferences
 func Discover(cfg *config.Config) []Provider {
-	var inferences []Provider
+	var tools []Provider
 	for _, provider := range providers {
 		if provider.IsAvailable(cfg) {
-			inferences = append(inferences, provider)
+			tools = append(tools, provider)
 		}
 	}
-	return inferences
+	return tools
 }
