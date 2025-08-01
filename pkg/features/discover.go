@@ -16,6 +16,7 @@ type Features struct {
 
 func Discover(cfg *config.Config) (*Features, error) {
 	inferences := inference.Discover(cfg)
+	// TODO: Error should be at the chat or usage level
 	if len(inferences) == 0 {
 		return nil, fmt.Errorf("no suitable inference found")
 	}
