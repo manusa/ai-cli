@@ -52,7 +52,7 @@ func TestGetAvailableModels(t *testing.T) {
 	Register(myNonAvailableProvider)
 	Register(myAvailableProvider)
 	cfg := config.New()
-	discovered, err := getAvailableInferences(cfg)
+	discovered, err := GetAvailableInferences(cfg)
 	if err != nil {
 		t.Fatalf("failed to discover model: %v", err)
 	}

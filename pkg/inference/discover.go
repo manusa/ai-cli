@@ -36,7 +36,7 @@ func cleanup() {
 
 // Discover the best inference based on the user preferences
 func Discover(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
-	inferences, err := getAvailableInferences(cfg)
+	inferences, err := GetAvailableInferences(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get available inferences: %w", err)
 	}
@@ -61,7 +61,7 @@ func Discover(ctx context.Context, cfg *config.Config) (model.ToolCallingChatMod
 }
 
 // getAvailableInferences gets all available inferences from all providers
-func getAvailableInferences(cfg *config.Config) ([]InferenceAttributes, error) {
+func GetAvailableInferences(cfg *config.Config) ([]InferenceAttributes, error) {
 	inferences := []InferenceAttributes{}
 	for _, provider := range providers {
 		if provider.IsAvailable(cfg) {
