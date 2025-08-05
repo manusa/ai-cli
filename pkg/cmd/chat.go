@@ -1,9 +1,7 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
-	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/manusa/ai-cli/pkg/ai"
@@ -65,13 +63,6 @@ func (o *ChatCmdOptions) Validate() error {
 
 // Run executes the main logic of the command once its complete and validated
 func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
-	ctx, cancel := context.WithCancel(cmd.Context())
-	defer func() {
-		cancel()
-		// Give some time to kill subprocesses
-		// TODO Could be made more robust by waiting for a signal emitted after the subprocesses terminate
-		time.Sleep(1 * time.Second)
-	}()
 	cfg := config.New() // TODO, will need to infer or load from a file
 
 	if o.inference != "" {
@@ -85,20 +76,20 @@ func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
 	if availableFeatures.Inference == nil {
 		return fmt.Errorf("no suitable inference found")
 	}
-	llm, err := (*availableFeatures.Inference).GetInference(ctx, cfg)
+	llm, err := (*availableFeatures.Inference).GetInference(cmd.Context(), cfg)
 	if err != nil {
 		return fmt.Errorf("failed to get inference: %w", err)
 	}
 	var allTools []*api.Tool
 	for _, toolProvider := range availableFeatures.Tools {
-		tools, err := toolProvider.GetTools(ctx, cfg)
+		tools, err := toolProvider.GetTools(cmd.Context(), cfg)
 		if err != nil {
 			return fmt.Errorf("failed to get tools from provider %s: %w", toolProvider.Attributes().Name(), err)
 		}
 		allTools = append(allTools, tools...)
 	}
 	aiAgent := ai.New(llm, allTools, cfg)
-	if err = aiAgent.Run(ctx); err != nil {
+	if err = aiAgent.Run(cmd.Context()); err != nil {
 		return fmt.Errorf("failed to run AI: %w", err)
 	}
 	if o.dryRun {
@@ -114,7 +105,7 @@ func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
 	go func() {
 		for {
 			select {
-			case <-ctx.Done():
+			case <-cmd.Context().Done():
 				return
 			case msg, ok := <-aiAgent.Output:
 				if !ok {
