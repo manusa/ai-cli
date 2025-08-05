@@ -11,12 +11,8 @@ import (
 	m3lmcp "github.com/mark3labs/mcp-go/mcp"
 )
 
-func StartMcpClient(ctx context.Context) (*client.Client, error) {
-	cli, err := client.NewSSEMCPClient("http://localhost:8080/sse")
-	if err != nil {
-		return nil, err
-	}
-	err = cli.Start(ctx)
+func StartMcp(ctx context.Context, cmdAndArgs []string) (*client.Client, error) {
+	cli, err := client.NewStdioMCPClient(cmdAndArgs[0], []string{}, cmdAndArgs[1:]...)
 	if err != nil {
 		return nil, err
 	}
