@@ -92,7 +92,7 @@ func startKubernetesMcpServer(ctx context.Context) error {
 
 func getBestCommand() ([]string, error) {
 	if commandExists("npx") {
-		return []string{"npx", "kubernetes-mcp-server@latest"}, nil
+		return []string{"npx", "-y", "kubernetes-mcp-server@latest"}, nil
 	} else if commandExists("uvx") {
 		return []string{"uvx", "kubernetes-mcp-server@latest"}, nil
 	}
