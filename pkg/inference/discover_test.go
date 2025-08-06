@@ -13,7 +13,8 @@ import (
 
 type TestProvider struct {
 	Name      string
-	Distant   bool
+	Local     bool
+	Public    bool
 	Available bool
 }
 
@@ -22,7 +23,8 @@ func (t *TestProvider) Attributes() Attributes {
 		BasicFeatureAttributes: api.BasicFeatureAttributes{
 			FeatureName: t.Name,
 		},
-		Distant: t.Distant,
+		Local:  t.Local,
+		Public: t.Public,
 	}
 }
 
@@ -66,7 +68,7 @@ func TestRegister(t *testing.T) {
 	// Registering a provider should add it to the providers map
 	testCase(t, func(c *testContext) {
 		t.Run("Registering a provider adds it to the providers map", func(t *testing.T) {
-			Register(&TestProvider{Name: "testProvider", Distant: false, Available: true})
+			Register(&TestProvider{Name: "testProvider", Local: true, Public: false, Available: true})
 			assert.Contains(t, providers, "testProvider",
 				"expected provider %s to be registered in the providers %v", "testProvider", providers)
 		})
@@ -74,7 +76,7 @@ func TestRegister(t *testing.T) {
 	// Registering a provider with the same name should panic
 	testCase(t, func(c *testContext) {
 		t.Run("Registering a provider with the same name panics", func(t *testing.T) {
-			provider := &TestProvider{Name: "duplicateProvider", Distant: false, Available: true}
+			provider := &TestProvider{Name: "duplicateProvider", Local: true, Public: false, Available: true}
 			Register(provider)
 			assert.Panics(t, func() {
 				Register(provider)
@@ -93,8 +95,8 @@ func TestDiscover(t *testing.T) {
 	})
 	// With one available provider, it should return that provider
 	testCase(t, func(c *testContext) {
-		Register(&TestProvider{Name: "availableProvider", Distant: false, Available: true})
-		Register(&TestProvider{Name: "unavailableProvider", Distant: false, Available: false})
+		Register(&TestProvider{Name: "availableProvider", Local: true, Public: false, Available: true})
+		Register(&TestProvider{Name: "unavailableProvider", Local: true, Public: false, Available: false})
 		inferences := Discover(config.New())
 		t.Run("With one available provider returns that provider", func(t *testing.T) {
 			assert.Len(t, inferences, 1, "expected one available provider to be registered")
@@ -106,15 +108,15 @@ func TestDiscover(t *testing.T) {
 
 func TestDiscoverMarshalling(t *testing.T) {
 	testCase(t, func(c *testContext) {
-		Register(&TestProvider{Name: "provider-one", Distant: false, Available: true})
-		Register(&TestProvider{Name: "provider-two", Distant: false, Available: true})
+		Register(&TestProvider{Name: "provider-one", Local: true, Public: false, Available: true})
+		Register(&TestProvider{Name: "provider-two", Local: true, Public: false, Available: true})
 		inferences := Discover(config.New())
 		bytes, err := json.Marshal(inferences)
 		t.Run("Marshalling returns no error", func(t *testing.T) {
 			assert.Nil(t, err, "expected no error when marshalling inferences")
 		})
 		t.Run("Marshalling returns expected JSON", func(t *testing.T) {
-			assert.JSONEq(t, `[{"name":"provider-one","distant":false},{"name":"provider-two","distant":false}]`, string(bytes),
+			assert.JSONEq(t, `[{"local":true,"name":"provider-one","public":false},{"local":true,"name":"provider-two","public":false}]`, string(bytes),
 				"expected JSON to match the expected format")
 		})
 	})
