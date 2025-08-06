@@ -47,16 +47,20 @@ func Clear() {
 	providers = map[string]Provider{}
 }
 
-// Discover the available inference providers based on the user preferences
-func Discover(cfg *config.Config) []Provider {
-	var inferences []Provider
+// Discover the available and not available inference providers based on the user preferences
+func Discover(cfg *config.Config) (availableInferences []Provider, notAvailableInferences []Provider) {
 	for _, provider := range providers {
 		if provider.IsAvailable(cfg) {
-			inferences = append(inferences, provider)
+			availableInferences = append(availableInferences, provider)
+		} else {
+			notAvailableInferences = append(notAvailableInferences, provider)
 		}
 	}
-	slices.SortFunc(inferences, func(a, b Provider) int {
+	slices.SortFunc(availableInferences, func(a, b Provider) int {
 		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
 	})
-	return inferences
+	slices.SortFunc(notAvailableInferences, func(a, b Provider) int {
+		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
+	})
+	return availableInferences, notAvailableInferences
 }

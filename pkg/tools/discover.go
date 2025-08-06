@@ -36,15 +36,19 @@ func Clear() {
 }
 
 // Discover the available tools based on the user preferences
-func Discover(cfg *config.Config) []Provider {
-	var tools []Provider
+func Discover(cfg *config.Config) (availableTools []Provider, notAvailableTools []Provider) {
 	for _, provider := range providers {
 		if provider.IsAvailable(cfg) {
-			tools = append(tools, provider)
+			availableTools = append(availableTools, provider)
+		} else {
+			notAvailableTools = append(notAvailableTools, provider)
 		}
 	}
-	slices.SortFunc(tools, func(a, b Provider) int {
+	slices.SortFunc(availableTools, func(a, b Provider) int {
 		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
 	})
-	return tools
+	slices.SortFunc(notAvailableTools, func(a, b Provider) int {
+		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
+	})
+	return availableTools, notAvailableTools
 }

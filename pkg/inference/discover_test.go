@@ -89,19 +89,21 @@ func TestDiscover(t *testing.T) {
 	// With no providers registered, it should returns empty
 	testCase(t, func(c *testContext) {
 		t.Run("With no providers registered returns empty", func(t *testing.T) {
-			inferences := Discover(config.New())
-			assert.Empty(t, inferences, "expected no inferences to be returned when no providers are registered")
+			availableInferences, notAvailableInferences := Discover(config.New())
+			assert.Empty(t, availableInferences, "expected no inferences to be returned when no providers are registered")
+			assert.Empty(t, notAvailableInferences, "expected no not available inferences to be returned when no providers are registered")
 		})
 	})
 	// With one available provider, it should return that provider
 	testCase(t, func(c *testContext) {
 		Register(&TestProvider{Name: "availableProvider", Local: true, Public: false, Available: true})
 		Register(&TestProvider{Name: "unavailableProvider", Local: true, Public: false, Available: false})
-		inferences := Discover(config.New())
+		availableInferences, notAvailableInferences := Discover(config.New())
 		t.Run("With one available provider returns that provider", func(t *testing.T) {
-			assert.Len(t, inferences, 1, "expected one available provider to be registered")
-			assert.Equal(t, "availableProvider", inferences[0].Attributes().Name(),
+			assert.Len(t, availableInferences, 1, "expected one available provider to be registered")
+			assert.Equal(t, "availableProvider", availableInferences[0].Attributes().Name(),
 				"expected the available provider to be returned")
+			assert.Len(t, notAvailableInferences, 1, "expected one not available provider")
 		})
 	})
 }
@@ -110,14 +112,15 @@ func TestDiscoverMarshalling(t *testing.T) {
 	testCase(t, func(c *testContext) {
 		Register(&TestProvider{Name: "provider-one", Local: true, Public: false, Available: true})
 		Register(&TestProvider{Name: "provider-two", Local: true, Public: false, Available: true})
-		inferences := Discover(config.New())
-		bytes, err := json.Marshal(inferences)
+		availableInferences, notAvailableInferences := Discover(config.New())
+		bytes, err := json.Marshal(availableInferences)
 		t.Run("Marshalling returns no error", func(t *testing.T) {
-			assert.Nil(t, err, "expected no error when marshalling inferences")
+			assert.Nil(t, err, "expected no error when marshalling available inferences")
 		})
 		t.Run("Marshalling returns expected JSON", func(t *testing.T) {
 			assert.JSONEq(t, `[{"local":true,"name":"provider-one","public":false},{"local":true,"name":"provider-two","public":false}]`, string(bytes),
 				"expected JSON to match the expected format")
+			assert.Empty(t, notAvailableInferences, "expected no not available provider")
 		})
 	})
 }
