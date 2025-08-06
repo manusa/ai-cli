@@ -15,7 +15,6 @@ import (
 type ChatCmdOptions struct {
 	inference string
 	model     string
-	dryRun    bool
 }
 
 func NewChatCmdOptions() *ChatCmdOptions {
@@ -46,7 +45,6 @@ func NewChatCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&o.inference, "inference", "", "Inference server to use")
 	cmd.Flags().StringVar(&o.model, "model", "", "Model to use")
-	cmd.Flags().BoolVar(&o.dryRun, "dry-run", false, "Dry run")
 	return cmd
 }
 
@@ -91,9 +89,6 @@ func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
 	aiAgent := ai.New(llm, allTools, cfg)
 	if err = aiAgent.Run(cmd.Context()); err != nil {
 		return fmt.Errorf("failed to run AI: %w", err)
-	}
-	if o.dryRun {
-		return nil
 	}
 	p := tea.NewProgram(
 		ui.NewModel(aiAgent),
