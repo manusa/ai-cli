@@ -81,7 +81,9 @@ func (o *DiscoverCmdOptions) Run(_ *cobra.Command) error {
 			}
 			fmt.Printf("    Models:\n    - %s\n", strings.Join(models, "\n    - "))
 		}
-		_, _ = fmt.Printf("Selected Inference Provider: %s\n", discoveredFeatures.Inferences[0].Attributes().Name())
+		if discoveredFeatures.Inference != nil {
+			_, _ = fmt.Printf("Selected Inference Provider: %s\n", (*discoveredFeatures.Inference).Attributes().Name())
+		}
 		_, _ = fmt.Printf("Available Tools Providers:\n")
 		for _, provider := range discoveredFeatures.Tools {
 			fmt.Printf("  - %s\n", provider.Attributes().Name())
