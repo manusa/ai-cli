@@ -11,6 +11,7 @@ import (
 )
 
 type Provider struct {
+	tools.BasicToolsProvider
 }
 
 var _ tools.Provider = &Provider{}
@@ -24,7 +25,16 @@ func (p *Provider) Attributes() tools.Attributes {
 }
 
 func (p *Provider) IsAvailable(_ *config.Config) bool {
+	p.Reason = "filesystem is accessible"
 	return true
+}
+
+func (p *Provider) Data() tools.Data {
+	return tools.Data{
+		BasicFeatureData: api.BasicFeatureData{
+			Reason: p.Reason,
+		},
+	}
 }
 
 func (p *Provider) GetTools(_ context.Context, _ *config.Config) ([]*api.Tool, error) {
@@ -34,7 +44,10 @@ func (p *Provider) GetTools(_ context.Context, _ *config.Config) ([]*api.Tool, e
 }
 
 func (p *Provider) MarshalJSON() ([]byte, error) {
-	return json.Marshal(p.Attributes())
+	return json.Marshal(tools.Report{
+		Attributes: p.Attributes(),
+		Data:       p.Data(),
+	})
 }
 
 var FileList = &api.Tool{

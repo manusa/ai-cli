@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -75,10 +74,7 @@ func (o *DiscoverCmdOptions) Run(_ *cobra.Command) error {
 		_, _ = fmt.Printf("Available Inference Providers:\n")
 		for _, provider := range discoveredFeatures.Inferences {
 			fmt.Printf("  - %s\n", provider.Attributes().Name())
-			models, err := provider.GetModels(context.Background(), config.New())
-			if err != nil {
-				fmt.Printf("    (error getting models: %v)\n", err)
-			}
+			models := provider.Data().Models
 			fmt.Printf("    Models:\n    - %s\n", strings.Join(models, "\n    - "))
 		}
 		if discoveredFeatures.Inference != nil {

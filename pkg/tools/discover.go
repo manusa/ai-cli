@@ -12,12 +12,25 @@ import (
 
 var providers = map[string]Provider{}
 
+type BasicToolsProvider struct {
+	api.BasicFeatureProvider
+}
+
 type Attributes struct {
 	api.BasicFeatureAttributes
 }
 
+type Data struct {
+	api.BasicFeatureData
+}
+
+type Report struct {
+	Attributes
+	Data
+}
+
 type Provider interface {
-	api.Feature[Attributes]
+	api.Feature[Attributes, Data]
 	GetTools(ctx context.Context, cfg *config.Config) ([]*api.Tool, error)
 	MarshalJSON() ([]byte, error)
 }

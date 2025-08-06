@@ -13,16 +13,29 @@ import (
 
 var providers = map[string]Provider{}
 
+type BasicInferenceProvider struct {
+	api.BasicFeatureProvider
+	Models []string
+}
+
 type Attributes struct {
 	api.BasicFeatureAttributes
-	// TODO: maybe rename to local or remote
 	Local  bool `json:"local"`  // Indicates if the inference provider is a local service
 	Public bool `json:"public"` // Indicates if the inference provider is public (e.g. OpenAI, Gemini) or private (e.g. Enterprise internal)
 }
 
+type Data struct {
+	api.BasicFeatureData
+	Models []string `json:"models"`
+}
+
+type Report struct {
+	Attributes
+	Data
+}
+
 type Provider interface {
-	api.Feature[Attributes]
-	GetModels(ctx context.Context, cfg *config.Config) ([]string, error)
+	api.Feature[Attributes, Data]
 	GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error)
 	MarshalJSON() ([]byte, error)
 }

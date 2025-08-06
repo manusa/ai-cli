@@ -16,6 +16,7 @@ type TestProvider struct {
 	Local     bool
 	Public    bool
 	Available bool
+	Reason    string
 }
 
 func (t *TestProvider) Attributes() Attributes {
@@ -25,6 +26,15 @@ func (t *TestProvider) Attributes() Attributes {
 		},
 		Local:  t.Local,
 		Public: t.Public,
+	}
+}
+
+func (t *TestProvider) Data() Data {
+
+	return Data{
+		BasicFeatureData: api.BasicFeatureData{
+			Reason: t.Reason,
+		},
 	}
 }
 

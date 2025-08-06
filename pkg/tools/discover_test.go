@@ -3,9 +3,10 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"testing"
+
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/stretchr/testify/assert"
-	"testing"
 
 	"github.com/manusa/ai-cli/pkg/config"
 )
@@ -13,6 +14,7 @@ import (
 type TestProvider struct {
 	Name      string
 	Available bool
+	Reason    string
 	Tools     []*api.Tool
 }
 
@@ -20,6 +22,14 @@ func (t *TestProvider) Attributes() Attributes {
 	return Attributes{
 		BasicFeatureAttributes: api.BasicFeatureAttributes{
 			FeatureName: t.Name,
+		},
+	}
+}
+
+func (t *TestProvider) Data() Data {
+	return Data{
+		BasicFeatureData: api.BasicFeatureData{
+			Reason: t.Reason,
 		},
 	}
 }
