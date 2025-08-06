@@ -1,8 +1,9 @@
 package ollama
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestMarshalJSON(t *testing.T) {
@@ -12,6 +13,6 @@ func TestMarshalJSON(t *testing.T) {
 		assert.Nil(t, err)
 	})
 	t.Run("MarshalJSON returns expected JSON", func(t *testing.T) {
-		assert.JSONEq(t, `{"name":"ollama","distant":false}`, string(data))
+		assert.JSONEq(t, `{"local":true,"name":"ollama","public":false}`, string(data))
 	})
 }

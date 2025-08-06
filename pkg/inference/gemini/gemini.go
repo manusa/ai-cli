@@ -23,7 +23,8 @@ func (geminiProvider *Provider) Attributes() inference.Attributes {
 		BasicFeatureAttributes: api.BasicFeatureAttributes{
 			FeatureName: "gemini",
 		},
-		Distant: true,
+		Local:  false,
+		Public: true,
 	}
 }
 

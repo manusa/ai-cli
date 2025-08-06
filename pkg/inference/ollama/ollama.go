@@ -32,7 +32,8 @@ func (ollamaProvider *Provider) Attributes() inference.Attributes {
 		BasicFeatureAttributes: api.BasicFeatureAttributes{
 			FeatureName: "ollama",
 		},
-		Distant: false,
+		Local:  true,
+		Public: false,
 	}
 }
 
