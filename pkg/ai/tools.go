@@ -3,6 +3,7 @@ package ai
 import (
 	"context"
 	"encoding/json"
+
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/schema"
 	"github.com/manusa/ai-cli/pkg/api"
@@ -39,18 +40,25 @@ func toType(t api.ToolParameterType) schema.DataType {
 }
 
 func toInvokableTool(t *api.Tool) *invokableTool {
-	params := make(map[string]*schema.ParameterInfo, len(t.Parameters))
-	for parameterKey, parameter := range t.Parameters {
-		params[parameterKey] = &schema.ParameterInfo{
-			Type:     toType(parameter.Type),
-			Desc:     parameter.Description,
-			Required: parameter.Required,
+	var parameters *schema.ParamsOneOf
+	if t.ParametersSchema != nil {
+		parameters = schema.NewParamsOneOfByOpenAPIV3(t.ParametersSchema)
+	} else {
+		params := make(map[string]*schema.ParameterInfo, len(t.Parameters))
+		for parameterKey, parameter := range t.Parameters {
+			params[parameterKey] = &schema.ParameterInfo{
+				Type:     toType(parameter.Type),
+				Desc:     parameter.Description,
+				Required: parameter.Required,
+			}
 		}
+		parameters = schema.NewParamsOneOfByParams(params)
 	}
+
 	toolInfo := &schema.ToolInfo{
 		Name:        t.Name,
 		Desc:        t.Description,
-		ParamsOneOf: schema.NewParamsOneOfByParams(params),
+		ParamsOneOf: parameters,
 	}
 	return &invokableTool{function: t.Function, toolInfo: toolInfo}
 }
