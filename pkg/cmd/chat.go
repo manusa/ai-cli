@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"slices"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -49,7 +50,15 @@ func NewChatCmd() *cobra.Command {
 	cmd.Flags().StringVar(&o.inference, "inference", "", "Inference server to use")
 	cmd.Flags().StringVar(&o.model, "model", "", "Model to use")
 	cmd.Flags().StringSliceVar(&o.tools, "tools", []string{}, "Comma separated list of tools to use, by default all discovered tools will be used")
+	err := cmd.Flags().MarkHidden("tools")
+	if err != nil {
+		log.Fatalln("tools flag is not defined")
+	}
 	cmd.Flags().BoolVar(&o.notools, "notools", false, "Do not use tools")
+	err = cmd.Flags().MarkHidden("notools")
+	if err != nil {
+		log.Fatalln("notools flag is not defined")
+	}
 	return cmd
 }
 
