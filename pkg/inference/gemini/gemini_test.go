@@ -13,6 +13,6 @@ func TestMarshalJSON(t *testing.T) {
 		assert.Nil(t, err)
 	})
 	t.Run("MarshalJSON returns expected JSON", func(t *testing.T) {
-		assert.JSONEq(t, `{"local":false,"name":"gemini","public":true}`, string(data))
+		assert.JSONEq(t, `{"local":false,"models":null,"name":"gemini","public":true,"reason":""}`, string(data))
 	})
 }

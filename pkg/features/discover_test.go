@@ -43,12 +43,21 @@ func testCaseWithContext(t *testing.T, ctx *testContext, test func(c *testContex
 type InferenceProvider struct {
 	Name      string
 	Available bool
+	Reason    string
 }
 
 func (t *InferenceProvider) Attributes() inference.Attributes {
 	return inference.Attributes{
 		BasicFeatureAttributes: api.BasicFeatureAttributes{
 			FeatureName: t.Name,
+		},
+	}
+}
+
+func (t *InferenceProvider) Data() inference.Data {
+	return inference.Data{
+		BasicFeatureData: api.BasicFeatureData{
+			Reason: t.Reason,
 		},
 	}
 }
@@ -151,7 +160,7 @@ func TestDiscoverMarshal(t *testing.T) {
 			assert.Nil(t, err, "expected no error when marshalling inferences")
 		})
 		t.Run("Marshalling returns expected JSON", func(t *testing.T) {
-			assert.JSONEq(t, `{"inference":{"local":false,"name":"gemini","public":true},"inferences":[{"local":false,"name":"gemini","public":true}],"tools":[{"name":"fs"}]}`,
+			assert.JSONEq(t, `{"inference":{"local":false,"models":["gemini-2.0-flash"],"name":"gemini","public":true,"reason":"GEMINI_API_KEY is set"},"inferences":[{"local":false,"models":["gemini-2.0-flash"],"name":"gemini","public":true,"reason":"GEMINI_API_KEY is set"}],"inferencesNotAvailable":[{"local":true,"models":null,"name":"ollama","public":false,"reason":"http://localhost:11434 is not accessible"}],"tools":[{"name":"fs","reason":"filesystem is accessible"}],"toolsNotAvailable":null}`,
 				string(bytes),
 				"expected JSON to match the expected format")
 		})

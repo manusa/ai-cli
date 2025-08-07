@@ -16,6 +16,7 @@ import (
 )
 
 type Provider struct {
+	tools.BasicToolsProvider
 }
 
 var _ tools.Provider = &Provider{}
@@ -35,6 +36,14 @@ func (p *Provider) Attributes() tools.Attributes {
 	return tools.Attributes{
 		BasicFeatureAttributes: api.BasicFeatureAttributes{
 			FeatureName: "kubernetes",
+		},
+	}
+}
+
+func (p *Provider) Data() tools.Data {
+	return tools.Data{
+		BasicFeatureData: api.BasicFeatureData{
+			Reason: p.Reason,
 		},
 	}
 }
@@ -117,8 +126,18 @@ func (p *Provider) IsAvailable(_ *config.Config) bool {
 	// return true if any of the files exist
 	for _, file := range allFiles {
 		if _, err := os.Stat(file); err == nil {
+			if len(envVarFiles) == 0 {
+				p.Reason = "default kubeconfig file found"
+			} else {
+				p.Reason = "kubeconfig file found in the locations specified by the KUBECONFIG environment variable"
+			}
 			return true
 		}
+	}
+	if len(envVarFiles) == 0 {
+		p.Reason = "no kubeconfig file found in the default location"
+	} else {
+		p.Reason = "no kubeconfig file found in the locations specified by the KUBECONFIG environment variable"
 	}
 	return false
 }
@@ -136,7 +155,10 @@ func (p *Provider) GetTools(ctx context.Context, _ *config.Config) ([]*api.Tool,
 }
 
 func (p *Provider) MarshalJSON() ([]byte, error) {
-	return json.Marshal(p.Attributes())
+	return json.Marshal(tools.Report{
+		Attributes: p.Attributes(),
+		Data:       p.Data(),
+	})
 }
 
 func getBestMcpServerCommand() ([]string, error) {

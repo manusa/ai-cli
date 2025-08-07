@@ -13,16 +13,29 @@ import (
 
 var providers = map[string]Provider{}
 
+type BasicInferenceProvider struct {
+	api.BasicFeatureProvider
+	Models []string
+}
+
 type Attributes struct {
 	api.BasicFeatureAttributes
-	// TODO: maybe rename to local or remote
 	Local  bool `json:"local"`  // Indicates if the inference provider is a local service
 	Public bool `json:"public"` // Indicates if the inference provider is public (e.g. OpenAI, Gemini) or private (e.g. Enterprise internal)
 }
 
+type Data struct {
+	api.BasicFeatureData
+	Models []string `json:"models"`
+}
+
+type Report struct {
+	Attributes
+	Data
+}
+
 type Provider interface {
-	api.Feature[Attributes]
-	GetModels(ctx context.Context, cfg *config.Config) ([]string, error)
+	api.Feature[Attributes, Data]
 	GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error)
 	MarshalJSON() ([]byte, error)
 }
@@ -47,16 +60,20 @@ func Clear() {
 	providers = map[string]Provider{}
 }
 
-// Discover the available inference providers based on the user preferences
-func Discover(cfg *config.Config) []Provider {
-	var inferences []Provider
+// Discover the available and not available inference providers based on the user preferences
+func Discover(cfg *config.Config) (availableInferences []Provider, notAvailableInferences []Provider) {
 	for _, provider := range providers {
 		if provider.IsAvailable(cfg) {
-			inferences = append(inferences, provider)
+			availableInferences = append(availableInferences, provider)
+		} else {
+			notAvailableInferences = append(notAvailableInferences, provider)
 		}
 	}
-	slices.SortFunc(inferences, func(a, b Provider) int {
+	slices.SortFunc(availableInferences, func(a, b Provider) int {
 		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
 	})
-	return inferences
+	slices.SortFunc(notAvailableInferences, func(a, b Provider) int {
+		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
+	})
+	return availableInferences, notAvailableInferences
 }

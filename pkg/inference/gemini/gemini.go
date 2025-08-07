@@ -14,6 +14,7 @@ import (
 )
 
 type Provider struct {
+	inference.BasicInferenceProvider
 }
 
 var _ inference.Provider = &Provider{}
@@ -28,12 +29,24 @@ func (geminiProvider *Provider) Attributes() inference.Attributes {
 	}
 }
 
-func (geminiProvider *Provider) IsAvailable(cfg *config.Config) bool {
-	return cfg.GoogleApiKey != ""
+func (geminiProvider *Provider) Data() inference.Data {
+	return inference.Data{
+		BasicFeatureData: api.BasicFeatureData{
+			Reason: geminiProvider.Reason,
+		},
+		Models: geminiProvider.Models,
+	}
 }
 
-func (geminiProvider *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, error) {
-	return []string{"gemini-2.0-flash"}, nil
+func (geminiProvider *Provider) IsAvailable(cfg *config.Config) bool {
+	available := cfg.GoogleApiKey != ""
+	if available {
+		geminiProvider.Reason = "GEMINI_API_KEY is set"
+		geminiProvider.Models = []string{"gemini-2.0-flash"}
+	} else {
+		geminiProvider.Reason = "GEMINI_API_KEY is not set"
+	}
+	return available
 }
 
 func (geminiProvider *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
@@ -47,7 +60,10 @@ func (geminiProvider *Provider) GetInference(ctx context.Context, cfg *config.Co
 }
 
 func (geminiProvider *Provider) MarshalJSON() ([]byte, error) {
-	return json.Marshal(geminiProvider.Attributes())
+	return json.Marshal(inference.Report{
+		Attributes: geminiProvider.Attributes(),
+		Data:       geminiProvider.Data(),
+	})
 }
 
 var instance = &Provider{}
