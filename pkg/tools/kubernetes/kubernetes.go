@@ -30,6 +30,16 @@ const (
 var (
 	RecommendedConfigDir = filepath.Join(homedir(), RecommendedHomeDir)
 	RecommendedHomeFile  = filepath.Join(RecommendedConfigDir, RecommendedFileName)
+	mcpCommands          = []tools.McpCommand{
+		{
+			Cmd:  "npx",
+			Args: []string{"-y", "kubernetes-mcp-server@latest"},
+		},
+		{
+			Cmd:  "uvx",
+			Args: []string{"kubernetes-mcp-server@latest"},
+		},
+	}
 )
 
 func (p *Provider) Attributes() tools.Attributes {
@@ -37,6 +47,7 @@ func (p *Provider) Attributes() tools.Attributes {
 		BasicFeatureAttributes: api.BasicFeatureAttributes{
 			FeatureName: "kubernetes",
 		},
+		McpCommands: mcpCommands,
 	}
 }
 
@@ -162,10 +173,10 @@ func (p *Provider) MarshalJSON() ([]byte, error) {
 }
 
 func getBestMcpServerCommand() ([]string, error) {
-	if commandExists("npx") {
-		return []string{"npx", "-y", "kubernetes-mcp-server@latest"}, nil
-	} else if commandExists("uvx") {
-		return []string{"uvx", "kubernetes-mcp-server@latest"}, nil
+	for _, command := range mcpCommands {
+		if commandExists(command.Cmd) {
+			return append([]string{command.Cmd}, command.Args...), nil
+		}
 	}
 	// TODO support manual download and installation of kubernetes-mcp-server as a last resort
 	return nil, errors.New("no command found to start the Kubernetes MCP server")
