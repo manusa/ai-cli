@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+	"slices"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/manusa/ai-cli/pkg/ai"
@@ -15,6 +17,8 @@ import (
 type ChatCmdOptions struct {
 	inference string
 	model     string
+	tools     []string
+	notools   bool
 }
 
 func NewChatCmdOptions() *ChatCmdOptions {
@@ -45,6 +49,16 @@ func NewChatCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&o.inference, "inference", "", "Inference server to use")
 	cmd.Flags().StringVar(&o.model, "model", "", "Model to use")
+	cmd.Flags().StringSliceVar(&o.tools, "tools", []string{}, "Comma separated list of tools to use, by default all discovered tools will be used")
+	err := cmd.Flags().MarkHidden("tools")
+	if err != nil {
+		log.Fatalln("tools flag is not defined")
+	}
+	cmd.Flags().BoolVar(&o.notools, "notools", false, "Do not use tools")
+	err = cmd.Flags().MarkHidden("notools")
+	if err != nil {
+		log.Fatalln("notools flag is not defined")
+	}
 	return cmd
 }
 
@@ -61,6 +75,7 @@ func (o *ChatCmdOptions) Validate() error {
 
 // Run executes the main logic of the command once its complete and validated
 func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
+	fmt.Printf("tools: %d %v\n", len(o.tools), o.tools)
 	cfg := config.New() // TODO, will need to infer or load from a file
 
 	if o.inference != "" {
@@ -80,11 +95,15 @@ func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
 	}
 	var allTools []*api.Tool
 	for _, toolProvider := range availableFeatures.Tools {
+		if !useTool(toolProvider.Attributes().Name(), o.notools, o.tools) {
+			continue
+		}
 		tools, err := toolProvider.GetTools(cmd.Context(), cfg)
 		if err != nil {
 			return fmt.Errorf("failed to get tools from provider %s: %w", toolProvider.Attributes().Name(), err)
 		}
 		allTools = append(allTools, tools...)
+		fmt.Printf("using tool: %s\n", toolProvider.Attributes().Name())
 	}
 	aiAgent := ai.New(llm, allTools, cfg)
 	if err = aiAgent.Run(cmd.Context()); err != nil {
@@ -115,4 +134,14 @@ func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
 		return fmt.Errorf("failed to run program: %w", err)
 	}
 	return nil
+}
+
+func useTool(toolName string, notools bool, toolsToUse []string) bool {
+	if notools {
+		return false
+	}
+	if len(toolsToUse) == 0 {
+		return true
+	}
+	return slices.Contains(toolsToUse, toolName)
 }
