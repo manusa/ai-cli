@@ -85,7 +85,7 @@ func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
 		cfg.Model = &o.model
 	}
 
-	availableFeatures := features.Discover(cfg)
+	availableFeatures := features.Discover(cmd.Context(), cfg)
 	if availableFeatures.Inference == nil {
 		return fmt.Errorf("no suitable inference found")
 	}

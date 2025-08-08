@@ -1,6 +1,9 @@
 package features
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference"
 	"github.com/manusa/ai-cli/pkg/tools"
@@ -14,7 +17,7 @@ type Features struct {
 	ToolsNotAvailable      []tools.Provider     `json:"toolsNotAvailable"`      // List of not available tools
 }
 
-func Discover(cfg *config.Config) *Features {
+func Discover(ctx context.Context, cfg *config.Config) *Features {
 	availableInferences, notAvailableInferences := inference.Discover(cfg)
 
 	var selectedInference *inference.Provider
@@ -31,6 +34,15 @@ func Discover(cfg *config.Config) *Features {
 		selectedInference = &availableInferences[0]
 	}
 	availableTools, notAvailableTools := tools.Discover(cfg)
+
+	if selectedInference != nil {
+		avail, notAvail, err := discoverWithModel(ctx, cfg, *selectedInference, availableTools)
+		if err == nil {
+			availableTools = append(availableTools, avail...)
+			notAvailableTools = append(notAvailableTools, notAvail...)
+		}
+	}
+
 	return &Features{
 		Inferences:             availableInferences,
 		InferencesNotAvailable: notAvailableInferences,
@@ -38,4 +50,14 @@ func Discover(cfg *config.Config) *Features {
 		Tools:                  availableTools,
 		ToolsNotAvailable:      notAvailableTools,
 	}
+}
+
+func discoverWithModel(ctx context.Context, cfg *config.Config, inference inference.Provider, discoveredTools []tools.Provider) (availableTools []tools.Provider, notAvailableTools []tools.Provider, err error) {
+	llm, err := inference.GetInference(ctx, cfg)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get inference: %w", err)
+	}
+
+	availableTools, notAvailableTools = tools.DiscoverWithModel(ctx, cfg, llm, discoveredTools)
+	return
 }
