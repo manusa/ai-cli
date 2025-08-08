@@ -27,3 +27,8 @@ func (b BasicFeatureAttributes) Name() string {
 type BasicFeatureData struct {
 	Reason string `json:"reason"`
 }
+
+type ModelAttributes struct {
+	NeededTools []string
+	Prompt      string
+}

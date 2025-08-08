@@ -60,8 +60,8 @@ func (o *DiscoverCmdOptions) Validate() error {
 }
 
 // Run executes the main logic of the command once its complete and validated
-func (o *DiscoverCmdOptions) Run(_ *cobra.Command) error {
-	discoveredFeatures := features.Discover(config.New())
+func (o *DiscoverCmdOptions) Run(cmd *cobra.Command) error {
+	discoveredFeatures := features.Discover(cmd.Context(), config.New())
 	// TODO: maybe create an output package to handle different output formats globally
 	switch o.outputFormat {
 	case "json":

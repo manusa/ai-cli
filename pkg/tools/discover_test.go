@@ -44,6 +44,10 @@ func (t *TestProvider) GetTools(_ context.Context, _ *config.Config) ([]*api.Too
 
 func (t *TestProvider) MarshalJSON() ([]byte, error) { return json.Marshal(t.Attributes()) }
 
+func (t *TestProvider) SetReason(reason string) {
+	t.Reason = reason
+}
+
 type testContext struct {
 }
 

@@ -40,6 +40,7 @@ func (p *Provider) Data() tools.Data {
 func (p *Provider) GetTools(_ context.Context, _ *config.Config) ([]*api.Tool, error) {
 	return []*api.Tool{
 		FileList,
+		HomeDirectory,
 	}, nil
 }
 
@@ -88,6 +89,16 @@ var FileList = &api.Tool{
 			return "", err
 		}
 		return string(fileNamesJSON), nil
+	},
+}
+
+var HomeDirectory = &api.Tool{
+	Name: "home_directory",
+	Description: "Get the home directory of the user." +
+		"Returns the absolute path of the directory.",
+	Parameters: map[string]api.ToolParameter{},
+	Function: func(args map[string]interface{}) (string, error) {
+		return os.UserHomeDir()
 	},
 }
 
