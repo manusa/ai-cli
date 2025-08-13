@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/cloudwego/eino/components/model"
@@ -18,16 +19,25 @@ import (
 )
 
 type testContext struct {
+	originalEnv []string
 }
 
 func (c *testContext) beforeEach(t *testing.T) {
 	t.Helper()
+	c.originalEnv = os.Environ()
+	os.Clearenv()
 	inference.Clear()
 	tools.Clear()
 }
 
 func (c *testContext) afterEach(t *testing.T) {
 	t.Helper()
+	os.Clearenv()
+	for _, env := range c.originalEnv {
+		if key, value, found := strings.Cut(env, "="); found {
+			_ = os.Setenv(key, value)
+		}
+	}
 }
 
 func testCase(t *testing.T, test func(c *testContext)) {
