@@ -1,6 +1,13 @@
 package config
 
-import "os"
+import (
+	"os"
+
+	"github.com/spf13/afero"
+)
+
+// FileSystem TODO: Properly inject the file system in the future (see _discover/registration)
+var FileSystem afero.Fs = afero.NewOsFs()
 
 type Config struct {
 	GoogleApiKey string  // TODO: will likely be removed

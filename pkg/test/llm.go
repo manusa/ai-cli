@@ -2,6 +2,7 @@ package test
 
 import (
 	"context"
+
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/schema"
 )
