@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
@@ -30,6 +31,18 @@ const (
 var (
 	RecommendedConfigDir = filepath.Join(homedir(), RecommendedHomeDir)
 	RecommendedHomeFile  = filepath.Join(RecommendedConfigDir, RecommendedFileName)
+	supportedMcpSettings = map[string]api.McpSettings{
+		"uvx": {
+			Type:    api.McpTypeStdio,
+			Command: "uvx", // TODO: Note that this is platform dependent (on windows this is uvx.exe)
+			Args:    []string{"kubernetes-mcp-server@latest"},
+		},
+		"npx": {
+			Type:    api.McpTypeStdio,
+			Command: "npx",
+			Args:    []string{"-y", "kubernetes-mcp-server@latest"}, // TODO: Note that this is platform dependent (on windows this is uvx.exe)
+		},
+	}
 )
 
 func (p *Provider) Attributes() tools.Attributes {
@@ -41,11 +54,16 @@ func (p *Provider) Attributes() tools.Attributes {
 }
 
 func (p *Provider) Data() tools.Data {
-	return tools.Data{
+	data := tools.Data{
 		BasicFeatureData: api.BasicFeatureData{
 			Reason: p.Reason,
 		},
 	}
+	settings, err := findBestMcpServerSettings()
+	if err == nil {
+		data.McpSettings = settings
+	}
+	return data
 }
 
 // copied from https://github.com/kubernetes/client-go/blob/d99dd130a2fc7519c0bc2bd7271447b2a16c04a2/util/homedir/homedir.go#L31
@@ -143,11 +161,12 @@ func (p *Provider) IsAvailable(_ *config.Config) bool {
 }
 
 func (p *Provider) GetTools(ctx context.Context, _ *config.Config) ([]*api.Tool, error) {
-	commandAndArgs, err := getBestMcpServerCommand()
-	if err != nil {
+	mcpSettings, err := findBestMcpServerSettings()
+	if err != nil || mcpSettings.Type != api.McpTypeStdio {
 		return nil, err
 	}
-	cli, err := eino.StartMcp(ctx, commandAndArgs)
+
+	cli, err := eino.StartMcp(ctx, slices.Concat([]string{mcpSettings.Command}, mcpSettings.Args))
 	if err != nil {
 		return nil, err
 	}
@@ -161,14 +180,14 @@ func (p *Provider) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func getBestMcpServerCommand() ([]string, error) {
-	if commandExists("npx") {
-		return []string{"npx", "-y", "kubernetes-mcp-server@latest"}, nil
-	} else if commandExists("uvx") {
-		return []string{"uvx", "kubernetes-mcp-server@latest"}, nil
+func findBestMcpServerSettings() (*api.McpSettings, error) {
+	for command, settings := range supportedMcpSettings {
+		if commandExists(command) {
+			return &settings, nil
+		}
 	}
 	// TODO support manual download and installation of kubernetes-mcp-server as a last resort
-	return nil, errors.New("no command found to start the Kubernetes MCP server")
+	return nil, errors.New("no suitable MCP settings found for the Kubernetes MCP server")
 }
 
 func commandExists(command string) bool {
