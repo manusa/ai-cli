@@ -3,7 +3,6 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/features"
@@ -71,19 +70,7 @@ func (o *DiscoverCmdOptions) Run(_ *cobra.Command) error {
 		}
 		_, _ = fmt.Printf("%s\n", bytes)
 	case "text":
-		_, _ = fmt.Printf("Available Inference Providers:\n")
-		for _, provider := range discoveredFeatures.Inferences {
-			fmt.Printf("  - %s\n", provider.Attributes().Name())
-			models := provider.Data().Models
-			fmt.Printf("    Models:\n    - %s\n", strings.Join(models, "\n    - "))
-		}
-		if discoveredFeatures.Inference != nil {
-			_, _ = fmt.Printf("Selected Inference Provider: %s\n", (*discoveredFeatures.Inference).Attributes().Name())
-		}
-		_, _ = fmt.Printf("Available Tools Providers:\n")
-		for _, provider := range discoveredFeatures.Tools {
-			fmt.Printf("  - %s\n", provider.Attributes().Name())
-		}
+		_, _ = fmt.Print(discoveredFeatures.ToHumanReadable())
 	}
 	return nil
 }

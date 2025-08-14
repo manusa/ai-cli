@@ -64,7 +64,7 @@ func homedir() string {
 			if len(p) == 0 {
 				continue
 			}
-			if _, err := os.Stat(filepath.Join(p, ".kube", "config")); err != nil {
+			if _, err := config.FileSystem.Stat(filepath.Join(p, ".kube", "config")); err != nil {
 				continue
 			}
 			return p
@@ -82,7 +82,7 @@ func homedir() string {
 				// remember the first path that is set
 				firstSetPath = p
 			}
-			info, err := os.Stat(p)
+			info, err := config.FileSystem.Stat(p)
 			if err != nil {
 				continue
 			}
@@ -125,7 +125,7 @@ func (p *Provider) IsAvailable(_ *config.Config) bool {
 
 	// return true if any of the files exist
 	for _, file := range allFiles {
-		if _, err := os.Stat(file); err == nil {
+		if _, err := config.FileSystem.Stat(file); err == nil {
 			if len(envVarFiles) == 0 {
 				p.Reason = "default kubeconfig file found"
 			} else {
