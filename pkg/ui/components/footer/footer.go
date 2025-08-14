@@ -1,26 +1,21 @@
 package footer
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/manusa/ai-cli/pkg/ui/context"
 	"strings"
+
+	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/manusa/ai-cli/pkg/ui/context"
 )
 
 type Model struct {
 	ctx *context.ModelContext
 }
 
+var _ tea.ViewModel = &Model{}
+
 func NewModel(ctx *context.ModelContext) Model {
 	return Model{ctx: ctx}
-}
-
-func (m Model) Init() tea.Cmd {
-	return nil
-}
-
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	return m, nil
 }
 
 func (m Model) View() string {
