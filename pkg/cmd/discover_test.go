@@ -36,10 +36,11 @@ func (s *DiscoverTestSuite) TearDownTest() {
 func (s *DiscoverTestSuite) TestOutputText() {
 	s.rootCmd.SetArgs([]string{"discover", "--output", "text"})
 	output, err := captureOutput(s.rootCmd.Execute)
-	if !s.NoErrorf(err, "Error executing command: %v", err) {
-		return
-	}
-	s.Run("Returns human-readable text output", func() {
+	s.Run("Returns no error", func() {
+		s.NotEmpty(output, "Expected non-empty output")
+		s.NoErrorf(err, "Error executing command: %v", err)
+	})
+	s.Run("Outputs human-readable text", func() {
 		expectedOutput := "Available Inference Providers:\n" +
 			"Not Available Inference Providers:\n" +
 			"  - gemini\n" +
@@ -53,6 +54,26 @@ func (s *DiscoverTestSuite) TestOutputText() {
 			"  - kubernetes\n" +
 			"    Reason: no kubeconfig file found in the default location\n"
 		s.Equal(expectedOutput, output, "Expected output does not match")
+	})
+}
+
+func (s *DiscoverTestSuite) TestOutputJson() {
+	s.rootCmd.SetArgs([]string{"discover", "--output", "json"})
+	output, err := captureOutput(s.rootCmd.Execute)
+	s.Run("Returns no error", func() {
+		s.NotEmpty(output, "Expected non-empty output")
+		s.NoErrorf(err, "Error executing command: %v", err)
+	})
+	s.Run("Outputs valid JSON", func() {
+		expectedOutput := "{" +
+			`"inferences":[],` +
+			`"inferencesNotAvailable":[` +
+			`{"name":"gemini","local":false,"public":true,"reason":"GEMINI_API_KEY is not set","models":null},` +
+			`{"name":"ollama","local":true,"public":false,"reason":"http://localhost:11434 is not accessible","models":null}],` +
+			`"inference":null,` +
+			`"tools":[{"name":"fs","reason":"filesystem is accessible"}],` +
+			`"toolsNotAvailable":[{"name":"kubernetes","reason":"no kubeconfig file found in the default location"}]}`
+		s.JSONEq(expectedOutput, output, "Expected JSON output does not match")
 	})
 }
 

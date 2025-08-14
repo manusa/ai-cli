@@ -117,20 +117,3 @@ func TestDiscover(t *testing.T) {
 		})
 	})
 }
-
-func TestDiscoverMarshalling(t *testing.T) {
-	testCase(t, func(c *testContext) {
-		Register(&TestProvider{Name: "provider-one", Local: true, Public: false, Available: true})
-		Register(&TestProvider{Name: "provider-two", Local: true, Public: false, Available: true})
-		availableInferences, notAvailableInferences := Discover(config.New())
-		bytes, err := json.Marshal(availableInferences)
-		t.Run("Marshalling returns no error", func(t *testing.T) {
-			assert.Nil(t, err, "expected no error when marshalling available inferences")
-		})
-		t.Run("Marshalling returns expected JSON", func(t *testing.T) {
-			assert.JSONEq(t, `[{"local":true,"name":"provider-one","public":false},{"local":true,"name":"provider-two","public":false}]`, string(bytes),
-				"expected JSON to match the expected format")
-			assert.Empty(t, notAvailableInferences, "expected no not available provider")
-		})
-	})
-}

@@ -15,7 +15,7 @@ var providers = map[string]Provider{}
 
 type BasicInferenceProvider struct {
 	api.BasicFeatureProvider
-	Models []string
+	Models []string `json:"models"` // List of models supported by the inference provider
 }
 
 type Attributes struct {
@@ -62,6 +62,7 @@ func Clear() {
 
 // Discover the available and not available inference providers based on the user preferences
 func Discover(cfg *config.Config) (availableInferences []Provider, notAvailableInferences []Provider) {
+	availableInferences, notAvailableInferences = []Provider{}, []Provider{}
 	for _, provider := range providers {
 		if provider.IsAvailable(cfg) {
 			availableInferences = append(availableInferences, provider)
