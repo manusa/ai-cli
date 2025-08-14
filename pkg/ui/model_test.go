@@ -1,12 +1,13 @@
 package ui
 
 import (
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/exp/teatest"
+	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/x/exp/teatest/v2"
 	"github.com/manusa/ai-cli/pkg/ai"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
@@ -70,19 +71,19 @@ func TestExit(t *testing.T) {
 	testCase(t, func(c *testContext) {
 		t.Run("Exit with /quit", func(t *testing.T) {
 			c.tm.Type("/quit")
-			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+			c.tm.Send(tea.KeyPressMsg{Code: tea.KeyEnter})
 
 			c.tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
 		})
 	})
-	cases := []struct{ key tea.KeyType }{
-		{key: tea.KeyCtrlC},
-		{key: tea.KeyEsc},
+	cases := []struct{ key tea.KeyPressMsg }{
+		{key: tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl}},
+		{key: tea.KeyPressMsg{Code: tea.KeyEsc}},
 	}
 	for _, tc := range cases {
 		testCase(t, func(c *testContext) {
 			t.Run("Exit with "+tc.key.String(), func(t *testing.T) {
-				c.tm.Send(tea.KeyMsg{Type: tc.key})
+				c.tm.Send(tc.key)
 
 				c.tm.WaitFinished(t, teatest.WithFinalTimeout(time.Second))
 			})
@@ -93,12 +94,12 @@ func TestExit(t *testing.T) {
 func TestClear(t *testing.T) {
 	testCase(t, func(c *testContext) {
 		c.tm.Type("Hello AItana")
-		c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+		c.tm.Send(tea.KeyPressMsg{Code: tea.KeyEnter})
 		teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 			return strings.Contains(string(b), "👤 ")
 		})
 		c.tm.Type("/clear")
-		c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+		c.tm.Send(tea.KeyPressMsg{Code: tea.KeyEnter})
 
 		t.Run("resets viewport", func(t *testing.T) {
 			// Set a term size to force viewport rendering
@@ -108,9 +109,10 @@ func TestClear(t *testing.T) {
 			})
 		})
 		t.Run("resets composer", func(t *testing.T) {
-			c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
+			// Set a term size to force viewport rendering
+			c.tm.Send(tea.WindowSizeMsg{Width: 78, Height: 24})
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
-				return strings.Contains(string(b), "How can I help you today?")
+				return strings.Contains(StripAnsi(b), "How can I help you today?")
 			})
 		})
 	})
@@ -145,9 +147,9 @@ func TestTerminalSizeWarning(t *testing.T) {
 func TestViewport(t *testing.T) {
 	testCase(t, func(c *testContext) {
 		t.Run("Viewport shows welcome message", func(t *testing.T) {
-			// Set a term size to force viewport rendering
-			c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				// Set a term size to force viewport rendering
+				c.tm.Send(tea.WindowSizeMsg{Width: 78, Height: 24})
 				return strings.Contains(string(b), "Welcome to the AI CLI!")
 			})
 		})
@@ -158,7 +160,7 @@ func TestViewport(t *testing.T) {
 		teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 			return strings.Contains(string(b), "│20                        │") // clear buffer
 		})
-		c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+		c.tm.Send(tea.KeyPressMsg{Code: tea.KeyEnter})
 		t.Run("AI notification scrolls viewport to bottom", func(t *testing.T) {
 			expectedViewport := "" +
 				"    18                        \r\n" +
@@ -172,7 +174,7 @@ func TestViewport(t *testing.T) {
 			})
 		})
 		t.Run("PgUp scrolls viewport one page up", func(t *testing.T) {
-			c.tm.Send(tea.KeyMsg{Type: tea.KeyPgUp})
+			c.tm.Send(tea.KeyPressMsg{Code: tea.KeyPgUp})
 
 			expectedViewport := "" +
 				" 👤 1                         \r\n" +
@@ -192,34 +194,32 @@ func TestComposer(t *testing.T) {
 		t.Run("Composer shows placeholder text", func(t *testing.T) {
 			c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
-				return strings.Contains(string(b), "How can I help you today?")
+				return strings.Contains(StripAnsi(b), "How can I help you today?")
 			})
 		})
 		t.Run("Composer has rounded borders", func(t *testing.T) {
 			c.tm.Send(tea.WindowSizeMsg{Width: 30, Height: 24})
 			expectedTextArea := "" +
-				" ╭──────────────────────────╮ \r\n" +
-				" │How can I help you today? │ \r\n" +
-				" │                          │ \r\n" +
-				" ╰──────────────────────────╯ \r\n"
+				" ╭──────────────────────────╮\n" +
+				" │How can I help you today? │\n" +
+				" │                          │\n" +
+				" ╰──────────────────────────╯\n"
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
-				return strings.Contains(string(b), expectedTextArea)
+				return strings.Contains(StripAnsi(b), expectedTextArea)
 			})
 		})
+		c.tm.Type("GREETINGS PROFESSOR FALKEN")
 		t.Run("Composer is focused and ready to receive input", func(t *testing.T) {
-			c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
-			c.tm.Type("GREETINGS PROFESSOR FALKEN")
-
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
-				return strings.Contains(string(b), "│GREETINGS PROFESSOR FALKEN")
+				c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
+				return strings.Contains(StripAnsi(b), "│GREETINGS PROFESSOR FALKEN")
 			})
 		})
 		t.Run("Composer wraps text when it exceeds width", func(t *testing.T) {
-			c.tm.Send(tea.WindowSizeMsg{Width: 30, Height: 24})
-
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
-				return strings.Contains(string(b), " │GREETINGS PROFESSOR       │ ") &&
-					strings.Contains(string(b), " │FALKEN                    │ ")
+				c.tm.Send(tea.WindowSizeMsg{Width: 30, Height: 24})
+				return strings.Contains(StripAnsi(b), " │GREETINGS PROFESSOR       │") &&
+					strings.Contains(StripAnsi(b), " │FALKEN                    │")
 			})
 		})
 	})
@@ -231,8 +231,16 @@ func TestFooter(t *testing.T) {
 		c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24})
 		t.Run("Footer displays version", func(t *testing.T) {
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
-				return strings.HasSuffix(string(b), "0.0.0 \u001B[80D")
+				return strings.HasSuffix(string(b), "\u001B[30m0.0.0\u001B[39m \u001B[m")
 			})
 		})
 	})
+}
+
+const ansi = "[\u001B\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\u0007)|(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))"
+
+var re = regexp.MustCompile(ansi)
+
+func StripAnsi(b []byte) string {
+	return re.ReplaceAllString(string(b), "")
 }
