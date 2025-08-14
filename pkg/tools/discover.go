@@ -18,16 +18,11 @@ type BasicToolsProvider struct {
 
 type Attributes struct {
 	api.BasicFeatureAttributes
-	McpCommands []McpCommand `json:"mcp_commands,omitempty"`
 }
 
 type Data struct {
 	api.BasicFeatureData
-}
-
-type McpCommand struct {
-	Cmd  string   `json:"cmd"`
-	Args []string `json:"args"`
+	McpSettings *api.McpSettings `json:"mcp_settings,omitempty"` // Settings for the MCP (Multi-Command Protocol) if applicable
 }
 
 type Report struct {
