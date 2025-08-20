@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/manusa/ai-cli/pkg/api"
@@ -16,6 +17,7 @@ type TestProvider struct {
 	Available bool
 	Reason    string
 	Tools     []*api.Tool
+	Policies  map[string]any
 }
 
 func (t *TestProvider) Attributes() Attributes {
@@ -39,7 +41,7 @@ func (t *TestProvider) IsAvailable(_ *config.Config, _ any) bool {
 }
 
 func (t *TestProvider) GetDefaultPolicies() map[string]any {
-	return nil
+	return t.Policies
 }
 
 func (t *TestProvider) GetTools(_ context.Context, _ *config.Config) ([]*api.Tool, error) {
@@ -128,5 +130,30 @@ func TestDiscoverMarshalling(t *testing.T) {
 				"expected JSON to match the expected format")
 		})
 		assert.Empty(t, notAvailableTools, "expected no not available tools to be returned when no providers are registered")
+	})
+}
+
+func TestGetDefaultPolicies(t *testing.T) {
+	testCase(t, func(c *testContext) {
+		Register(&TestProvider{
+			Name:      "provider-one",
+			Available: true,
+			Policies: map[string]any{
+				"provider-one-policy": "provider-one-policy-value",
+			},
+		})
+		Register(&TestProvider{
+			Name:      "provider-two",
+			Available: true,
+			Policies: map[string]any{
+				"provider-two-policy": "provider-two-policy-value",
+			},
+		})
+		t.Run("GetDefaultPolicies returns expected policies", func(t *testing.T) {
+			policies := GetDefaultPolicies()
+			fmt.Printf("policies: %+v\n", policies)
+			assert.Equal(t, map[string]any{"provider-one-policy": "provider-one-policy-value"}, policies["provider-one"], "expected the provider-one policy to be returned")
+			assert.Equal(t, map[string]any{"provider-two-policy": "provider-two-policy-value"}, policies["provider-two"], "expected the provider-two policy to be returned")
+		})
 	})
 }
