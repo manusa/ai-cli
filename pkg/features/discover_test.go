@@ -76,8 +76,12 @@ func (t *InferenceProvider) GetModels(_ context.Context, _ *config.Config) ([]st
 	return []string{}, nil
 }
 
-func (t *InferenceProvider) IsAvailable(_ *config.Config) bool {
+func (t *InferenceProvider) IsAvailable(_ *config.Config, _ any) bool {
 	return t.Available
+}
+
+func (t *InferenceProvider) GetDefaultPolicies() map[string]any {
+	return nil
 }
 
 func (t *InferenceProvider) GetInference(_ context.Context, _ *config.Config) (model.ToolCallingChatModel, error) {
@@ -91,7 +95,7 @@ func TestDiscoverInference(t *testing.T) {
 	testCase(t, func(c *testContext) {
 		inference.Register(&InferenceProvider{Name: "availableProvider", Available: true})
 		inference.Register(&InferenceProvider{Name: "unavailableProvider", Available: false})
-		features := Discover(config.New())
+		features := Discover(config.New(), nil)
 		t.Run("With one available provider returns features", func(t *testing.T) {
 			assert.NotNil(t, features, "expected an inference to be returned")
 		})
@@ -116,7 +120,7 @@ func TestDiscoverKnownExplicitInference(t *testing.T) {
 		cfg.Inference = func(s string) *string {
 			return &s
 		}("availableProvider")
-		features := Discover(cfg)
+		features := Discover(cfg, nil)
 		t.Run("With one available provider returns features", func(t *testing.T) {
 			assert.NotNil(t, features, "expected an inference to be returned")
 		})
@@ -141,7 +145,7 @@ func TestDiscoverUnknownExplicitInference(t *testing.T) {
 		cfg.Inference = func(s string) *string {
 			return &s
 		}("otherProvider")
-		features := Discover(cfg)
+		features := Discover(cfg, nil)
 		t.Run("With one available provider returns features", func(t *testing.T) {
 			assert.NotNil(t, features, "expected an inference to be returned")
 		})
@@ -164,7 +168,7 @@ func TestDiscoverMarshal(t *testing.T) {
 		inference.Register(&gemini.Provider{})
 		inference.Register(&ollama.Provider{})
 		tools.Register(&fs.Provider{})
-		features := Discover(config.New())
+		features := Discover(config.New(), nil)
 		bytes, err := json.Marshal(features)
 		t.Run("Marshalling returns no error", func(t *testing.T) {
 			assert.Nil(t, err, "expected no error when marshalling inferences")

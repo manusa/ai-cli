@@ -10,15 +10,17 @@ import (
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/features"
+	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/ui"
 	"github.com/spf13/cobra"
 )
 
 type ChatCmdOptions struct {
-	inference string
-	model     string
-	tools     []string
-	notools   bool
+	inference    string
+	model        string
+	policiesFile string
+	tools        []string
+	notools      bool
 }
 
 func NewChatCmdOptions() *ChatCmdOptions {
@@ -49,6 +51,7 @@ func NewChatCmd() *cobra.Command {
 
 	cmd.Flags().StringVar(&o.inference, "inference", "", "Inference server to use")
 	cmd.Flags().StringVar(&o.model, "model", "", "Model to use")
+	cmd.Flags().StringVar(&o.policiesFile, "policies", "", "Policies file to use")
 	cmd.Flags().StringSliceVar(&o.tools, "tools", []string{}, "Comma separated list of tools to use, by default all discovered tools will be used")
 	err := cmd.Flags().MarkHidden("tools")
 	if err != nil {
@@ -85,7 +88,16 @@ func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
 		cfg.Model = &o.model
 	}
 
-	availableFeatures := features.Discover(cfg)
+	var userPolicies *policies.Policies
+	if len(o.policiesFile) > 0 {
+		var err error
+		userPolicies, err = policies.Read(o.policiesFile)
+		if err != nil {
+			return fmt.Errorf("failed to read preferences: %w", err)
+		}
+	}
+
+	availableFeatures := features.Discover(cfg, userPolicies)
 	if availableFeatures.Inference == nil {
 		return fmt.Errorf("no suitable inference found")
 	}

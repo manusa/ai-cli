@@ -9,7 +9,8 @@ type BasicFeatureProvider struct {
 type Feature[a FeatureAttributes, b any] interface {
 	Attributes() a
 	Data() b
-	IsAvailable(cfg *config.Config) bool
+	IsAvailable(cfg *config.Config, policies any) bool
+	GetDefaultPolicies() map[string]any
 }
 
 type FeatureAttributes interface {
