@@ -51,6 +51,8 @@ func (s *DiscoverTestSuite) TestOutputText() {
 			"  - fs\n" +
 			"    Reason: filesystem is accessible\n" +
 			"Not Available Tools Providers:\n" +
+			"  - github\n" +
+			"    Reason: GITHUB_PERSONAL_ACCESS_TOKEN is not set\n" +
 			"  - kubernetes\n" +
 			"    Reason: no kubeconfig file found in the default location\n"
 		s.Equal(expectedOutput, output, "Expected output does not match")
@@ -72,7 +74,10 @@ func (s *DiscoverTestSuite) TestOutputJson() {
 			`{"name":"ollama","local":true,"public":false,"reason":"http://localhost:11434 is not accessible","models":null}],` +
 			`"inference":null,` +
 			`"tools":[{"name":"fs","reason":"filesystem is accessible"}],` +
-			`"toolsNotAvailable":[{"name":"kubernetes","reason":"no kubeconfig file found in the default location"}]}`
+			`"toolsNotAvailable":[` +
+			`{"name":"github","reason":"GITHUB_PERSONAL_ACCESS_TOKEN is not set"},` +
+			`{"name":"kubernetes","reason":"no kubeconfig file found in the default location"}` +
+			`]}`
 		s.JSONEq(expectedOutput, output, "Expected JSON output does not match")
 	})
 }
