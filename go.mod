@@ -13,6 +13,7 @@ require (
 	github.com/cloudwego/eino-ext/components/model/ollama v0.1.0
 	github.com/cloudwego/eino-ext/components/tool/mcp v0.0.3
 	github.com/getkin/kin-openapi v0.118.0
+	github.com/invopop/yaml v0.1.0
 	github.com/mark3labs/mcp-go v0.36.0
 	github.com/muesli/termenv v0.16.0
 	github.com/spf13/afero v1.14.0
@@ -61,7 +62,6 @@ require (
 	github.com/gorilla/websocket v1.5.4-0.20250319132907-e064f32e3674 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/invopop/jsonschema v0.13.0 // indirect
-	github.com/invopop/yaml v0.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.9 // indirect

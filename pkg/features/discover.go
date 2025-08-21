@@ -6,6 +6,7 @@ import (
 
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference"
+	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 )
 
@@ -62,8 +63,8 @@ func toHumanReadableToolsProvider(provider tools.Provider) string {
 	return ret.String()
 }
 
-func Discover(cfg *config.Config) *Features {
-	availableInferences, notAvailableInferences := inference.Discover(cfg)
+func Discover(cfg *config.Config, policies *policies.Policies) *Features {
+	availableInferences, notAvailableInferences := inference.Discover(cfg, nil) // TODO: pass preferences for inference
 
 	var selectedInference *inference.Provider
 	if cfg.Inference != nil {
@@ -78,12 +79,22 @@ func Discover(cfg *config.Config) *Features {
 		// For now, we just select the first available inference
 		selectedInference = &availableInferences[0]
 	}
-	availableTools, notAvailableTools := tools.Discover(cfg)
+	toolsPolicies := map[string]any{}
+	if policies != nil {
+		toolsPolicies = policies.Tools
+	}
+	availableTools, notAvailableTools := tools.Discover(cfg, toolsPolicies)
 	return &Features{
 		Inferences:             availableInferences,
 		InferencesNotAvailable: notAvailableInferences,
 		Inference:              selectedInference,
 		Tools:                  availableTools,
 		ToolsNotAvailable:      notAvailableTools,
+	}
+}
+
+func GetDefaultPolicies() map[string]any {
+	return map[string]any{
+		"tools": tools.GetDefaultPolicies(),
 	}
 }

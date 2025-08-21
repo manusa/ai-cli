@@ -38,8 +38,12 @@ func (t *TestProvider) Data() Data {
 	}
 }
 
-func (t *TestProvider) IsAvailable(_ *config.Config) bool {
+func (t *TestProvider) IsAvailable(_ *config.Config, _ any) bool {
 	return t.Available
+}
+
+func (t *TestProvider) GetDefaultPolicies() map[string]any {
+	return nil
 }
 
 func (t *TestProvider) GetModels(_ context.Context, _ *config.Config) ([]string, error) {
@@ -99,7 +103,7 @@ func TestDiscover(t *testing.T) {
 	// With no providers registered, it should returns empty
 	testCase(t, func(c *testContext) {
 		t.Run("With no providers registered returns empty", func(t *testing.T) {
-			availableInferences, notAvailableInferences := Discover(config.New())
+			availableInferences, notAvailableInferences := Discover(config.New(), nil)
 			assert.Empty(t, availableInferences, "expected no inferences to be returned when no providers are registered")
 			assert.Empty(t, notAvailableInferences, "expected no not available inferences to be returned when no providers are registered")
 		})
@@ -108,7 +112,7 @@ func TestDiscover(t *testing.T) {
 	testCase(t, func(c *testContext) {
 		Register(&TestProvider{Name: "availableProvider", Local: true, Public: false, Available: true})
 		Register(&TestProvider{Name: "unavailableProvider", Local: true, Public: false, Available: false})
-		availableInferences, notAvailableInferences := Discover(config.New())
+		availableInferences, notAvailableInferences := Discover(config.New(), nil)
 		t.Run("With one available provider returns that provider", func(t *testing.T) {
 			assert.Len(t, availableInferences, 1, "expected one available provider to be registered")
 			assert.Equal(t, "availableProvider", availableInferences[0].Attributes().Name(),

@@ -7,11 +7,16 @@ import (
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 )
 
 type Provider struct {
 	tools.BasicToolsProvider
+}
+
+type FsPolicies struct {
+	policies.ToolPolicies
 }
 
 var _ tools.Provider = &Provider{}
@@ -24,7 +29,12 @@ func (p *Provider) Attributes() tools.Attributes {
 	}
 }
 
-func (p *Provider) IsAvailable(_ *config.Config) bool {
+func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
+	if !policies.IsEnabledByPolicies(toolPolicies) {
+		p.Reason = "filesystem is not authorized by policies"
+		return false
+	}
+	// ReadOnly is not considered for fs, as all operations are read-only
 	p.Reason = "filesystem is accessible"
 	return true
 }
@@ -89,6 +99,20 @@ var FileList = &api.Tool{
 		}
 		return string(fileNamesJSON), nil
 	},
+}
+
+func (p *Provider) GetDefaultPolicies() map[string]any {
+	var policies = FsPolicies{}
+	jsonBody, err := json.Marshal(policies)
+	if err != nil {
+		return nil
+	}
+	var policiesMap map[string]any
+	err = json.Unmarshal(jsonBody, &policiesMap)
+	if err != nil {
+		return nil
+	}
+	return policiesMap
 }
 
 var instance = &Provider{}

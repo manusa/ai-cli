@@ -50,9 +50,9 @@ func Clear() {
 }
 
 // Discover the available tools based on the user preferences
-func Discover(cfg *config.Config) (availableTools []Provider, notAvailableTools []Provider) {
+func Discover(cfg *config.Config, policies map[string]any) (availableTools []Provider, notAvailableTools []Provider) {
 	for _, provider := range providers {
-		if provider.IsAvailable(cfg) {
+		if provider.IsAvailable(cfg, policies[provider.Attributes().Name()]) {
 			availableTools = append(availableTools, provider)
 		} else {
 			notAvailableTools = append(notAvailableTools, provider)
@@ -65,4 +65,13 @@ func Discover(cfg *config.Config) (availableTools []Provider, notAvailableTools 
 		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
 	})
 	return availableTools, notAvailableTools
+}
+
+func GetDefaultPolicies() map[string]any {
+	policies := make(map[string]any)
+	for _, provider := range providers {
+		providerPolicies := provider.GetDefaultPolicies()
+		policies[provider.Attributes().Name()] = providerPolicies
+	}
+	return policies
 }

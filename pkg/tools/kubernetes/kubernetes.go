@@ -12,12 +12,20 @@ import (
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/manusa/ai-cli/pkg/tools/utils/eino"
 )
 
 type Provider struct {
 	tools.BasicToolsProvider
+	ReadOnly           bool
+	DisableDestructive bool
+}
+
+type KubePolicies struct {
+	policies.ToolPolicies
+	DisableDestructive bool `yaml:"disable-destructive" json:"disable-destructive"`
 }
 
 var _ tools.Provider = &Provider{}
@@ -59,7 +67,7 @@ func (p *Provider) Data() tools.Data {
 			Reason: p.Reason,
 		},
 	}
-	settings, err := findBestMcpServerSettings()
+	settings, err := findBestMcpServerSettings(p.ReadOnly, p.DisableDestructive)
 	if err == nil {
 		data.McpSettings = settings
 	}
@@ -130,7 +138,20 @@ func homedir() string {
 	return os.Getenv("HOME")
 }
 
-func (p *Provider) IsAvailable(_ *config.Config) bool {
+func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
+	if !policies.IsEnabledByPolicies(toolPolicies) {
+		p.Reason = "kubernetes is not authorized by policies"
+		return false
+	}
+
+	if policies.IsReadOnlyByPolicies(toolPolicies) {
+		p.ReadOnly = true
+	}
+
+	if isDisableDestructiveByPolicies(toolPolicies) {
+		p.DisableDestructive = true
+	}
+
 	// using the same logic as kubectl to find the config files
 	// https://github.com/kubernetes/client-go/blob/d99dd130a2fc7519c0bc2bd7271447b2a16c04a2/tools/clientcmd/loader.go#L159
 	var allFiles []string
@@ -161,7 +182,7 @@ func (p *Provider) IsAvailable(_ *config.Config) bool {
 }
 
 func (p *Provider) GetTools(ctx context.Context, _ *config.Config) ([]*api.Tool, error) {
-	mcpSettings, err := findBestMcpServerSettings()
+	mcpSettings, err := findBestMcpServerSettings(p.ReadOnly, p.DisableDestructive)
 	if err != nil || mcpSettings.Type != api.McpTypeStdio {
 		return nil, err
 	}
@@ -180,9 +201,15 @@ func (p *Provider) MarshalJSON() ([]byte, error) {
 	})
 }
 
-func findBestMcpServerSettings() (*api.McpSettings, error) {
+func findBestMcpServerSettings(readOnly bool, disableDestructive bool) (*api.McpSettings, error) {
 	for command, settings := range supportedMcpSettings {
 		if commandExists(command) {
+			if readOnly {
+				settings.Args = append(settings.Args, "--read-only")
+			}
+			if disableDestructive && !readOnly {
+				settings.Args = append(settings.Args, "--disable-destructive")
+			}
 			return &settings, nil
 		}
 	}
@@ -193,6 +220,40 @@ func findBestMcpServerSettings() (*api.McpSettings, error) {
 func commandExists(command string) bool {
 	_, err := exec.LookPath(command)
 	return err == nil
+}
+
+// isDisableDestructiveByPolicies checks if the tool must be disabled for destructive operations by policies
+// If the tool policies are nil, it returns false
+// If the tool policies are not nil, it returns the value of the DisableDestructive field
+// If the tool policies are not a valid KubePreferences struct, it returns true
+func isDisableDestructiveByPolicies(toolPolicies any) bool {
+	if toolPolicies == nil {
+		return false
+	}
+	jsonBody, err := json.Marshal(toolPolicies)
+	if err != nil {
+		return true
+	}
+	var structuredPolicies KubePolicies
+	err = json.Unmarshal(jsonBody, &structuredPolicies)
+	if err != nil {
+		return true
+	}
+	return structuredPolicies.DisableDestructive
+}
+
+func (p *Provider) GetDefaultPolicies() map[string]any {
+	var policies = KubePolicies{}
+	jsonBody, err := json.Marshal(policies)
+	if err != nil {
+		return nil
+	}
+	var policiesMap map[string]any
+	err = json.Unmarshal(jsonBody, &policiesMap)
+	if err != nil {
+		return nil
+	}
+	return policiesMap
 }
 
 var instance = &Provider{}

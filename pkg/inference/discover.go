@@ -61,10 +61,10 @@ func Clear() {
 }
 
 // Discover the available and not available inference providers based on the user preferences
-func Discover(cfg *config.Config) (availableInferences []Provider, notAvailableInferences []Provider) {
+func Discover(cfg *config.Config, policies map[string]any) (availableInferences []Provider, notAvailableInferences []Provider) {
 	availableInferences, notAvailableInferences = []Provider{}, []Provider{}
 	for _, provider := range providers {
-		if provider.IsAvailable(cfg) {
+		if provider.IsAvailable(cfg, policies) {
 			availableInferences = append(availableInferences, provider)
 		} else {
 			notAvailableInferences = append(notAvailableInferences, provider)

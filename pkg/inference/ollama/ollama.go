@@ -72,7 +72,7 @@ func (ollamaProvider *Provider) GetModels(_ context.Context, _ *config.Config) (
 	return modelsNames, nil
 }
 
-func (ollamaProvider *Provider) IsAvailable(cfg *config.Config) bool {
+func (ollamaProvider *Provider) IsAvailable(cfg *config.Config, policies any) bool {
 	baseURL := ollamaProvider.baseURL()
 	isBaseURLConfigured := ollamaProvider.isBaseURLConfigured()
 	resp, err := http.Get(baseURL + "/v1/models")
@@ -133,6 +133,10 @@ func (ollamaProvider *Provider) baseURL() string {
 
 func (ollamaProvider *Provider) isBaseURLConfigured() bool {
 	return os.Getenv(ollamaHostEnvVar) != ""
+}
+
+func (ollamaProvider *Provider) GetDefaultPolicies() map[string]any {
+	return nil
 }
 
 var instance = &Provider{}

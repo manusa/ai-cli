@@ -38,7 +38,7 @@ func (geminiProvider *Provider) Data() inference.Data {
 	}
 }
 
-func (geminiProvider *Provider) IsAvailable(cfg *config.Config) bool {
+func (geminiProvider *Provider) IsAvailable(cfg *config.Config, policies any) bool {
 	available := cfg.GoogleApiKey != ""
 	if available {
 		geminiProvider.Reason = "GEMINI_API_KEY is set"
@@ -64,6 +64,10 @@ func (geminiProvider *Provider) MarshalJSON() ([]byte, error) {
 		Attributes: geminiProvider.Attributes(),
 		Data:       geminiProvider.Data(),
 	})
+}
+
+func (geminiProvider *Provider) GetDefaultPolicies() map[string]any {
+	return nil
 }
 
 var instance = &Provider{}

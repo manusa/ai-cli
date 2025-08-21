@@ -3,6 +3,7 @@ package features
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -13,8 +14,10 @@ import (
 	"github.com/manusa/ai-cli/pkg/inference"
 	"github.com/manusa/ai-cli/pkg/inference/gemini"
 	"github.com/manusa/ai-cli/pkg/inference/ollama"
+	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/manusa/ai-cli/pkg/tools/fs"
+	"github.com/manusa/ai-cli/pkg/tools/kubernetes"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -76,8 +79,12 @@ func (t *InferenceProvider) GetModels(_ context.Context, _ *config.Config) ([]st
 	return []string{}, nil
 }
 
-func (t *InferenceProvider) IsAvailable(_ *config.Config) bool {
+func (t *InferenceProvider) IsAvailable(_ *config.Config, _ any) bool {
 	return t.Available
+}
+
+func (t *InferenceProvider) GetDefaultPolicies() map[string]any {
+	return nil
 }
 
 func (t *InferenceProvider) GetInference(_ context.Context, _ *config.Config) (model.ToolCallingChatModel, error) {
@@ -91,7 +98,7 @@ func TestDiscoverInference(t *testing.T) {
 	testCase(t, func(c *testContext) {
 		inference.Register(&InferenceProvider{Name: "availableProvider", Available: true})
 		inference.Register(&InferenceProvider{Name: "unavailableProvider", Available: false})
-		features := Discover(config.New())
+		features := Discover(config.New(), nil)
 		t.Run("With one available provider returns features", func(t *testing.T) {
 			assert.NotNil(t, features, "expected an inference to be returned")
 		})
@@ -107,6 +114,67 @@ func TestDiscoverInference(t *testing.T) {
 	})
 }
 
+func TestDiscoverToolsWithoutPolicies(t *testing.T) {
+	testCase(t, func(c *testContext) {
+		tools.Register(&fs.Provider{})
+		features := Discover(config.New(), nil)
+		t.Run("With one available provider returns features", func(t *testing.T) {
+			assert.NotNil(t, features, "expected features to be returned")
+		})
+		t.Run("With one available provider Tools has one provider", func(t *testing.T) {
+			assert.Len(t, features.ToolsNotAvailable, 0, "expected no not available tools provider to be returned")
+			assert.Len(t, features.Tools, 1, "expected one tool provider to be returned")
+			assert.Equal(t, "fs", features.Tools[0].Attributes().Name(),
+				"expected fs provider to be returned")
+		})
+	})
+}
+
+func TestDiscoverToolsWithEnabledPolicies(t *testing.T) {
+	testCase(t, func(c *testContext) {
+		tools.Register(&fs.Provider{})
+		structuredPolicies := policies.Policies{
+			Tools: map[string]any{
+				"fs": map[string]any{
+					"enabled": true,
+				},
+			},
+		}
+		features := Discover(config.New(), &structuredPolicies)
+		t.Run("With one available provider returns features", func(t *testing.T) {
+			assert.NotNil(t, features, "expected features to be returned")
+		})
+		t.Run("With one available provider Tools has one provider", func(t *testing.T) {
+			assert.Len(t, features.ToolsNotAvailable, 0, "expected no not available tools provider to be returned")
+			assert.Len(t, features.Tools, 1, "expected one tool provider to be returned")
+			assert.Equal(t, "fs", features.Tools[0].Attributes().Name(),
+				"expected fs provider to be returned")
+		})
+	})
+}
+
+func TestDiscoverToolsWithDisabledPolicies(t *testing.T) {
+	testCase(t, func(c *testContext) {
+		tools.Register(&fs.Provider{})
+		structuredPolicies := policies.Policies{
+			Tools: map[string]any{
+				"fs": map[string]any{
+					"enabled": false,
+				},
+			},
+		}
+		features := Discover(config.New(), &structuredPolicies)
+		t.Run("With one available provider returns features", func(t *testing.T) {
+			assert.NotNil(t, features, "expected features to be returned")
+		})
+		t.Run("With one available provider Tools has one provider", func(t *testing.T) {
+			assert.Len(t, features.Tools, 0, "expected no not available tools provider to be returned")
+			assert.Len(t, features.ToolsNotAvailable, 1, "expected one tool provider to be returned")
+			assert.Equal(t, "fs", features.ToolsNotAvailable[0].Attributes().Name(),
+				"expected fs provider to be returned")
+		})
+	})
+}
 func TestDiscoverKnownExplicitInference(t *testing.T) {
 	// With one available inference provider, it should return that provider when specified in the config
 	testCase(t, func(c *testContext) {
@@ -116,7 +184,7 @@ func TestDiscoverKnownExplicitInference(t *testing.T) {
 		cfg.Inference = func(s string) *string {
 			return &s
 		}("availableProvider")
-		features := Discover(cfg)
+		features := Discover(cfg, nil)
 		t.Run("With one available provider returns features", func(t *testing.T) {
 			assert.NotNil(t, features, "expected an inference to be returned")
 		})
@@ -141,7 +209,7 @@ func TestDiscoverUnknownExplicitInference(t *testing.T) {
 		cfg.Inference = func(s string) *string {
 			return &s
 		}("otherProvider")
-		features := Discover(cfg)
+		features := Discover(cfg, nil)
 		t.Run("With one available provider returns features", func(t *testing.T) {
 			assert.NotNil(t, features, "expected an inference to be returned")
 		})
@@ -164,7 +232,7 @@ func TestDiscoverMarshal(t *testing.T) {
 		inference.Register(&gemini.Provider{})
 		inference.Register(&ollama.Provider{})
 		tools.Register(&fs.Provider{})
-		features := Discover(config.New())
+		features := Discover(config.New(), nil)
 		bytes, err := json.Marshal(features)
 		t.Run("Marshalling returns no error", func(t *testing.T) {
 			assert.Nil(t, err, "expected no error when marshalling inferences")
@@ -173,6 +241,29 @@ func TestDiscoverMarshal(t *testing.T) {
 			assert.JSONEq(t, `{"inference":{"local":false,"models":["gemini-2.0-flash"],"name":"gemini","public":true,"reason":"GEMINI_API_KEY is set"},"inferences":[{"local":false,"models":["gemini-2.0-flash"],"name":"gemini","public":true,"reason":"GEMINI_API_KEY is set"}],"inferencesNotAvailable":[{"local":true,"models":null,"name":"ollama","public":false,"reason":"http://localhost:11434 is not accessible"}],"tools":[{"name":"fs","reason":"filesystem is accessible"}],"toolsNotAvailable":null}`,
 				string(bytes),
 				"expected JSON to match the expected format")
+		})
+	})
+}
+
+func TestGetDefaultPolicies(t *testing.T) {
+	testCase(t, func(c *testContext) {
+		tools.Register(&fs.Provider{})
+		tools.Register(&kubernetes.Provider{})
+		policies := GetDefaultPolicies()
+		fmt.Printf("policies: %+v\n", policies)
+		t.Run("GetDefaultPolicies returns expected policies", func(t *testing.T) {
+			fsPolicies := policies["tools"].(map[string]any)["fs"]
+			assert.Equal(t, map[string]any{
+				"enabled":   false,
+				"read-only": false,
+			}, fsPolicies, "expected the fs policy to be returned")
+
+			kubernetesPolicies := policies["tools"].(map[string]any)["kubernetes"]
+			assert.Equal(t, map[string]any{
+				"enabled":             false,
+				"read-only":           false,
+				"disable-destructive": false,
+			}, kubernetesPolicies, "expected the kubernetes policy to be returned")
 		})
 	})
 }

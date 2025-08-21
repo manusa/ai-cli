@@ -4,13 +4,17 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/invopop/yaml"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/features"
+	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/spf13/cobra"
 )
 
 type DiscoverCmdOptions struct {
-	outputFormat string
+	outputFormat   string
+	policiesFile   string
+	policiesSample bool
 }
 
 func NewDiscoverCmdOptions() *DiscoverCmdOptions {
@@ -42,6 +46,8 @@ func NewDiscoverCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&o.outputFormat, "output", "o", "json", "Output format (json, text)")
+	cmd.Flags().StringVar(&o.policiesFile, "policies", "", "Policies file to use")
+	cmd.Flags().BoolVar(&o.policiesSample, "show-policies-sample", false, "Outputs sample policies file")
 
 	return cmd
 }
@@ -60,7 +66,26 @@ func (o *DiscoverCmdOptions) Validate() error {
 
 // Run executes the main logic of the command once its complete and validated
 func (o *DiscoverCmdOptions) Run(_ *cobra.Command) error {
-	discoveredFeatures := features.Discover(config.New())
+	if o.policiesSample {
+		policies := features.GetDefaultPolicies()
+		bytes, err := yaml.Marshal(policies)
+		if err != nil {
+			return fmt.Errorf("failed to marshal default policies to YAML: %w", err)
+		}
+		_, _ = fmt.Printf("%s\n", bytes)
+		return nil
+	}
+
+	var userPolicies *policies.Policies
+	if len(o.policiesFile) > 0 {
+		var err error
+		userPolicies, err = policies.Read(o.policiesFile)
+		if err != nil {
+			return fmt.Errorf("failed to read preferences: %w", err)
+		}
+	}
+
+	discoveredFeatures := features.Discover(config.New(), userPolicies)
 	// TODO: maybe create an output package to handle different output formats globally
 	switch o.outputFormat {
 	case "json":

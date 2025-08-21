@@ -3,6 +3,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/manusa/ai-cli/pkg/api"
@@ -16,6 +17,7 @@ type TestProvider struct {
 	Available bool
 	Reason    string
 	Tools     []*api.Tool
+	Policies  map[string]any
 }
 
 func (t *TestProvider) Attributes() Attributes {
@@ -34,8 +36,12 @@ func (t *TestProvider) Data() Data {
 	}
 }
 
-func (t *TestProvider) IsAvailable(_ *config.Config) bool {
+func (t *TestProvider) IsAvailable(_ *config.Config, _ any) bool {
 	return t.Available
+}
+
+func (t *TestProvider) GetDefaultPolicies() map[string]any {
+	return t.Policies
 }
 
 func (t *TestProvider) GetTools(_ context.Context, _ *config.Config) ([]*api.Tool, error) {
@@ -91,7 +97,7 @@ func TestDiscover(t *testing.T) {
 	// With no providers registered, it should returns empty
 	testCase(t, func(c *testContext) {
 		t.Run("With no providers registered returns empty", func(t *testing.T) {
-			availableTools, notAvailableTools := Discover(config.New())
+			availableTools, notAvailableTools := Discover(config.New(), nil)
 			assert.Empty(t, availableTools, "expected no available tools to be returned when no providers are registered")
 			assert.Empty(t, notAvailableTools, "expected no not available tools to be returned when no providers are registered")
 		})
@@ -100,7 +106,7 @@ func TestDiscover(t *testing.T) {
 	testCase(t, func(c *testContext) {
 		Register(&TestProvider{Name: "availableProvider", Available: true})
 		Register(&TestProvider{Name: "unavailableProvider", Available: false})
-		availableTools, notAvailableTools := Discover(config.New())
+		availableTools, notAvailableTools := Discover(config.New(), nil)
 		t.Run("With one available provider returns that provider", func(t *testing.T) {
 			assert.Len(t, availableTools, 1, "expected one available provider to be registered")
 			assert.Equal(t, "availableProvider", availableTools[0].Attributes().Name(),
@@ -114,7 +120,7 @@ func TestDiscoverMarshalling(t *testing.T) {
 	testCase(t, func(c *testContext) {
 		Register(&TestProvider{Name: "provider-one", Available: true})
 		Register(&TestProvider{Name: "provider-two", Available: true})
-		availableTools, notAvailableTools := Discover(config.New())
+		availableTools, notAvailableTools := Discover(config.New(), nil)
 		bytes, err := json.Marshal(availableTools)
 		t.Run("Marshalling returns no error", func(t *testing.T) {
 			assert.Nil(t, err, "expected no error when marshalling inferences")
@@ -124,5 +130,30 @@ func TestDiscoverMarshalling(t *testing.T) {
 				"expected JSON to match the expected format")
 		})
 		assert.Empty(t, notAvailableTools, "expected no not available tools to be returned when no providers are registered")
+	})
+}
+
+func TestGetDefaultPolicies(t *testing.T) {
+	testCase(t, func(c *testContext) {
+		Register(&TestProvider{
+			Name:      "provider-one",
+			Available: true,
+			Policies: map[string]any{
+				"provider-one-policy": "provider-one-policy-value",
+			},
+		})
+		Register(&TestProvider{
+			Name:      "provider-two",
+			Available: true,
+			Policies: map[string]any{
+				"provider-two-policy": "provider-two-policy-value",
+			},
+		})
+		t.Run("GetDefaultPolicies returns expected policies", func(t *testing.T) {
+			policies := GetDefaultPolicies()
+			fmt.Printf("policies: %+v\n", policies)
+			assert.Equal(t, map[string]any{"provider-one-policy": "provider-one-policy-value"}, policies["provider-one"], "expected the provider-one policy to be returned")
+			assert.Equal(t, map[string]any{"provider-two-policy": "provider-two-policy-value"}, policies["provider-two"], "expected the provider-two policy to be returned")
+		})
 	})
 }
