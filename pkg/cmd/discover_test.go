@@ -58,7 +58,9 @@ func (s *DiscoverTestSuite) TestOutputText() {
 			"  - github\n" +
 			"    Reason: GITHUB_PERSONAL_ACCESS_TOKEN is not set\n" +
 			"  - kubernetes\n" +
-			"    Reason: no kubeconfig file found in the default location\n"
+			"    Reason: no kubeconfig file found in the default location\n" +
+			"  - postgresql\n" +
+			"    Reason: DATABASE_URI and PGPASSWORD are not set\n"
 		s.Equal(expectedOutput, output, "Expected output does not match")
 	})
 }
@@ -82,7 +84,8 @@ func (s *DiscoverTestSuite) TestOutputJson() {
 			`"tools":[{"name":"fs","reason":"filesystem is accessible"}],` +
 			`"toolsNotAvailable":[` +
 			`{"name":"github","reason":"GITHUB_PERSONAL_ACCESS_TOKEN is not set"},` +
-			`{"name":"kubernetes","reason":"no kubeconfig file found in the default location"}` +
+			`{"name":"kubernetes","reason":"no kubeconfig file found in the default location"},` +
+			`{"name":"postgresql","reason":"DATABASE_URI and PGPASSWORD are not set"}` +
 			`]}`
 		s.JSONEq(expectedOutput, output, "Expected JSON output does not match")
 	})
