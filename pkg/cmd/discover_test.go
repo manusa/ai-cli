@@ -45,6 +45,8 @@ func (s *DiscoverTestSuite) TestOutputText() {
 			"Not Available Inference Providers:\n" +
 			"  - gemini\n" +
 			"    Reason: GEMINI_API_KEY is not set\n" +
+			"  - lmstudio\n" +
+			"    Reason: http://localhost:1234 is not accessible\n" +
 			"  - ollama\n" +
 			"    Reason: http://localhost:11434 is not accessible\n" +
 			"  - ramalama\n" +
@@ -73,6 +75,7 @@ func (s *DiscoverTestSuite) TestOutputJson() {
 			`"inferences":[],` +
 			`"inferencesNotAvailable":[` +
 			`{"name":"gemini","local":false,"public":true,"reason":"GEMINI_API_KEY is not set","models":null},` +
+			`{"name":"lmstudio","local":true,"public":false,"reason":"http://localhost:1234 is not accessible","models":null},` +
 			`{"name":"ollama","local":true,"public":false,"reason":"http://localhost:11434 is not accessible","models":null},` +
 			`{"name":"ramalama","local":true,"public":false,"reason":"ramalama is not installed","models":null}],` +
 			`"inference":null,` +
