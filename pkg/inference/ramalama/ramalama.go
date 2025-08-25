@@ -1,0 +1,138 @@
+package ramalama
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os/exec"
+	"runtime"
+
+	"github.com/cloudwego/eino-ext/components/model/openai"
+	"github.com/cloudwego/eino/components/model"
+	"github.com/manusa/ai-cli/pkg/api"
+	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/inference"
+)
+
+type Provider struct {
+	inference.BasicInferenceProvider
+	processes []ramalamaProcess
+}
+
+// ramalamaProcess is part of the response from the "ramalama ps --format json" command
+type ramalamaProcess struct {
+	State  string
+	Labels map[string]string
+}
+
+var _ inference.Provider = &Provider{}
+
+func (p *Provider) Attributes() inference.Attributes {
+	return inference.Attributes{
+		BasicFeatureAttributes: api.BasicFeatureAttributes{
+			FeatureName: "ramalama",
+		},
+		Local:  true,
+		Public: false,
+	}
+}
+
+func (p *Provider) Data() inference.Data {
+	return inference.Data{
+		BasicFeatureData: api.BasicFeatureData{
+			Reason: p.Reason,
+		},
+		Models: p.Models,
+	}
+}
+
+func (p *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, error) {
+	cmd := exec.Command(p.getRamalamaBinaryName(), "ps", "--format", "json")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(output, &p.processes)
+	if err != nil {
+		return nil, err
+	}
+	models := make([]string, 0, len(p.processes))
+	for _, process := range p.processes {
+		models = append(models, process.Labels["ai.ramalama.model"])
+	}
+	return models, nil
+}
+
+func (p *Provider) IsAvailable(cfg *config.Config, policies any) bool {
+	_, err := exec.LookPath(p.getRamalamaBinaryName())
+	if err != nil {
+		p.Reason = "ramalama is not installed"
+		return false
+	}
+	models, err := p.GetModels(context.Background(), cfg)
+	if err != nil || len(models) == 0 {
+		p.Reason = "ramalama is installed but no models are served"
+		return false
+	}
+	p.Models = models
+
+	p.Reason = "ramalama is serving models"
+	return true
+}
+
+func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
+	model := p.Models[0]
+	if cfg.Model != nil {
+		model = *cfg.Model
+	}
+	baseURL, err := p.baseURL(model)
+	if err != nil {
+		return nil, err
+	}
+	return openai.NewChatModel(ctx, &openai.ChatModelConfig{
+		BaseURL: baseURL,
+		Model:   model,
+	})
+}
+
+func (p *Provider) MarshalJSON() ([]byte, error) {
+	return json.Marshal(inference.Report{
+		Attributes: p.Attributes(),
+		Data:       p.Data(),
+	})
+}
+
+func (p *Provider) baseURL(model string) (string, error) {
+	process := p.getProcessByModel(model)
+	if process == nil {
+		return "", fmt.Errorf("model %s not found", model)
+	}
+	url := fmt.Sprintf("http://localhost:%s", process.Labels["ai.ramalama.port"])
+	return url, nil
+}
+
+func (p *Provider) getProcessByModel(model string) *ramalamaProcess {
+	for _, process := range p.processes {
+		if process.Labels["ai.ramalama.model"] == model {
+			return &process
+		}
+	}
+	return nil
+}
+
+func (p *Provider) GetDefaultPolicies() map[string]any {
+	return nil
+}
+
+func (p *Provider) getRamalamaBinaryName() string {
+	if runtime.GOOS == "windows" {
+		return "ramalama.exe"
+	}
+	return "ramalama"
+}
+
+var instance = &Provider{}
+
+func init() {
+	inference.Register(instance)
+}

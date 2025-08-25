@@ -8,9 +8,10 @@ require (
 	github.com/charmbracelet/glamour v0.10.0
 	github.com/charmbracelet/lipgloss v1.1.1-0.20250404203927-76690c660834
 	github.com/charmbracelet/x/exp/teatest v0.0.0-20250714123521-bc8a1995e079
-	github.com/cloudwego/eino v0.3.55
+	github.com/cloudwego/eino v0.4.3
 	github.com/cloudwego/eino-ext/components/model/gemini v0.1.3
 	github.com/cloudwego/eino-ext/components/model/ollama v0.1.0
+	github.com/cloudwego/eino-ext/components/model/openai v0.0.0-20250820120452-cb4c949a1d4c
 	github.com/cloudwego/eino-ext/components/tool/mcp v0.0.3
 	github.com/getkin/kin-openapi v0.118.0
 	github.com/invopop/yaml v0.1.0
@@ -43,10 +44,12 @@ require (
 	github.com/charmbracelet/x/exp/slice v0.0.0-20250327172914-2fdc97757edf // indirect
 	github.com/charmbracelet/x/term v0.2.1 // indirect
 	github.com/cloudwego/base64x v0.1.5 // indirect
+	github.com/cloudwego/eino-ext/libs/acl/openai v0.0.0-20250811130120-7b6b45476992 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
+	github.com/evanphx/json-patch v0.5.2 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -70,6 +73,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
+	github.com/meguminnnnnnnnn/go-openai v0.0.0-20250723112853-3bce976e5ccc // indirect
 	github.com/microcosm-cc/bluemonday v1.0.27 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect

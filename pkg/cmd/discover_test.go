@@ -47,6 +47,8 @@ func (s *DiscoverTestSuite) TestOutputText() {
 			"    Reason: GEMINI_API_KEY is not set\n" +
 			"  - ollama\n" +
 			"    Reason: http://localhost:11434 is not accessible\n" +
+			"  - ramalama\n" +
+			"    Reason: ramalama is not installed\n" +
 			"Available Tools Providers:\n" +
 			"  - fs\n" +
 			"    Reason: filesystem is accessible\n" +
@@ -71,7 +73,8 @@ func (s *DiscoverTestSuite) TestOutputJson() {
 			`"inferences":[],` +
 			`"inferencesNotAvailable":[` +
 			`{"name":"gemini","local":false,"public":true,"reason":"GEMINI_API_KEY is not set","models":null},` +
-			`{"name":"ollama","local":true,"public":false,"reason":"http://localhost:11434 is not accessible","models":null}],` +
+			`{"name":"ollama","local":true,"public":false,"reason":"http://localhost:11434 is not accessible","models":null},` +
+			`{"name":"ramalama","local":true,"public":false,"reason":"ramalama is not installed","models":null}],` +
 			`"inference":null,` +
 			`"tools":[{"name":"fs","reason":"filesystem is accessible"}],` +
 			`"toolsNotAvailable":[` +
