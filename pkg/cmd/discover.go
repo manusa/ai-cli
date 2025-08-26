@@ -89,7 +89,7 @@ func (o *DiscoverCmdOptions) Run(_ *cobra.Command) error {
 	// TODO: maybe create an output package to handle different output formats globally
 	switch o.outputFormat {
 	case "json":
-		bytes, err := json.Marshal(discoveredFeatures)
+		bytes, err := json.MarshalIndent(discoveredFeatures, "", "  ")
 		if err != nil {
 			return fmt.Errorf("failed to marshal discovered features to JSON: %w", err)
 		}
