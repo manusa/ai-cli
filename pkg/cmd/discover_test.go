@@ -18,9 +18,12 @@ type DiscoverTestSuite struct {
 }
 
 func (s *DiscoverTestSuite) SetupTest() {
+	// Get the tmpdir before cleaning the environment
+	// to avoid error on Windows
+	tmpdir := s.T().TempDir()
 	s.originalEnv = os.Environ()
 	os.Clearenv()
-	config.FileSystem = afero.NewBasePathFs(afero.NewOsFs(), s.T().TempDir())
+	config.FileSystem = afero.NewBasePathFs(afero.NewOsFs(), tmpdir)
 	s.rootCmd = NewAiCli()
 }
 
