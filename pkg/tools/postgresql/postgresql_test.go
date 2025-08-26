@@ -1,9 +1,11 @@
 package postgresql
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/manusa/ai-cli/pkg/api"
+	"github.com/manusa/ai-cli/pkg/config"
 )
 
 func TestIsAvailable(t *testing.T) {
@@ -77,6 +79,14 @@ func TestIsAvailable(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			//  make uvx available
+			config.LookPath = func(file string) (string, error) {
+				if file == "uvx" {
+					return "/path/to/uvx", nil
+				}
+				return "", fmt.Errorf("file not found: %s", file)
+			}
+
 			t.Setenv("DATABASE_URI", tt.databaseUri)
 			t.Setenv("PGPASSWORD", tt.pgPassword)
 			t.Setenv("PGDATABASE", tt.pgDatabase)

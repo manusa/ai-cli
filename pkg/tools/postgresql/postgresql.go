@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"slices"
 	"strings"
 
@@ -156,7 +155,7 @@ func (p *Provider) findBestMcpServerSettings(readOnly bool) (*api.McpSettings, e
 }
 
 func commandExists(command string) bool {
-	_, err := exec.LookPath(command)
+	_, err := config.LookPath(command)
 	return err == nil
 }
 
