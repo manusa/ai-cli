@@ -42,13 +42,13 @@ var (
 	supportedMcpSettings = map[string]api.McpSettings{
 		"uvx": {
 			Type:    api.McpTypeStdio,
-			Command: "uvx", // TODO: Note that this is platform dependent (on windows this is uvx.exe)
+			Command: "uvx",
 			Args:    []string{"kubernetes-mcp-server@latest"},
 		},
 		"npx": {
 			Type:    api.McpTypeStdio,
 			Command: "npx",
-			Args:    []string{"-y", "kubernetes-mcp-server@latest"}, // TODO: Note that this is platform dependent (on windows this is uvx.exe)
+			Args:    []string{"-y", "kubernetes-mcp-server@latest"},
 		},
 	}
 )
