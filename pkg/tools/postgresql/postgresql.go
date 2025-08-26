@@ -57,7 +57,7 @@ var (
 				"--rm",
 				"-e",
 				"DATABASE_URI",
-				"crystaldba/postgres-mcp",
+				"docker.io/crystaldba/postgres-mcp",
 			},
 		},
 	}
