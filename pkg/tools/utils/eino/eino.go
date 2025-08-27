@@ -11,8 +11,8 @@ import (
 	m3lmcp "github.com/mark3labs/mcp-go/mcp"
 )
 
-func StartMcp(ctx context.Context, cmdAndArgs []string) (*client.Client, error) {
-	cli, err := client.NewStdioMCPClient(cmdAndArgs[0], []string{}, cmdAndArgs[1:]...)
+func StartMcp(ctx context.Context, env []string, cmdAndArgs []string) (*client.Client, error) {
+	cli, err := client.NewStdioMCPClient(cmdAndArgs[0], env, cmdAndArgs[1:]...)
 	if err != nil {
 		return nil, err
 	}

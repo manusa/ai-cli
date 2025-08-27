@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"slices"
 	"strings"
 
@@ -48,16 +47,11 @@ const (
 
 var (
 	supportedMcpSettings = map[string]api.McpSettings{
-		"podman": {
+		"uvx": {
 			Type:    api.McpTypeStdio,
-			Command: "podman",
+			Command: "uvx",
 			Args: []string{
-				"run",
-				"-i",
-				"--rm",
-				"-e",
-				"DATABASE_URI",
-				"docker.io/crystaldba/postgres-mcp",
+				"postgres-mcp",
 			},
 		},
 	}
@@ -94,8 +88,8 @@ func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
 		p.ReadOnly = true
 	}
 
-	if available := os.Getenv(databaseUriEnvVar) != ""; available {
-		p.Reason = fmt.Sprintf("%s is set", databaseUriEnvVar)
+	if available := strings.HasPrefix(os.Getenv(databaseUriEnvVar), "postgresql://"); available {
+		p.Reason = fmt.Sprintf("%s is set with postgresql schema", databaseUriEnvVar)
 		return true
 	}
 
@@ -104,7 +98,11 @@ func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
 		return true
 	}
 
-	p.Reason = fmt.Sprintf("%s and %s are not set", databaseUriEnvVar, pgPasswordEnvVar)
+	if os.Getenv(databaseUriEnvVar) == "" {
+		p.Reason = fmt.Sprintf("%s is not set and %s is not set", databaseUriEnvVar, pgPasswordEnvVar)
+	} else {
+		p.Reason = fmt.Sprintf("%s is not set with postgresql schema and %s is not set", databaseUriEnvVar, pgPasswordEnvVar)
+	}
 
 	return false
 }
@@ -115,7 +113,7 @@ func (p *Provider) GetTools(ctx context.Context, _ *config.Config) ([]*api.Tool,
 		return nil, err
 	}
 
-	cli, err := eino.StartMcp(ctx, slices.Concat([]string{mcpSettings.Command}, mcpSettings.Args))
+	cli, err := eino.StartMcp(ctx, mcpSettings.Env, slices.Concat([]string{mcpSettings.Command}, mcpSettings.Args))
 	if err != nil {
 		return nil, err
 	}
@@ -139,11 +137,8 @@ func (p *Provider) findBestMcpServerSettings(readOnly bool) (*api.McpSettings, e
 			}
 
 			// Get or build URI
-			uri := ""
-			if databaseUri := os.Getenv(databaseUriEnvVar); databaseUri != "" {
-				uri = databaseUri
-			} else if os.Getenv(pgPasswordEnvVar) != "" {
-				uri = fmt.Sprintf(
+			if databaseUri := os.Getenv(databaseUriEnvVar); !strings.HasPrefix(databaseUri, "postgresql://") && os.Getenv(pgPasswordEnvVar) != "" {
+				uri := fmt.Sprintf(
 					"postgresql://%s:%s@%s:%s/%s",
 					p.getEnvVarValueOrDefault(pgUserEnvVar, defaultPgUser),
 					os.Getenv(pgPasswordEnvVar),
@@ -151,13 +146,7 @@ func (p *Provider) findBestMcpServerSettings(readOnly bool) (*api.McpSettings, e
 					p.getEnvVarValueOrDefault(pgPortEnvVar, defaultPgPort),
 					p.getEnvVarValueOrDefault(pgDatabaseEnvVar, defaultPgDatabase),
 				)
-			}
-
-			// replace localhost with host.containers.internal in the DATABASE_URI environment variable
-			for i, arg := range settings.Args {
-				if arg == "DATABASE_URI" {
-					settings.Args[i] = fmt.Sprintf("DATABASE_URI=%s", strings.Replace(uri, "localhost", "host.containers.internal", 1))
-				}
+				settings.Env = append(settings.Env, fmt.Sprintf("%s=%s", databaseUriEnvVar, uri))
 			}
 			return &settings, nil
 		}
@@ -166,7 +155,7 @@ func (p *Provider) findBestMcpServerSettings(readOnly bool) (*api.McpSettings, e
 }
 
 func commandExists(command string) bool {
-	_, err := exec.LookPath(command)
+	_, err := config.LookPath(command)
 	return err == nil
 }
 
