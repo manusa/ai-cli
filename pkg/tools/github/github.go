@@ -35,7 +35,7 @@ var (
 	supportedMcpSettings = map[string]api.McpSettings{
 		"podman": {
 			Type:    api.McpTypeStdio,
-			Command: "podman", // TODO: Note that this is platform dependent (on windows this is podman.exe)
+			Command: "podman",
 			Args: []string{
 				"run",
 				"-i",
