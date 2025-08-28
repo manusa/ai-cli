@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/invopop/yaml"
@@ -86,14 +85,13 @@ func (o *DiscoverCmdOptions) Run(_ *cobra.Command) error {
 	}
 
 	discoveredFeatures := features.Discover(config.New(), userPolicies)
-	// TODO: maybe create an output package to handle different output formats globally
 	switch o.outputFormat {
 	case "json":
-		bytes, err := json.MarshalIndent(discoveredFeatures, "", "  ")
+		jsonString, err := discoveredFeatures.ToJSON()
 		if err != nil {
 			return fmt.Errorf("failed to marshal discovered features to JSON: %w", err)
 		}
-		_, _ = fmt.Printf("%s\n", bytes)
+		_, _ = fmt.Printf("%s\n", jsonString)
 	case "text":
 		_, _ = fmt.Print(discoveredFeatures.ToHumanReadable())
 	}
