@@ -2,19 +2,29 @@ package cmd
 
 import (
 	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/invopop/yaml"
+	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/features"
+	mcpconfig "github.com/manusa/ai-cli/pkg/mcp-config"
+	"github.com/manusa/ai-cli/pkg/mcp-config/cursor"
 	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/spf13/cobra"
 )
 
 type DiscoverCmdOptions struct {
 	outputFormat   string
+	mcpConfig      string
 	policiesFile   string
 	policiesSample bool
 }
+
+var (
+	editors = []string{"cursor"}
+)
 
 func NewDiscoverCmdOptions() *DiscoverCmdOptions {
 	return &DiscoverCmdOptions{}
@@ -33,7 +43,7 @@ func NewDiscoverCmd() *cobra.Command {
 			if err := o.Complete(cmd, args); err != nil {
 				return err
 			}
-			if err := o.Validate(); err != nil {
+			if err := o.Validate(cmd); err != nil {
 				return err
 			}
 			if err := o.Run(cmd); err != nil {
@@ -45,6 +55,7 @@ func NewDiscoverCmd() *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&o.outputFormat, "output", "o", "json", "Output format (json, text)")
+	cmd.Flags().StringVar(&o.mcpConfig, "mcp-config", "", fmt.Sprintf("Configure editor MCP config (%s). This option replaces the normal output", strings.Join(editors, ", ")))
 	cmd.Flags().StringVar(&o.policiesFile, "policies", "", "Policies file to use")
 	cmd.Flags().BoolVar(&o.policiesSample, "show-policies-sample", false, "Outputs sample policies file")
 
@@ -58,8 +69,10 @@ func (o *DiscoverCmdOptions) Complete(_ *cobra.Command, _ []string) error {
 }
 
 // Validate ensures that all required arguments and flag values are provided
-func (o *DiscoverCmdOptions) Validate() error {
-	// TODO: validate output format
+func (o *DiscoverCmdOptions) Validate(cmd *cobra.Command) error {
+	if cmd.Flags().Changed("mcp-config") && !slices.Contains(editors, o.mcpConfig) {
+		return fmt.Errorf("invalid editor name '%s', must be one of (%s)", o.mcpConfig, strings.Join(editors, ", "))
+	}
 	return nil
 }
 
@@ -85,6 +98,17 @@ func (o *DiscoverCmdOptions) Run(_ *cobra.Command) error {
 	}
 
 	discoveredFeatures := features.Discover(config.New(), userPolicies)
+
+	if o.mcpConfig != "" {
+		var mcpConfigProvider api.MCPConfig
+		if o.mcpConfig == "cursor" {
+			mcpConfigProvider = &cursor.CursorMcpConfig{}
+		} else {
+			return fmt.Errorf("invalid editor name '%s', must be one of (%s)", o.mcpConfig, strings.Join(editors, ", "))
+		}
+		return mcpconfig.Save(mcpConfigProvider, discoveredFeatures.Tools)
+	}
+
 	switch o.outputFormat {
 	case "json":
 		jsonString, err := discoveredFeatures.ToJSON()

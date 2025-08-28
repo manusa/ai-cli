@@ -13,6 +13,7 @@ import (
 type ToolsProvider interface {
 	Feature[ToolsAttributes]
 	GetTools(ctx context.Context, cfg *config.Config) ([]*Tool, error)
+	GetMcpSettings() *McpSettings
 }
 
 type ToolsAttributes interface {
