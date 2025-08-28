@@ -1,6 +1,7 @@
 package features
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -17,6 +18,12 @@ type Features struct {
 	Inference              *api.InferenceProvider  `json:"inference"`              // The selected inference provider based on user preferences or auto-detection, or nil if no inference provider is selected
 	Tools                  []api.ToolsProvider     `json:"tools"`                  // List of available tools
 	ToolsNotAvailable      []api.ToolsProvider     `json:"toolsNotAvailable"`      // List of not available tools
+}
+
+// ToJSON converts the features to a generic JSON string representation.
+func (f *Features) ToJSON() (string, error) {
+	bytes, err := json.MarshalIndent(f, "", "  ")
+	return string(bytes), err
 }
 
 // ToHumanReadable converts the features to a human-readable string representation.
