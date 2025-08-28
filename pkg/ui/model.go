@@ -34,13 +34,13 @@ type Model struct {
 	footer   tea.ViewModel
 }
 
-func NewModel(ai *ai.Ai) Model {
+func NewModel(ai *ai.Ai) *Model {
 	ctx := &context.ModelContext{
 		Ai:      ai,
 		Version: version.Version,
 		Theme:   styles.DefaultTheme(termenv.HasDarkBackground()),
 	}
-	m := Model{
+	m := &Model{
 		context:  ctx,
 		viewport: viewport.New(viewport.WithWidth(0), viewport.WithHeight(0)),
 		spinner:  spinner.New(spinner.WithSpinner(spinner.Points)),
