@@ -1,51 +1,51 @@
 package inference
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"strings"
 
-	"github.com/cloudwego/eino/components/model"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 )
 
-var providers = map[string]Provider{}
+var providers = map[string]api.InferenceProvider{}
 
 type BasicInferenceProvider struct {
-	api.BasicFeatureProvider
-	Models []string `json:"models"` // List of models supported by the inference provider
+	api.InferenceProvider `json:"-"`
+	BasicInferenceAttributes
+	IsAvailableReason string   `json:"reason"`
+	ProviderModels    []string `json:"models"`
 }
 
-type Attributes struct {
+func (p *BasicInferenceProvider) Attributes() api.InferenceAttributes {
+	return &p.BasicInferenceAttributes
+}
+
+func (p *BasicInferenceProvider) Reason() string {
+	return p.IsAvailableReason
+}
+
+func (p *BasicInferenceProvider) Models() []string {
+	return p.ProviderModels
+}
+
+type BasicInferenceAttributes struct {
 	api.BasicFeatureAttributes
-	Local  bool `json:"local"`  // Indicates if the inference provider is a local service
-	Public bool `json:"public"` // Indicates if the inference provider is public (e.g. OpenAI, Gemini) or private (e.g. Enterprise internal)
+	LocalAttr  bool `json:"local"`
+	PublicAttr bool `json:"public"`
 }
 
-type Data struct {
-	api.BasicFeatureData
-	Models []string `json:"models"`
+func (a *BasicInferenceAttributes) Local() bool {
+	return a.LocalAttr
 }
 
-type Report struct {
-	Attributes
-	Data
-}
-
-type Provider interface {
-	api.Feature[Attributes, Data]
-	GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error)
-	MarshalJSON() ([]byte, error)
-}
-
-type BasicProvider struct {
-	Attributes Attributes `json:"attributes"`
+func (a *BasicInferenceAttributes) Public() bool {
+	return a.PublicAttr
 }
 
 // Register a new inference provider
-func Register(provider Provider) {
+func Register(provider api.InferenceProvider) {
 	if provider == nil {
 		panic("cannot register a nil inference provider")
 	}
@@ -57,12 +57,12 @@ func Register(provider Provider) {
 
 // Clear the registered tools providers (Exposed for testing purposes)
 func Clear() {
-	providers = map[string]Provider{}
+	providers = map[string]api.InferenceProvider{}
 }
 
 // Discover the available and not available inference providers based on the user preferences
-func Discover(cfg *config.Config, policies map[string]any) (availableInferences []Provider, notAvailableInferences []Provider) {
-	availableInferences, notAvailableInferences = []Provider{}, []Provider{}
+func Discover(cfg *config.Config, policies map[string]any) (availableInferences []api.InferenceProvider, notAvailableInferences []api.InferenceProvider) {
+	availableInferences, notAvailableInferences = []api.InferenceProvider{}, []api.InferenceProvider{}
 	for _, provider := range providers {
 		if provider.IsAvailable(cfg, policies) {
 			availableInferences = append(availableInferences, provider)
@@ -70,10 +70,10 @@ func Discover(cfg *config.Config, policies map[string]any) (availableInferences 
 			notAvailableInferences = append(notAvailableInferences, provider)
 		}
 	}
-	slices.SortFunc(availableInferences, func(a, b Provider) int {
+	slices.SortFunc(availableInferences, func(a, b api.InferenceProvider) int {
 		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
 	})
-	slices.SortFunc(notAvailableInferences, func(a, b Provider) int {
+	slices.SortFunc(notAvailableInferences, func(a, b api.InferenceProvider) int {
 		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
 	})
 	return availableInferences, notAvailableInferences

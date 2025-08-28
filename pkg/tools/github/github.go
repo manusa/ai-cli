@@ -18,8 +18,10 @@ import (
 
 type Provider struct {
 	tools.BasicToolsProvider
-	ReadOnly bool
+	ReadOnly bool `json:"-"`
 }
+
+var _ api.ToolsProvider = &Provider{}
 
 type GithubPolicies struct {
 	policies.ToolPolicies
@@ -28,8 +30,6 @@ type GithubPolicies struct {
 const (
 	accessTokenEnvVar = "GITHUB_PERSONAL_ACCESS_TOKEN"
 )
-
-var _ tools.Provider = &Provider{}
 
 var (
 	supportedMcpSettings = map[string]api.McpSettings{
@@ -51,30 +51,10 @@ var (
 	}
 )
 
-func (p *Provider) Attributes() tools.Attributes {
-	return tools.Attributes{
-		BasicFeatureAttributes: api.BasicFeatureAttributes{
-			FeatureName: "github",
-		},
-	}
-}
-
-func (p *Provider) Data() tools.Data {
-	data := tools.Data{
-		BasicFeatureData: api.BasicFeatureData{
-			Reason: p.Reason,
-		},
-	}
-	settings, err := findBestMcpServerSettings(p.ReadOnly)
-	if err == nil {
-		data.McpSettings = settings
-	}
-	return data
-}
-
 func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
+	// TODO: This should probably be generalized to all tools and inference providers
 	if !policies.IsEnabledByPolicies(toolPolicies) {
-		p.Reason = "github is not authorized by policies"
+		p.IsAvailableReason = "github is not authorized by policies"
 		return false
 	}
 
@@ -83,12 +63,20 @@ func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
 	}
 
 	available := os.Getenv(accessTokenEnvVar) != ""
-	if available {
-		p.Reason = fmt.Sprintf("%s is set", accessTokenEnvVar)
-	} else {
-		p.Reason = fmt.Sprintf("%s is not set", accessTokenEnvVar)
+	if !available {
+		p.IsAvailableReason = fmt.Sprintf("%s is not set", accessTokenEnvVar)
+		return false
 	}
-	return available
+
+	var err error
+	p.McpSettings, err = findBestMcpServerSettings(p.ReadOnly)
+	if err != nil {
+		p.IsAvailableReason = err.Error()
+		return false
+	}
+
+	p.IsAvailableReason = fmt.Sprintf("%s is set and has suitable MCP settings", accessTokenEnvVar)
+	return true
 }
 
 func (p *Provider) GetTools(ctx context.Context, _ *config.Config) ([]*api.Tool, error) {
@@ -102,13 +90,6 @@ func (p *Provider) GetTools(ctx context.Context, _ *config.Config) ([]*api.Tool,
 		return nil, err
 	}
 	return eino.GetTools(ctx, cli)
-}
-
-func (p *Provider) MarshalJSON() ([]byte, error) {
-	return json.Marshal(tools.Report{
-		Attributes: p.Attributes(),
-		Data:       p.Data(),
-	})
 }
 
 func findBestMcpServerSettings(readOnly bool) (*api.McpSettings, error) {
@@ -142,7 +123,16 @@ func (p *Provider) GetDefaultPolicies() map[string]any {
 	return policiesMap
 }
 
-var instance = &Provider{}
+var instance = &Provider{
+	BasicToolsProvider: tools.BasicToolsProvider{
+		BasicToolsAttributes: tools.BasicToolsAttributes{
+			BasicFeatureAttributes: api.BasicFeatureAttributes{
+				FeatureName:        "github",
+				FeatureDescription: "Provides access to GitHub repositories, issues, pull requests, and more.",
+			},
+		},
+	},
+}
 
 func init() {
 	tools.Register(instance)

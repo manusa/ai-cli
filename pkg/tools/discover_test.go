@@ -13,27 +13,10 @@ import (
 )
 
 type TestProvider struct {
-	Name      string
-	Available bool
-	Reason    string
-	Tools     []*api.Tool
-	Policies  map[string]any
-}
-
-func (t *TestProvider) Attributes() Attributes {
-	return Attributes{
-		BasicFeatureAttributes: api.BasicFeatureAttributes{
-			FeatureName: t.Name,
-		},
-	}
-}
-
-func (t *TestProvider) Data() Data {
-	return Data{
-		BasicFeatureData: api.BasicFeatureData{
-			Reason: t.Reason,
-		},
-	}
+	BasicToolsProvider
+	Available bool           `json:"-"`
+	Tools     []*api.Tool    `json:"-"`
+	Policies  map[string]any `json:"-"`
 }
 
 func (t *TestProvider) IsAvailable(_ *config.Config, _ any) bool {
@@ -47,8 +30,6 @@ func (t *TestProvider) GetDefaultPolicies() map[string]any {
 func (t *TestProvider) GetTools(_ context.Context, _ *config.Config) ([]*api.Tool, error) {
 	return t.Tools, nil
 }
-
-func (t *TestProvider) MarshalJSON() ([]byte, error) { return json.Marshal(t.Attributes()) }
 
 type testContext struct {
 }
@@ -76,7 +57,17 @@ func TestRegister(t *testing.T) {
 	// Registering a provider should add it to the providers map
 	testCase(t, func(c *testContext) {
 		t.Run("Registering a provider adds it to the providers map", func(t *testing.T) {
-			Register(&TestProvider{Name: "testProvider", Available: true})
+			Register(&TestProvider{
+				BasicToolsProvider: BasicToolsProvider{
+					BasicToolsAttributes: BasicToolsAttributes{
+						BasicFeatureAttributes: api.BasicFeatureAttributes{
+							FeatureName:        "testProvider",
+							FeatureDescription: "Test Provider",
+						},
+					},
+				},
+				Available: true,
+			})
 			assert.Contains(t, providers, "testProvider",
 				"expected provider %s to be registered in the providers %v", "testProvider", providers)
 		})
@@ -84,7 +75,17 @@ func TestRegister(t *testing.T) {
 	// Registering a provider with the same name should panic
 	testCase(t, func(c *testContext) {
 		t.Run("Registering a provider with the same name panics", func(t *testing.T) {
-			provider := &TestProvider{Name: "duplicateProvider", Available: true}
+			provider := &TestProvider{
+				BasicToolsProvider: BasicToolsProvider{
+					BasicToolsAttributes: BasicToolsAttributes{
+						BasicFeatureAttributes: api.BasicFeatureAttributes{
+							FeatureName:        "duplicateProvider",
+							FeatureDescription: "Test Provider",
+						},
+					},
+				},
+				Available: true,
+			}
 			Register(provider)
 			assert.Panics(t, func() {
 				Register(provider)
@@ -104,12 +105,32 @@ func TestDiscover(t *testing.T) {
 	})
 	// With one available provider, it should return that provider
 	testCase(t, func(c *testContext) {
-		Register(&TestProvider{Name: "availableProvider", Available: true})
-		Register(&TestProvider{Name: "unavailableProvider", Available: false})
+		Register(&TestProvider{
+			BasicToolsProvider: BasicToolsProvider{
+				BasicToolsAttributes: BasicToolsAttributes{
+					BasicFeatureAttributes: api.BasicFeatureAttributes{
+						FeatureName:        "provider-available",
+						FeatureDescription: "Test Provider",
+					},
+				},
+			},
+			Available: true,
+		})
+		Register(&TestProvider{
+			BasicToolsProvider: BasicToolsProvider{
+				BasicToolsAttributes: BasicToolsAttributes{
+					BasicFeatureAttributes: api.BasicFeatureAttributes{
+						FeatureName:        "provider-unavailable",
+						FeatureDescription: "Test Provider",
+					},
+				},
+			},
+			Available: false,
+		})
 		availableTools, notAvailableTools := Discover(config.New(), nil)
 		t.Run("With one available provider returns that provider", func(t *testing.T) {
 			assert.Len(t, availableTools, 1, "expected one available provider to be registered")
-			assert.Equal(t, "availableProvider", availableTools[0].Attributes().Name(),
+			assert.Equal(t, "provider-available", availableTools[0].Attributes().Name(),
 				"expected the available provider to be returned")
 			assert.Len(t, notAvailableTools, 1, "expected one not available provider to be registered")
 		})
@@ -118,15 +139,35 @@ func TestDiscover(t *testing.T) {
 
 func TestDiscoverMarshalling(t *testing.T) {
 	testCase(t, func(c *testContext) {
-		Register(&TestProvider{Name: "provider-one", Available: true})
-		Register(&TestProvider{Name: "provider-two", Available: true})
+		Register(&TestProvider{
+			BasicToolsProvider: BasicToolsProvider{
+				BasicToolsAttributes: BasicToolsAttributes{
+					BasicFeatureAttributes: api.BasicFeatureAttributes{
+						FeatureName:        "provider-one",
+						FeatureDescription: "Test Provider",
+					},
+				},
+			},
+			Available: true,
+		})
+		Register(&TestProvider{
+			BasicToolsProvider: BasicToolsProvider{
+				BasicToolsAttributes: BasicToolsAttributes{
+					BasicFeatureAttributes: api.BasicFeatureAttributes{
+						FeatureName:        "provider-two",
+						FeatureDescription: "Test Provider",
+					},
+				},
+			},
+			Available: true,
+		})
 		availableTools, notAvailableTools := Discover(config.New(), nil)
 		bytes, err := json.Marshal(availableTools)
 		t.Run("Marshalling returns no error", func(t *testing.T) {
 			assert.Nil(t, err, "expected no error when marshalling inferences")
 		})
 		t.Run("Marshalling returns expected JSON", func(t *testing.T) {
-			assert.JSONEq(t, `[{"name":"provider-one"},{"name":"provider-two"}]`, string(bytes),
+			assert.JSONEq(t, `[{"description":"Test Provider","name":"provider-one","reason":""},{"description":"Test Provider","name":"provider-two","reason":""}]`, string(bytes),
 				"expected JSON to match the expected format")
 		})
 		assert.Empty(t, notAvailableTools, "expected no not available tools to be returned when no providers are registered")
@@ -136,14 +177,28 @@ func TestDiscoverMarshalling(t *testing.T) {
 func TestGetDefaultPolicies(t *testing.T) {
 	testCase(t, func(c *testContext) {
 		Register(&TestProvider{
-			Name:      "provider-one",
+			BasicToolsProvider: BasicToolsProvider{
+				BasicToolsAttributes: BasicToolsAttributes{
+					BasicFeatureAttributes: api.BasicFeatureAttributes{
+						FeatureName:        "provider-one",
+						FeatureDescription: "Test Provider",
+					},
+				},
+			},
 			Available: true,
 			Policies: map[string]any{
 				"provider-one-policy": "provider-one-policy-value",
 			},
 		})
 		Register(&TestProvider{
-			Name:      "provider-two",
+			BasicToolsProvider: BasicToolsProvider{
+				BasicToolsAttributes: BasicToolsAttributes{
+					BasicFeatureAttributes: api.BasicFeatureAttributes{
+						FeatureName:        "provider-two",
+						FeatureDescription: "Test Provider",
+					},
+				},
+			},
 			Available: true,
 			Policies: map[string]any{
 				"provider-two-policy": "provider-two-policy-value",

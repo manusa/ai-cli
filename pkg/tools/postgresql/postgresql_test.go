@@ -98,8 +98,8 @@ func TestIsAvailable(t *testing.T) {
 			if available != tt.available {
 				t.Errorf("expected postgresql to be %v", tt.available)
 			}
-			if provider.Reason != tt.reason {
-				t.Errorf("expected reason to be %s, but got %s", tt.reason, provider.Reason)
+			if provider.Reason() != tt.reason {
+				t.Errorf("expected reason to be %s, but got %s", tt.reason, provider.Reason())
 			}
 			if available {
 				mcpServerSettings, err := provider.findBestMcpServerSettings(false)

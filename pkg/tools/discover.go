@@ -1,7 +1,6 @@
 package tools
 
 import (
-	"context"
 	"fmt"
 	"slices"
 	"strings"
@@ -10,34 +9,29 @@ import (
 	"github.com/manusa/ai-cli/pkg/config"
 )
 
-var providers = map[string]Provider{}
+var providers = map[string]api.ToolsProvider{}
 
 type BasicToolsProvider struct {
-	api.BasicFeatureProvider
+	api.ToolsProvider `json:"-"`
+	BasicToolsAttributes
+	IsAvailableReason string           `json:"reason"`
+	McpSettings       *api.McpSettings `json:"mcp_settings,omitempty"`
 }
 
-type Attributes struct {
+func (p *BasicToolsProvider) Attributes() api.ToolsAttributes {
+	return &p.BasicToolsAttributes
+}
+
+func (p *BasicToolsProvider) Reason() string {
+	return p.IsAvailableReason
+}
+
+type BasicToolsAttributes struct {
 	api.BasicFeatureAttributes
 }
 
-type Data struct {
-	api.BasicFeatureData
-	McpSettings *api.McpSettings `json:"mcp_settings,omitempty"` // Settings for the MCP (Multi-Command Protocol) if applicable
-}
-
-type Report struct {
-	Attributes
-	Data
-}
-
-type Provider interface {
-	api.Feature[Attributes, Data]
-	GetTools(ctx context.Context, cfg *config.Config) ([]*api.Tool, error)
-	MarshalJSON() ([]byte, error)
-}
-
 // Register a new tools provider
-func Register(provider Provider) {
+func Register(provider api.ToolsProvider) {
 	if _, ok := providers[provider.Attributes().Name()]; ok {
 		panic(fmt.Sprintf("tool provider already registered: %s", provider.Attributes().Name()))
 	}
@@ -46,11 +40,11 @@ func Register(provider Provider) {
 
 // Clear the registered tools providers (Exposed for testing purposes)
 func Clear() {
-	providers = map[string]Provider{}
+	providers = map[string]api.ToolsProvider{}
 }
 
 // Discover the available tools based on the user preferences
-func Discover(cfg *config.Config, policies map[string]any) (availableTools []Provider, notAvailableTools []Provider) {
+func Discover(cfg *config.Config, policies map[string]any) (availableTools []api.ToolsProvider, notAvailableTools []api.ToolsProvider) {
 	for _, provider := range providers {
 		if provider.IsAvailable(cfg, policies[provider.Attributes().Name()]) {
 			availableTools = append(availableTools, provider)
@@ -58,10 +52,10 @@ func Discover(cfg *config.Config, policies map[string]any) (availableTools []Pro
 			notAvailableTools = append(notAvailableTools, provider)
 		}
 	}
-	slices.SortFunc(availableTools, func(a, b Provider) int {
+	slices.SortFunc(availableTools, func(a, b api.ToolsProvider) int {
 		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
 	})
-	slices.SortFunc(notAvailableTools, func(a, b Provider) int {
+	slices.SortFunc(notAvailableTools, func(a, b api.ToolsProvider) int {
 		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
 	})
 	return availableTools, notAvailableTools

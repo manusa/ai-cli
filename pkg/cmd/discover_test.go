@@ -47,23 +47,31 @@ func (s *DiscoverTestSuite) TestOutputText() {
 		expectedOutput := "Available Inference Providers:\n" +
 			"Not Available Inference Providers:\n" +
 			"  - gemini\n" +
+			"    Description: Google Gemini inference provider\n" +
 			"    Reason: GEMINI_API_KEY is not set\n" +
 			"  - lmstudio\n" +
+			"    Description: LM Studio local inference provider\n" +
 			"    Reason: http://localhost:1234 is not accessible\n" +
 			"  - ollama\n" +
+			"    Description: Ollama local inference provider\n" +
 			"    Reason: http://localhost:11434 is not accessible\n" +
 			"  - ramalama\n" +
+			"    Description: Ramalama local inference provider\n" +
 			"    Reason: ramalama is not installed\n" +
 			"Available Tools Providers:\n" +
 			"  - fs\n" +
+			"    Description: Provides access to the local filesystem, allowing listing of files and directories.\n" +
 			"    Reason: filesystem is accessible\n" +
 			"Not Available Tools Providers:\n" +
 			"  - github\n" +
+			"    Description: Provides access to GitHub repositories, issues, pull requests, and more.\n" +
 			"    Reason: GITHUB_PERSONAL_ACCESS_TOKEN is not set\n" +
 			"  - kubernetes\n" +
-			"    Reason: no kubeconfig file found in the default location\n" +
+			"    Description: Provides access to Kubernetes clusters, allowing management and interaction with cluster resources.\n" +
+			"    Reason: no suitable MCP settings found for the Kubernetes MCP server\n" +
 			"  - postgresql\n" +
-			"    Reason: DATABASE_URI is not set and PGPASSWORD is not set\n"
+			"    Description: Provides access to a PostgreSQL database, allowing execution of SQL queries and retrieval of data.\n" +
+			"    Reason: no suitable MCP settings found for the PostgreSQL MCP server\n"
 		s.Equal(expectedOutput, output, "Expected output does not match")
 	})
 }
@@ -79,21 +87,20 @@ func (s *DiscoverTestSuite) TestOutputJson() {
 		expectedOutput := "{" +
 			`"inferences":[],` +
 			`"inferencesNotAvailable":[` +
-			`{"name":"gemini","local":false,"public":true,"reason":"GEMINI_API_KEY is not set","models":null},` +
-			`{"name":"lmstudio","local":true,"public":false,"reason":"http://localhost:1234 is not accessible","models":null},` +
-			`{"name":"ollama","local":true,"public":false,"reason":"http://localhost:11434 is not accessible","models":null},` +
-			`{"name":"ramalama","local":true,"public":false,"reason":"ramalama is not installed","models":null}],` +
+			`{"description":"Google Gemini inference provider","name":"gemini","local":false,"public":true,"reason":"GEMINI_API_KEY is not set","models":null},` +
+			`{"description":"LM Studio local inference provider","name":"lmstudio","local":true,"public":false,"reason":"http://localhost:1234 is not accessible","models":null},` +
+			`{"description":"Ollama local inference provider","name":"ollama","local":true,"public":false,"reason":"http://localhost:11434 is not accessible","models":null},` +
+			`{"description":"Ramalama local inference provider","name":"ramalama","local":true,"public":false,"reason":"ramalama is not installed","models":null}],` +
 			`"inference":null,` +
-			`"tools":[{"name":"fs","reason":"filesystem is accessible"}],` +
+			`"tools":[{"description":"Provides access to the local filesystem, allowing listing of files and directories.","name":"fs","reason":"filesystem is accessible"}],` +
 			`"toolsNotAvailable":[` +
-			`{"name":"github","reason":"GITHUB_PERSONAL_ACCESS_TOKEN is not set"},` +
-			`{"name":"kubernetes","reason":"no kubeconfig file found in the default location"},` +
-			`{"name":"postgresql","reason":"DATABASE_URI is not set and PGPASSWORD is not set"}` +
+			`{"description":"Provides access to GitHub repositories, issues, pull requests, and more.","name":"github","reason":"GITHUB_PERSONAL_ACCESS_TOKEN is not set"},` +
+			`{"description":"Provides access to Kubernetes clusters, allowing management and interaction with cluster resources.","name":"kubernetes","reason":"no suitable MCP settings found for the Kubernetes MCP server"},` + `{"description":"Provides access to a PostgreSQL database, allowing execution of SQL queries and retrieval of data.","name":"postgresql","reason":"no suitable MCP settings found for the PostgreSQL MCP server"}` +
 			`]}`
 		s.JSONEq(expectedOutput, output, "Expected JSON output does not match")
 	})
 }
 
-func TestDiscoverText(t *testing.T) {
+func TestDiscover(t *testing.T) {
 	suite.Run(t, new(DiscoverTestSuite))
 }

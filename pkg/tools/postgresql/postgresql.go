@@ -18,14 +18,14 @@ import (
 
 type Provider struct {
 	tools.BasicToolsProvider
-	ReadOnly bool
+	ReadOnly bool `json:"-"`
 }
+
+var _ api.ToolsProvider = &Provider{}
 
 type PostgresqlPolicies struct {
 	policies.ToolPolicies
 }
-
-var _ tools.Provider = &Provider{}
 
 const (
 	databaseUriEnvVar = "DATABASE_URI"
@@ -57,30 +57,10 @@ var (
 	}
 )
 
-func (p *Provider) Attributes() tools.Attributes {
-	return tools.Attributes{
-		BasicFeatureAttributes: api.BasicFeatureAttributes{
-			FeatureName: "postgresql",
-		},
-	}
-}
-
-func (p *Provider) Data() tools.Data {
-	data := tools.Data{
-		BasicFeatureData: api.BasicFeatureData{
-			Reason: p.Reason,
-		},
-	}
-	settings, err := p.findBestMcpServerSettings(p.ReadOnly)
-	if err == nil {
-		data.McpSettings = settings
-	}
-	return data
-}
-
 func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
+	// TODO: This should probably be generalized to all tools and inference providers
 	if !policies.IsEnabledByPolicies(toolPolicies) {
-		p.Reason = "postgresql is not authorized by policies"
+		p.IsAvailableReason = "postgresql is not authorized by policies"
 		return false
 	}
 
@@ -88,20 +68,27 @@ func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
 		p.ReadOnly = true
 	}
 
+	var err error
+	p.McpSettings, err = p.findBestMcpServerSettings(p.ReadOnly)
+	if err != nil {
+		p.IsAvailableReason = err.Error()
+		return false
+	}
+
 	if available := strings.HasPrefix(os.Getenv(databaseUriEnvVar), "postgresql://"); available {
-		p.Reason = fmt.Sprintf("%s is set with postgresql schema", databaseUriEnvVar)
+		p.IsAvailableReason = fmt.Sprintf("%s is set with postgresql schema", databaseUriEnvVar)
 		return true
 	}
 
 	if pgpassword := os.Getenv(pgPasswordEnvVar); pgpassword != "" {
-		p.Reason = fmt.Sprintf("%s is set (will also consider %s)", pgPasswordEnvVar, strings.Join([]string{pgDatabaseEnvVar, pgHostEnvVar, pgPortEnvVar, pgUserEnvVar}, ", "))
+		p.IsAvailableReason = fmt.Sprintf("%s is set (will also consider %s)", pgPasswordEnvVar, strings.Join([]string{pgDatabaseEnvVar, pgHostEnvVar, pgPortEnvVar, pgUserEnvVar}, ", "))
 		return true
 	}
 
 	if os.Getenv(databaseUriEnvVar) == "" {
-		p.Reason = fmt.Sprintf("%s is not set and %s is not set", databaseUriEnvVar, pgPasswordEnvVar)
+		p.IsAvailableReason = fmt.Sprintf("%s is not set and %s is not set", databaseUriEnvVar, pgPasswordEnvVar)
 	} else {
-		p.Reason = fmt.Sprintf("%s is not set with postgresql schema and %s is not set", databaseUriEnvVar, pgPasswordEnvVar)
+		p.IsAvailableReason = fmt.Sprintf("%s is not set with postgresql schema and %s is not set", databaseUriEnvVar, pgPasswordEnvVar)
 	}
 
 	return false
@@ -118,13 +105,6 @@ func (p *Provider) GetTools(ctx context.Context, _ *config.Config) ([]*api.Tool,
 		return nil, err
 	}
 	return eino.GetTools(ctx, cli)
-}
-
-func (p *Provider) MarshalJSON() ([]byte, error) {
-	return json.Marshal(tools.Report{
-		Attributes: p.Attributes(),
-		Data:       p.Data(),
-	})
 }
 
 func (p *Provider) findBestMcpServerSettings(readOnly bool) (*api.McpSettings, error) {
@@ -180,7 +160,16 @@ func (p *Provider) getEnvVarValueOrDefault(envVar string, defaultValue string) s
 	return defaultValue
 }
 
-var instance = &Provider{}
+var instance = &Provider{
+	BasicToolsProvider: tools.BasicToolsProvider{
+		BasicToolsAttributes: tools.BasicToolsAttributes{
+			BasicFeatureAttributes: api.BasicFeatureAttributes{
+				FeatureName:        "postgresql",
+				FeatureDescription: "Provides access to a PostgreSQL database, allowing execution of SQL queries and retrieval of data.",
+			},
+		},
+	},
+}
 
 func init() {
 	tools.Register(instance)

@@ -23,7 +23,7 @@ type Provider struct {
 	inference.BasicInferenceProvider
 }
 
-var _ inference.Provider = &Provider{}
+var _ api.InferenceProvider = &Provider{}
 
 // ModelsList is the response from the /v1/models endpoint
 type ModelsList struct {
@@ -32,27 +32,8 @@ type ModelsList struct {
 	} `json:"data"`
 }
 
-func (ollamaProvider *Provider) Attributes() inference.Attributes {
-	return inference.Attributes{
-		BasicFeatureAttributes: api.BasicFeatureAttributes{
-			FeatureName: "ollama",
-		},
-		Local:  true,
-		Public: false,
-	}
-}
-
-func (ollamaProvider *Provider) Data() inference.Data {
-	return inference.Data{
-		BasicFeatureData: api.BasicFeatureData{
-			Reason: ollamaProvider.Reason,
-		},
-		Models: ollamaProvider.Models,
-	}
-}
-
-func (ollamaProvider *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, error) {
-	resp, err := http.Get(ollamaProvider.baseURL() + "/v1/models")
+func (p *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, error) {
+	resp, err := http.Get(p.baseURL() + "/v1/models")
 	if err != nil {
 		return nil, err
 	}
@@ -72,15 +53,15 @@ func (ollamaProvider *Provider) GetModels(_ context.Context, _ *config.Config) (
 	return modelsNames, nil
 }
 
-func (ollamaProvider *Provider) IsAvailable(cfg *config.Config, policies any) bool {
-	baseURL := ollamaProvider.baseURL()
-	isBaseURLConfigured := ollamaProvider.isBaseURLConfigured()
+func (p *Provider) IsAvailable(cfg *config.Config, policies any) bool {
+	baseURL := p.baseURL()
+	isBaseURLConfigured := p.isBaseURLConfigured()
 	resp, err := http.Get(baseURL + "/v1/models")
 	if err != nil {
 		if isBaseURLConfigured {
-			ollamaProvider.Reason = fmt.Sprintf("%s defined by the %s environment variable is not accessible", baseURL, ollamaHostEnvVar)
+			p.IsAvailableReason = fmt.Sprintf("%s defined by the %s environment variable is not accessible", baseURL, ollamaHostEnvVar)
 		} else {
-			ollamaProvider.Reason = fmt.Sprintf("%s is not accessible", baseURL)
+			p.IsAvailableReason = fmt.Sprintf("%s is not accessible", baseURL)
 		}
 		return false
 	}
@@ -88,58 +69,62 @@ func (ollamaProvider *Provider) IsAvailable(cfg *config.Config, policies any) bo
 	available := resp.StatusCode == http.StatusOK
 	if available {
 		if isBaseURLConfigured {
-			ollamaProvider.Reason = fmt.Sprintf("ollama is accessible at %s defined by the %s environment variable", baseURL, ollamaHostEnvVar)
+			p.IsAvailableReason = fmt.Sprintf("ollama is accessible at %s defined by the %s environment variable", baseURL, ollamaHostEnvVar)
 		} else {
-			ollamaProvider.Reason = fmt.Sprintf("ollama is accessible at %s", baseURL)
+			p.IsAvailableReason = fmt.Sprintf("ollama is accessible at %s", baseURL)
 		}
-		models, err := ollamaProvider.GetModels(context.Background(), cfg)
+		models, err := p.GetModels(context.Background(), cfg)
 		if err == nil {
-			ollamaProvider.Models = models
+			p.ProviderModels = models
 		}
 	} else {
 		if isBaseURLConfigured {
-			ollamaProvider.Reason = fmt.Sprintf("ollama is not accessible at %s defined by the %s environment variable", baseURL, ollamaHostEnvVar)
+			p.IsAvailableReason = fmt.Sprintf("ollama is not accessible at %s defined by the %s environment variable", baseURL, ollamaHostEnvVar)
 		} else {
-			ollamaProvider.Reason = fmt.Sprintf("ollama is not accessible at %s", baseURL)
+			p.IsAvailableReason = fmt.Sprintf("ollama is not accessible at %s", baseURL)
 		}
 	}
 	return available
 }
 
-func (ollamaProvider *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
+func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
 	model := defaultModel
 	if cfg.Model != nil {
 		model = *cfg.Model
 	}
 	return ollama.NewChatModel(ctx, &ollama.ChatModelConfig{
-		BaseURL: ollamaProvider.baseURL(),
+		BaseURL: p.baseURL(),
 		Model:   model,
 	})
 }
 
-func (ollamaProvider *Provider) MarshalJSON() ([]byte, error) {
-	return json.Marshal(inference.Report{
-		Attributes: ollamaProvider.Attributes(),
-		Data:       ollamaProvider.Data(),
-	})
-}
-
-func (ollamaProvider *Provider) baseURL() string {
+func (p *Provider) baseURL() string {
 	if baseURL := os.Getenv(ollamaHostEnvVar); baseURL != "" {
 		return baseURL
 	}
 	return defaultBaseURL
 }
 
-func (ollamaProvider *Provider) isBaseURLConfigured() bool {
+func (p *Provider) isBaseURLConfigured() bool {
 	return os.Getenv(ollamaHostEnvVar) != ""
 }
 
-func (ollamaProvider *Provider) GetDefaultPolicies() map[string]any {
+func (p *Provider) GetDefaultPolicies() map[string]any {
 	return nil
 }
 
-var instance = &Provider{}
+var instance = &Provider{
+	inference.BasicInferenceProvider{
+		BasicInferenceAttributes: inference.BasicInferenceAttributes{
+			BasicFeatureAttributes: api.BasicFeatureAttributes{
+				FeatureName:        "ollama",
+				FeatureDescription: "Ollama local inference provider",
+			},
+			LocalAttr:  true,
+			PublicAttr: false,
+		},
+	},
+}
 
 func init() {
 	inference.Register(instance)

@@ -19,16 +19,16 @@ import (
 
 type Provider struct {
 	tools.BasicToolsProvider
-	ReadOnly           bool
-	DisableDestructive bool
+	ReadOnly           bool `json:"-"`
+	DisableDestructive bool `json:"-"`
 }
+
+var _ api.ToolsProvider = &Provider{}
 
 type KubePolicies struct {
 	policies.ToolPolicies
 	DisableDestructive bool `yaml:"disable-destructive" json:"disable-destructive"`
 }
-
-var _ tools.Provider = &Provider{}
 
 const (
 	RecommendedConfigPathEnvVar = "KUBECONFIG"
@@ -52,27 +52,6 @@ var (
 		},
 	}
 )
-
-func (p *Provider) Attributes() tools.Attributes {
-	return tools.Attributes{
-		BasicFeatureAttributes: api.BasicFeatureAttributes{
-			FeatureName: "kubernetes",
-		},
-	}
-}
-
-func (p *Provider) Data() tools.Data {
-	data := tools.Data{
-		BasicFeatureData: api.BasicFeatureData{
-			Reason: p.Reason,
-		},
-	}
-	settings, err := findBestMcpServerSettings(p.ReadOnly, p.DisableDestructive)
-	if err == nil {
-		data.McpSettings = settings
-	}
-	return data
-}
 
 // copied from https://github.com/kubernetes/client-go/blob/d99dd130a2fc7519c0bc2bd7271447b2a16c04a2/util/homedir/homedir.go#L31
 func homedir() string {
@@ -139,8 +118,9 @@ func homedir() string {
 }
 
 func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
+	// TODO: This should probably be generalized to all tools and inference providers
 	if !policies.IsEnabledByPolicies(toolPolicies) {
-		p.Reason = "kubernetes is not authorized by policies"
+		p.IsAvailableReason = "kubernetes is not authorized by policies"
 		return false
 	}
 
@@ -150,6 +130,13 @@ func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
 
 	if isDisableDestructiveByPolicies(toolPolicies) {
 		p.DisableDestructive = true
+	}
+
+	var err error
+	p.McpSettings, err = findBestMcpServerSettings(p.ReadOnly, p.DisableDestructive)
+	if err != nil {
+		p.IsAvailableReason = err.Error()
+		return false
 	}
 
 	// using the same logic as kubectl to find the config files
@@ -166,17 +153,17 @@ func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
 	for _, file := range allFiles {
 		if _, err := config.FileSystem.Stat(file); err == nil {
 			if len(envVarFiles) == 0 {
-				p.Reason = "default kubeconfig file found"
+				p.IsAvailableReason = "default kubeconfig file found"
 			} else {
-				p.Reason = "kubeconfig file found in the locations specified by the KUBECONFIG environment variable"
+				p.IsAvailableReason = "kubeconfig file found in the locations specified by the KUBECONFIG environment variable"
 			}
 			return true
 		}
 	}
 	if len(envVarFiles) == 0 {
-		p.Reason = "no kubeconfig file found in the default location"
+		p.IsAvailableReason = "no kubeconfig file found in the default location"
 	} else {
-		p.Reason = "no kubeconfig file found in the locations specified by the KUBECONFIG environment variable"
+		p.IsAvailableReason = "no kubeconfig file found in the locations specified by the KUBECONFIG environment variable"
 	}
 	return false
 }
@@ -192,13 +179,6 @@ func (p *Provider) GetTools(ctx context.Context, _ *config.Config) ([]*api.Tool,
 		return nil, err
 	}
 	return eino.GetTools(ctx, cli)
-}
-
-func (p *Provider) MarshalJSON() ([]byte, error) {
-	return json.Marshal(tools.Report{
-		Attributes: p.Attributes(),
-		Data:       p.Data(),
-	})
 }
 
 func findBestMcpServerSettings(readOnly bool, disableDestructive bool) (*api.McpSettings, error) {
@@ -256,7 +236,16 @@ func (p *Provider) GetDefaultPolicies() map[string]any {
 	return policiesMap
 }
 
-var instance = &Provider{}
+var instance = &Provider{
+	BasicToolsProvider: tools.BasicToolsProvider{
+		BasicToolsAttributes: tools.BasicToolsAttributes{
+			BasicFeatureAttributes: api.BasicFeatureAttributes{
+				FeatureName:        "kubernetes",
+				FeatureDescription: "Provides access to Kubernetes clusters, allowing management and interaction with cluster resources.",
+			},
+		},
+	},
+}
 
 func init() {
 	tools.Register(instance)
