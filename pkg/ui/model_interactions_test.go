@@ -2,14 +2,15 @@ package ui
 
 import (
 	"errors"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/x/exp/teatest"
-	"github.com/cloudwego/eino/components/model"
-	"github.com/cloudwego/eino/schema"
-	"github.com/manusa/ai-cli/pkg/test"
 	"runtime"
 	"strings"
 	"testing"
+
+	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/x/exp/teatest/v2"
+	"github.com/cloudwego/eino/components/model"
+	"github.com/cloudwego/eino/schema"
+	"github.com/manusa/ai-cli/pkg/test"
 )
 
 // TODO: sample PoC to build some interaction
@@ -20,7 +21,7 @@ func TestInteractionsUser(t *testing.T) {
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), "Hello AItana")
 			})
-			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+			c.tm.Send(tea.KeyPressMsg{Code: tea.KeyEnter})
 
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), "👤 Hello AItana")
@@ -45,12 +46,12 @@ func TestInteractionsError(t *testing.T) {
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), "Hello Alex")
 			})
-			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+			c.tm.Send(tea.KeyPressMsg{Code: tea.KeyEnter})
 
 			expectedViewport := "" +
-				" 👤 Hello Alex                \r\n" +
-				" ❗ [NodeRunError]            \r\n" +
-				" error generating response    \r\n"
+				" 👤 Hello Alex\r\r\n" +
+				" ❗ [NodeRunError]\r\r\n" +
+				" error generating response\r\r\n"
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), expectedViewport)
 			})
@@ -87,14 +88,14 @@ func TestInteractionsTool(t *testing.T) {
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), "Hello Alex")
 			})
-			c.tm.Send(tea.KeyMsg{Type: tea.KeyEnter})
+			c.tm.Send(tea.KeyPressMsg{Code: tea.KeyEnter})
 
 			expectedViewport := "" +
-				" 👤 Hello Alex                  \r\n" +
-				"    ┌──────────────┐            \r\n" +
-				"    │ 🔧 file_list │            \r\n" +
-				"    └──────────────┘            \r\n" +
-				" 🤖 \u001B[38;5;252mHere is the list of files  \u001B[0m "
+				" 👤 Hello Alex\r\r\n" +
+				"    ┌──────────────┐\r\r\n" +
+				"    │ 🔧 file_list │\r\r\n" +
+				"    └──────────────┘\r\r\n" +
+				" 🤖 Here is the list of files"
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.Contains(string(b), expectedViewport)
 			})

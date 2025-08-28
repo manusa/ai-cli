@@ -2,20 +2,22 @@ package ui
 
 import (
 	"fmt"
-	"github.com/charmbracelet/bubbles/cursor"
-	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/glamour"
-	"github.com/charmbracelet/lipgloss"
+	"strings"
+
+	"github.com/charmbracelet/bubbles/v2/cursor"
+	"github.com/charmbracelet/bubbles/v2/spinner"
+	"github.com/charmbracelet/bubbles/v2/textarea"
+	"github.com/charmbracelet/bubbles/v2/viewport"
+	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/glamour/v2"
+	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/manusa/ai-cli/pkg/ai"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/ui/components/footer"
 	"github.com/manusa/ai-cli/pkg/ui/context"
+	"github.com/manusa/ai-cli/pkg/ui/styles"
 	"github.com/manusa/ai-cli/pkg/version"
 	"github.com/muesli/termenv"
-	"strings"
 )
 
 const (
@@ -29,18 +31,18 @@ type Model struct {
 	viewport viewport.Model
 	spinner  spinner.Model
 	composer textarea.Model
-	footer   tea.Model
+	footer   tea.ViewModel
 }
 
 func NewModel(ai *ai.Ai) Model {
 	ctx := &context.ModelContext{
-		Ai:                ai,
-		Version:           version.Version,
-		HasDarkBackground: termenv.HasDarkBackground(),
+		Ai:      ai,
+		Version: version.Version,
+		Theme:   styles.DefaultTheme(termenv.HasDarkBackground()),
 	}
 	m := Model{
 		context:  ctx,
-		viewport: viewport.New(0, 0),
+		viewport: viewport.New(viewport.WithWidth(0), viewport.WithHeight(0)),
 		spinner:  spinner.New(spinner.WithSpinner(spinner.Points)),
 		composer: textarea.New(),
 		footer:   footer.NewModel(ctx),
@@ -50,9 +52,7 @@ func NewModel(ai *ai.Ai) Model {
 	m.composer.ShowLineNumbers = false
 	m.composer.Placeholder = "How can I help you today?"
 	m.composer.Prompt = ""
-	m.composer.Cursor.SetMode(cursor.CursorStatic)
-	m.composer.FocusedStyle.CursorLine = lipgloss.NewStyle() // Removes highlighted line
-	m.composer.FocusedStyle.Base = m.composer.FocusedStyle.Base.Border(lipgloss.RoundedBorder())
+	m.composer.SetStyles(ctx.Theme.ComposerStyles)
 	return m
 }
 
@@ -62,7 +62,6 @@ func (m Model) Init() tea.Cmd {
 		m.viewport.Init(),
 		m.spinner.Tick,
 		m.composer.Focus(),
-		m.footer.Init(),
 	)
 }
 
@@ -110,7 +109,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.composer, cmd = m.composer.Update(msg)
 		cmds = append(cmds, cmd)
 	}
-	m.footer, cmd = m.footer.Update(msg)
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
@@ -171,9 +169,9 @@ func adjustViewportSize(m *Model) {
 	if m.context.Ai.Session().IsRunning() {
 		spinnerHeight = lipgloss.Height(m.spinner.View())
 	}
-	composerHeight := m.composer.Height() + m.composer.FocusedStyle.Base.GetVerticalFrameSize()
-	m.viewport.Width = m.context.Width
-	m.viewport.Height = m.context.Height - spinnerHeight - composerHeight - lipgloss.Height(m.footer.View())
+	composerHeight := m.composer.Height() + m.composer.Styles().Focused.Base.GetVerticalFrameSize()
+	m.viewport.SetWidth(m.context.Width)
+	m.viewport.SetHeight(m.context.Height - spinnerHeight - composerHeight - lipgloss.Height(m.footer.View()))
 }
 
 func emoji(messageType api.MessageType) string {
@@ -201,14 +199,10 @@ func render(context *context.ModelContext, msg api.Message) string {
 		out := guttered.Render(strings.Trim(msg.Text, "\n"))
 		return out[:1] + "👤" + out[3:]
 	case api.MessageTypeTool:
-		return guttered.Render(MessageToolCall.MaxWidth(maxWidth - marginSize).Render("🔧 " + msg.Text))
+		return guttered.Render(context.Theme.MessageToolCall.MaxWidth(maxWidth - marginSize).Render("🔧 " + msg.Text))
 	case api.MessageTypeAssistant:
-		glamourStyle := GlamourLightStyle
-		if context.HasDarkBackground {
-			glamourStyle = GlamourDarkStyle
-		}
 		tr, err := glamour.NewTermRenderer(
-			glamour.WithStyles(glamourStyle),
+			glamour.WithStyles(context.Theme.GlamourStyle),
 			glamour.WithWordWrap(maxWidth-marginSize),
 			glamour.WithEmoji(),
 		)
