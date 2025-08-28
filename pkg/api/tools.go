@@ -1,12 +1,23 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/manusa/ai-cli/pkg/config"
 )
+
+type ToolsProvider interface {
+	Feature[ToolsAttributes]
+	GetTools(ctx context.Context, cfg *config.Config) ([]*Tool, error)
+}
+
+type ToolsAttributes interface {
+	FeatureAttributes
+}
 
 type Tool struct {
 	Name        string

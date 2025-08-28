@@ -2,7 +2,6 @@ package inference
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/cloudwego/eino/components/model"
@@ -12,30 +11,8 @@ import (
 )
 
 type TestProvider struct {
-	Name      string
-	Local     bool
-	Public    bool
+	BasicInferenceProvider
 	Available bool
-	Reason    string
-}
-
-func (t *TestProvider) Attributes() Attributes {
-	return Attributes{
-		BasicFeatureAttributes: api.BasicFeatureAttributes{
-			FeatureName: t.Name,
-		},
-		Local:  t.Local,
-		Public: t.Public,
-	}
-}
-
-func (t *TestProvider) Data() Data {
-
-	return Data{
-		BasicFeatureData: api.BasicFeatureData{
-			Reason: t.Reason,
-		},
-	}
 }
 
 func (t *TestProvider) IsAvailable(_ *config.Config, _ any) bool {
@@ -46,15 +23,9 @@ func (t *TestProvider) GetDefaultPolicies() map[string]any {
 	return nil
 }
 
-func (t *TestProvider) GetModels(_ context.Context, _ *config.Config) ([]string, error) {
-	return []string{}, nil
-}
-
 func (t *TestProvider) GetInference(_ context.Context, _ *config.Config) (model.ToolCallingChatModel, error) {
 	return nil, nil
 }
-
-func (t *TestProvider) MarshalJSON() ([]byte, error) { return json.Marshal(t.Attributes()) }
 
 type testContext struct {
 }
@@ -82,7 +53,16 @@ func TestRegister(t *testing.T) {
 	// Registering a provider should add it to the providers map
 	testCase(t, func(c *testContext) {
 		t.Run("Registering a provider adds it to the providers map", func(t *testing.T) {
-			Register(&TestProvider{Name: "testProvider", Local: true, Public: false, Available: true})
+			Register(&TestProvider{
+				BasicInferenceProvider: BasicInferenceProvider{
+					BasicInferenceAttributes: BasicInferenceAttributes{
+						api.BasicFeatureAttributes{FeatureName: "testProvider", FeatureDescription: "Test Provider"},
+						true,
+						false,
+					},
+				},
+				Available: true,
+			})
 			assert.Contains(t, providers, "testProvider",
 				"expected provider %s to be registered in the providers %v", "testProvider", providers)
 		})
@@ -90,7 +70,16 @@ func TestRegister(t *testing.T) {
 	// Registering a provider with the same name should panic
 	testCase(t, func(c *testContext) {
 		t.Run("Registering a provider with the same name panics", func(t *testing.T) {
-			provider := &TestProvider{Name: "duplicateProvider", Local: true, Public: false, Available: true}
+			provider := &TestProvider{
+				BasicInferenceProvider: BasicInferenceProvider{
+					BasicInferenceAttributes: BasicInferenceAttributes{
+						api.BasicFeatureAttributes{FeatureName: "duplicateProvider", FeatureDescription: "Test Provider"},
+						true,
+						false,
+					},
+				},
+				Available: true,
+			}
 			Register(provider)
 			assert.Panics(t, func() {
 				Register(provider)
@@ -110,12 +99,30 @@ func TestDiscover(t *testing.T) {
 	})
 	// With one available provider, it should return that provider
 	testCase(t, func(c *testContext) {
-		Register(&TestProvider{Name: "availableProvider", Local: true, Public: false, Available: true})
-		Register(&TestProvider{Name: "unavailableProvider", Local: true, Public: false, Available: false})
+		Register(&TestProvider{
+			BasicInferenceProvider: BasicInferenceProvider{
+				BasicInferenceAttributes: BasicInferenceAttributes{
+					api.BasicFeatureAttributes{FeatureName: "provider-available", FeatureDescription: "Test Provider"},
+					true,
+					false,
+				},
+			},
+			Available: true,
+		})
+		Register(&TestProvider{
+			BasicInferenceProvider: BasicInferenceProvider{
+				BasicInferenceAttributes: BasicInferenceAttributes{
+					api.BasicFeatureAttributes{FeatureName: "provider-unavailable", FeatureDescription: "Test Provider"},
+					true,
+					false,
+				},
+			},
+			Available: false,
+		})
 		availableInferences, notAvailableInferences := Discover(config.New(), nil)
 		t.Run("With one available provider returns that provider", func(t *testing.T) {
 			assert.Len(t, availableInferences, 1, "expected one available provider to be registered")
-			assert.Equal(t, "availableProvider", availableInferences[0].Attributes().Name(),
+			assert.Equal(t, "provider-available", availableInferences[0].Attributes().Name(),
 				"expected the available provider to be returned")
 			assert.Len(t, notAvailableInferences, 1, "expected one not available provider")
 		})

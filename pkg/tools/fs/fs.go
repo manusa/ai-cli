@@ -15,49 +15,27 @@ type Provider struct {
 	tools.BasicToolsProvider
 }
 
+var _ api.ToolsProvider = &Provider{}
+
 type FsPolicies struct {
 	policies.ToolPolicies
 }
 
-var _ tools.Provider = &Provider{}
-
-func (p *Provider) Attributes() tools.Attributes {
-	return tools.Attributes{
-		BasicFeatureAttributes: api.BasicFeatureAttributes{
-			FeatureName: "fs",
-		},
-	}
-}
-
 func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
+	// TODO: This should probably be generalized to all tools and inference providers
 	if !policies.IsEnabledByPolicies(toolPolicies) {
-		p.Reason = "filesystem is not authorized by policies"
+		p.IsAvailableReason = "filesystem is not authorized by policies"
 		return false
 	}
 	// ReadOnly is not considered for fs, as all operations are read-only
-	p.Reason = "filesystem is accessible"
+	p.IsAvailableReason = "filesystem is accessible"
 	return true
-}
-
-func (p *Provider) Data() tools.Data {
-	return tools.Data{
-		BasicFeatureData: api.BasicFeatureData{
-			Reason: p.Reason,
-		},
-	}
 }
 
 func (p *Provider) GetTools(_ context.Context, _ *config.Config) ([]*api.Tool, error) {
 	return []*api.Tool{
 		FileList,
 	}, nil
-}
-
-func (p *Provider) MarshalJSON() ([]byte, error) {
-	return json.Marshal(tools.Report{
-		Attributes: p.Attributes(),
-		Data:       p.Data(),
-	})
 }
 
 var FileList = &api.Tool{
@@ -115,7 +93,16 @@ func (p *Provider) GetDefaultPolicies() map[string]any {
 	return policiesMap
 }
 
-var instance = &Provider{}
+var instance = &Provider{
+	tools.BasicToolsProvider{
+		BasicToolsAttributes: tools.BasicToolsAttributes{
+			BasicFeatureAttributes: api.BasicFeatureAttributes{
+				FeatureName:        "fs",
+				FeatureDescription: "Provides access to the local filesystem, allowing listing of files and directories.",
+			},
+		},
+	},
+}
 
 func init() {
 	tools.Register(instance)

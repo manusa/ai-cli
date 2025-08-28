@@ -2,7 +2,6 @@ package gemini
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/cloudwego/eino-ext/components/model/gemini"
@@ -17,39 +16,20 @@ type Provider struct {
 	inference.BasicInferenceProvider
 }
 
-var _ inference.Provider = &Provider{}
+var _ api.InferenceProvider = &Provider{}
 
-func (geminiProvider *Provider) Attributes() inference.Attributes {
-	return inference.Attributes{
-		BasicFeatureAttributes: api.BasicFeatureAttributes{
-			FeatureName: "gemini",
-		},
-		Local:  false,
-		Public: true,
-	}
-}
-
-func (geminiProvider *Provider) Data() inference.Data {
-	return inference.Data{
-		BasicFeatureData: api.BasicFeatureData{
-			Reason: geminiProvider.Reason,
-		},
-		Models: geminiProvider.Models,
-	}
-}
-
-func (geminiProvider *Provider) IsAvailable(cfg *config.Config, policies any) bool {
+func (p *Provider) IsAvailable(cfg *config.Config, policies any) bool {
 	available := cfg.GoogleApiKey != ""
 	if available {
-		geminiProvider.Reason = "GEMINI_API_KEY is set"
-		geminiProvider.Models = []string{"gemini-2.0-flash"}
+		p.IsAvailableReason = "GEMINI_API_KEY is set"
+		p.ProviderModels = []string{"gemini-2.0-flash"}
 	} else {
-		geminiProvider.Reason = "GEMINI_API_KEY is not set"
+		p.IsAvailableReason = "GEMINI_API_KEY is not set"
 	}
 	return available
 }
 
-func (geminiProvider *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
+func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
 	geminiCli, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey: cfg.GoogleApiKey,
 	})
@@ -59,18 +39,22 @@ func (geminiProvider *Provider) GetInference(ctx context.Context, cfg *config.Co
 	return gemini.NewChatModel(ctx, &gemini.Config{Client: geminiCli, Model: "gemini-2.0-flash"})
 }
 
-func (geminiProvider *Provider) MarshalJSON() ([]byte, error) {
-	return json.Marshal(inference.Report{
-		Attributes: geminiProvider.Attributes(),
-		Data:       geminiProvider.Data(),
-	})
-}
-
-func (geminiProvider *Provider) GetDefaultPolicies() map[string]any {
+func (p *Provider) GetDefaultPolicies() map[string]any {
 	return nil
 }
 
-var instance = &Provider{}
+var instance = &Provider{
+	inference.BasicInferenceProvider{
+		BasicInferenceAttributes: inference.BasicInferenceAttributes{
+			BasicFeatureAttributes: api.BasicFeatureAttributes{
+				FeatureName:        "gemini",
+				FeatureDescription: "Google Gemini inference provider",
+			},
+			LocalAttr:  false,
+			PublicAttr: true,
+		},
+	},
+}
 
 func init() {
 	inference.Register(instance)

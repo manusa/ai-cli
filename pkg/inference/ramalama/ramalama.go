@@ -19,31 +19,12 @@ type Provider struct {
 	processes []ramalamaProcess
 }
 
+var _ api.InferenceProvider = &Provider{}
+
 // ramalamaProcess is part of the response from the "ramalama ps --format json" command
 type ramalamaProcess struct {
 	State  string
 	Labels map[string]string
-}
-
-var _ inference.Provider = &Provider{}
-
-func (p *Provider) Attributes() inference.Attributes {
-	return inference.Attributes{
-		BasicFeatureAttributes: api.BasicFeatureAttributes{
-			FeatureName: "ramalama",
-		},
-		Local:  true,
-		Public: false,
-	}
-}
-
-func (p *Provider) Data() inference.Data {
-	return inference.Data{
-		BasicFeatureData: api.BasicFeatureData{
-			Reason: p.Reason,
-		},
-		Models: p.Models,
-	}
 }
 
 func (p *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, error) {
@@ -66,22 +47,22 @@ func (p *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, err
 func (p *Provider) IsAvailable(cfg *config.Config, policies any) bool {
 	_, err := exec.LookPath(p.getRamalamaBinaryName())
 	if err != nil {
-		p.Reason = "ramalama is not installed"
+		p.IsAvailableReason = "ramalama is not installed"
 		return false
 	}
 	models, err := p.GetModels(context.Background(), cfg)
 	if err != nil || len(models) == 0 {
-		p.Reason = "ramalama is installed but no models are served"
+		p.IsAvailableReason = "ramalama is installed but no models are served"
 		return false
 	}
-	p.Models = models
+	p.ProviderModels = models
 
-	p.Reason = "ramalama is serving models"
+	p.IsAvailableReason = "ramalama is serving models"
 	return true
 }
 
 func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
-	model := p.Models[0]
+	model := p.ProviderModels[0]
 	if cfg.Model != nil {
 		model = *cfg.Model
 	}
@@ -92,13 +73,6 @@ func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.
 	return openai.NewChatModel(ctx, &openai.ChatModelConfig{
 		BaseURL: baseURL,
 		Model:   model,
-	})
-}
-
-func (p *Provider) MarshalJSON() ([]byte, error) {
-	return json.Marshal(inference.Report{
-		Attributes: p.Attributes(),
-		Data:       p.Data(),
 	})
 }
 
@@ -131,7 +105,19 @@ func (p *Provider) getRamalamaBinaryName() string {
 	return "ramalama"
 }
 
-var instance = &Provider{}
+var instance = &Provider{
+	inference.BasicInferenceProvider{
+		BasicInferenceAttributes: inference.BasicInferenceAttributes{
+			BasicFeatureAttributes: api.BasicFeatureAttributes{
+				FeatureName:        "ramalama",
+				FeatureDescription: "Ramalama local inference provider",
+			},
+			LocalAttr:  true,
+			PublicAttr: false,
+		},
+	},
+	nil,
+}
 
 func init() {
 	inference.Register(instance)

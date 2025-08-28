@@ -20,32 +20,13 @@ type Provider struct {
 	inference.BasicInferenceProvider
 }
 
-var _ inference.Provider = &Provider{}
+var _ api.InferenceProvider = &Provider{}
 
 // ModelsList is the response from the /v1/models endpoint
 type ModelsList struct {
 	Data []struct {
 		Id string `json:"id"`
 	} `json:"data"`
-}
-
-func (p *Provider) Attributes() inference.Attributes {
-	return inference.Attributes{
-		BasicFeatureAttributes: api.BasicFeatureAttributes{
-			FeatureName: "lmstudio",
-		},
-		Local:  true,
-		Public: false,
-	}
-}
-
-func (p *Provider) Data() inference.Data {
-	return inference.Data{
-		BasicFeatureData: api.BasicFeatureData{
-			Reason: p.Reason,
-		},
-		Models: p.Models,
-	}
 }
 
 func (p *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, error) {
@@ -73,38 +54,31 @@ func (p *Provider) IsAvailable(cfg *config.Config, policies any) bool {
 	baseURL := p.baseURL()
 	resp, err := http.Get(baseURL + "/v1/models")
 	if err != nil {
-		p.Reason = fmt.Sprintf("%s is not accessible", baseURL)
+		p.IsAvailableReason = fmt.Sprintf("%s is not accessible", baseURL)
 		return false
 	}
 	_ = resp.Body.Close()
 	available := resp.StatusCode == http.StatusOK
 	if available {
-		p.Reason = fmt.Sprintf("LM Studio is accessible at %s", baseURL)
+		p.IsAvailableReason = fmt.Sprintf("LM Studio is accessible at %s", baseURL)
 		models, err := p.GetModels(context.Background(), cfg)
 		if err == nil {
-			p.Models = models
+			p.ProviderModels = models
 		}
 	} else {
-		p.Reason = fmt.Sprintf("LM Studio is not accessible at %s", baseURL)
+		p.IsAvailableReason = fmt.Sprintf("LM Studio is not accessible at %s", baseURL)
 	}
 	return available
 }
 
 func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
-	model := p.Models[0]
+	model := p.ProviderModels[0]
 	if cfg.Model != nil {
 		model = *cfg.Model
 	}
 	return openai.NewChatModel(ctx, &openai.ChatModelConfig{
 		BaseURL: fmt.Sprintf("%s/v1", p.baseURL()),
 		Model:   model,
-	})
-}
-
-func (p *Provider) MarshalJSON() ([]byte, error) {
-	return json.Marshal(inference.Report{
-		Attributes: p.Attributes(),
-		Data:       p.Data(),
 	})
 }
 
@@ -116,7 +90,18 @@ func (p *Provider) GetDefaultPolicies() map[string]any {
 	return nil
 }
 
-var instance = &Provider{}
+var instance = &Provider{
+	inference.BasicInferenceProvider{
+		BasicInferenceAttributes: inference.BasicInferenceAttributes{
+			BasicFeatureAttributes: api.BasicFeatureAttributes{
+				FeatureName:        "lmstudio",
+				FeatureDescription: "LM Studio local inference provider",
+			},
+			LocalAttr:  true,
+			PublicAttr: false,
+		},
+	},
+}
 
 func init() {
 	inference.Register(instance)
