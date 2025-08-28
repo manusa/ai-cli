@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/cloudwego/eino/components/model"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference"
 	"github.com/manusa/ai-cli/pkg/policies"
+	"github.com/manusa/ai-cli/pkg/test"
 	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/manusa/ai-cli/pkg/tools/fs"
 	"github.com/manusa/ai-cli/pkg/tools/kubernetes"
@@ -28,15 +28,6 @@ func (t *TestProvider) IsAvailable(_ *config.Config, _ any) bool {
 
 func (t *TestProvider) GetDefaultPolicies() map[string]any {
 	return nil
-}
-
-type TestInferenceProvider struct {
-	inference.BasicInferenceProvider
-	TestProvider
-}
-
-func (t *TestInferenceProvider) GetInference(_ context.Context, _ *config.Config) (model.ToolCallingChatModel, error) {
-	return nil, nil
 }
 
 type TestToolsProvider struct {
@@ -71,23 +62,23 @@ func (s *DiscoverTestSuite) TearDownTest() {
 
 func (s *DiscoverTestSuite) TestDiscoverInference() {
 	// With one available inference provider, it should return that provider
-	inference.Register(&TestInferenceProvider{
-		inference.BasicInferenceProvider{
-			BasicInferenceAttributes: inference.BasicInferenceAttributes{
+	inference.Register(&test.InferenceProvider{
+		BasicInferenceProvider: api.BasicInferenceProvider{
+			BasicInferenceAttributes: api.BasicInferenceAttributes{
 				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-available", FeatureDescription: "Test Provider"},
 				LocalAttr:              true,
 			},
 		},
-		TestProvider{Available: true},
+		Available: true,
 	})
-	inference.Register(&TestInferenceProvider{
-		inference.BasicInferenceProvider{
-			BasicInferenceAttributes: inference.BasicInferenceAttributes{
+	inference.Register(&test.InferenceProvider{
+		BasicInferenceProvider: api.BasicInferenceProvider{
+			BasicInferenceAttributes: api.BasicInferenceAttributes{
 				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-unavailable", FeatureDescription: "Test Provider"},
 				LocalAttr:              true,
 			},
 		},
-		TestProvider{Available: false},
+		Available: false,
 	})
 	features := Discover(config.New(), nil)
 	s.Run("With one available provider returns features", func() {
@@ -105,32 +96,32 @@ func (s *DiscoverTestSuite) TestDiscoverInference() {
 }
 
 func (s *DiscoverTestSuite) TestDiscoverInferenceConfiguredProvider() {
-	inference.Register(&TestInferenceProvider{
-		inference.BasicInferenceProvider{
-			BasicInferenceAttributes: inference.BasicInferenceAttributes{
+	inference.Register(&test.InferenceProvider{
+		BasicInferenceProvider: api.BasicInferenceProvider{
+			BasicInferenceAttributes: api.BasicInferenceAttributes{
 				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-1", FeatureDescription: "Test Provider"},
 				LocalAttr:              true,
 			},
 		},
-		TestProvider{Available: true},
+		Available: true,
 	})
-	inference.Register(&TestInferenceProvider{
-		inference.BasicInferenceProvider{
-			BasicInferenceAttributes: inference.BasicInferenceAttributes{
+	inference.Register(&test.InferenceProvider{
+		BasicInferenceProvider: api.BasicInferenceProvider{
+			BasicInferenceAttributes: api.BasicInferenceAttributes{
 				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-2", FeatureDescription: "Test Provider"},
 				LocalAttr:              true,
 			},
 		},
-		TestProvider{Available: true},
+		Available: true,
 	})
-	inference.Register(&TestInferenceProvider{
-		inference.BasicInferenceProvider{
-			BasicInferenceAttributes: inference.BasicInferenceAttributes{
+	inference.Register(&test.InferenceProvider{
+		BasicInferenceProvider: api.BasicInferenceProvider{
+			BasicInferenceAttributes: api.BasicInferenceAttributes{
 				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-3", FeatureDescription: "Test Provider"},
 				LocalAttr:              true,
 			},
 		},
-		TestProvider{Available: true},
+		Available: false,
 	})
 	cfg := config.New()
 	cfg.Inference = func(s string) *string {
@@ -144,23 +135,23 @@ func (s *DiscoverTestSuite) TestDiscoverInferenceConfiguredProvider() {
 }
 
 func (s *DiscoverTestSuite) TestDiscoverInferenceConfiguredProviderUnknown() {
-	inference.Register(&TestInferenceProvider{
-		inference.BasicInferenceProvider{
-			BasicInferenceAttributes: inference.BasicInferenceAttributes{
+	inference.Register(&test.InferenceProvider{
+		BasicInferenceProvider: api.BasicInferenceProvider{
+			BasicInferenceAttributes: api.BasicInferenceAttributes{
 				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-1", FeatureDescription: "Test Provider"},
 				LocalAttr:              true,
 			},
 		},
-		TestProvider{Available: true},
+		Available: false,
 	})
-	inference.Register(&TestInferenceProvider{
-		inference.BasicInferenceProvider{
-			BasicInferenceAttributes: inference.BasicInferenceAttributes{
+	inference.Register(&test.InferenceProvider{
+		BasicInferenceProvider: api.BasicInferenceProvider{
+			BasicInferenceAttributes: api.BasicInferenceAttributes{
 				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-2", FeatureDescription: "Test Provider"},
 				LocalAttr:              true,
 			},
 		},
-		TestProvider{Available: true},
+		Available: false,
 	})
 	cfg := config.New()
 	cfg.Inference = func(s string) *string {
@@ -246,27 +237,27 @@ func (s *DiscoverTestSuite) TestDiscoverToolsWithDisabledPolicies() {
 }
 
 func (s *DiscoverTestSuite) TestDiscoverToJSON() {
-	inference.Register(&TestInferenceProvider{
-		inference.BasicInferenceProvider{
-			BasicInferenceAttributes: inference.BasicInferenceAttributes{
+	inference.Register(&test.InferenceProvider{
+		BasicInferenceProvider: api.BasicInferenceProvider{
+			BasicInferenceAttributes: api.BasicInferenceAttributes{
 				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "inference-provider-available", FeatureDescription: "Test Provider"},
 				LocalAttr:              true,
 			},
 			IsAvailableReason: "conditions met",
 			ProviderModels:    []string{"model-1"},
 		},
-		TestProvider{Available: true},
+		Available: true,
 	})
-	inference.Register(&TestInferenceProvider{
-		inference.BasicInferenceProvider{
-			BasicInferenceAttributes: inference.BasicInferenceAttributes{
+	inference.Register(&test.InferenceProvider{
+		BasicInferenceProvider: api.BasicInferenceProvider{
+			BasicInferenceAttributes: api.BasicInferenceAttributes{
 				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "inference-provider-unavailable", FeatureDescription: "Test Provider"},
 				LocalAttr:              false,
 				PublicAttr:             true,
 			},
 			IsAvailableReason: "conditions NOT met",
 		},
-		TestProvider{Available: false},
+		Available: false,
 	})
 	tools.Register(&TestToolsProvider{
 		tools.BasicToolsProvider{

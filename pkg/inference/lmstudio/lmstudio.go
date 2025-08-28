@@ -17,7 +17,7 @@ import (
 const defaultBaseURL = "http://localhost:1234"
 
 type Provider struct {
-	inference.BasicInferenceProvider
+	api.BasicInferenceProvider
 }
 
 var _ api.InferenceProvider = &Provider{}
@@ -91,8 +91,8 @@ func (p *Provider) GetDefaultPolicies() map[string]any {
 }
 
 var instance = &Provider{
-	inference.BasicInferenceProvider{
-		BasicInferenceAttributes: inference.BasicInferenceAttributes{
+	api.BasicInferenceProvider{
+		BasicInferenceAttributes: api.BasicInferenceAttributes{
 			BasicFeatureAttributes: api.BasicFeatureAttributes{
 				FeatureName:        "lmstudio",
 				FeatureDescription: "LM Studio local inference provider",

@@ -20,7 +20,7 @@ const defaultModel = "llama3.2:3b"
 const ollamaHostEnvVar = "OLLAMA_HOST"
 
 type Provider struct {
-	inference.BasicInferenceProvider
+	api.BasicInferenceProvider
 }
 
 var _ api.InferenceProvider = &Provider{}
@@ -114,8 +114,8 @@ func (p *Provider) GetDefaultPolicies() map[string]any {
 }
 
 var instance = &Provider{
-	inference.BasicInferenceProvider{
-		BasicInferenceAttributes: inference.BasicInferenceAttributes{
+	api.BasicInferenceProvider{
+		BasicInferenceAttributes: api.BasicInferenceAttributes{
 			BasicFeatureAttributes: api.BasicFeatureAttributes{
 				FeatureName:        "ollama",
 				FeatureDescription: "Ollama local inference provider",

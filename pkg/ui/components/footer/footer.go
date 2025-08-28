@@ -19,17 +19,18 @@ func NewModel(ctx *context.ModelContext) Model {
 }
 
 func (m Model) View() string {
-	version := lipgloss.NewStyle().
-		Background(lipgloss.Color("62")).
-		Foreground(lipgloss.Color("0")).
-		Padding(0, 1).
-		Render(m.ctx.Version)
-	spacerWidth := m.ctx.Width - lipgloss.Width(version)
+	style := lipgloss.NewStyle().
+		Background(m.ctx.Theme.FooterBackground).
+		Foreground(m.ctx.Theme.FooterText).
+		Padding(0, 1)
+	inferenceProvider := style.Render("🧠", m.ctx.Ai.InferenceAttributes().Name())
+	version := style.Render(m.ctx.Version)
+	spacerWidth := m.ctx.Width - lipgloss.Width(inferenceProvider) - lipgloss.Width(version)
 	if spacerWidth < 0 {
 		spacerWidth = 0
 	}
 	spacer := lipgloss.NewStyle().
-		Background(lipgloss.Color("62")).
+		Background(m.ctx.Theme.FooterBackground).
 		Render(strings.Repeat(" ", spacerWidth))
-	return lipgloss.JoinHorizontal(lipgloss.Top, spacer, version)
+	return lipgloss.JoinHorizontal(lipgloss.Top, inferenceProvider, spacer, version)
 }

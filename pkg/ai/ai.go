@@ -4,6 +4,11 @@ package ai
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"strings"
+	"sync"
+
 	"github.com/cloudwego/eino/callbacks"
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/components/tool"
@@ -14,34 +19,37 @@ import (
 	callbackutils "github.com/cloudwego/eino/utils/callbacks"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
-	"io"
-	"strings"
-	"sync"
 )
 
 type Notification struct{}
 
 type Ai struct {
-	config       *config.Config
-	llm          model.ToolCallingChatModel
-	tools        []*api.Tool
-	Input        chan api.Message
-	Output       chan Notification
-	session      *Session
-	sessionMutex sync.RWMutex
+	config            *config.Config
+	inferenceProvider api.InferenceProvider
+	tools             []*api.Tool
+	Input             chan api.Message
+	Output            chan Notification
+	session           *Session
+	sessionMutex      sync.RWMutex
+
+	llm model.ToolCallingChatModel
 }
 
-func New(llm model.ToolCallingChatModel, tools []*api.Tool, cfg *config.Config) *Ai {
+func New(cfg *config.Config, inferenceProvider api.InferenceProvider, tools []*api.Tool) *Ai {
 	session := &Session{}
 	return &Ai{
-		config:       cfg,
-		llm:          llm,
-		tools:        tools,
-		Input:        make(chan api.Message),
-		Output:       make(chan Notification),
-		session:      session,
-		sessionMutex: sync.RWMutex{},
+		config:            cfg,
+		inferenceProvider: inferenceProvider,
+		tools:             tools,
+		Input:             make(chan api.Message),
+		Output:            make(chan Notification),
+		session:           session,
+		sessionMutex:      sync.RWMutex{},
 	}
+}
+
+func (a *Ai) InferenceAttributes() api.InferenceAttributes {
+	return a.inferenceProvider.Attributes()
 }
 
 func (a *Ai) Session() *Session {
@@ -94,7 +102,11 @@ func (a *Ai) Reset() {
 	a.notify()
 }
 
-func (a *Ai) Run(ctx context.Context) error {
+func (a *Ai) Run(ctx context.Context) (err error) {
+	a.llm, err = a.inferenceProvider.GetInference(ctx, a.config)
+	if err != nil {
+		return fmt.Errorf("failed to get inference: %w", err)
+	}
 	go func() {
 		for {
 			select {
@@ -105,7 +117,7 @@ func (a *Ai) Run(ctx context.Context) error {
 			}
 		}
 	}()
-	return nil
+	return
 }
 
 // Prompt sends a prompt to the AI model.

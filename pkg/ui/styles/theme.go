@@ -10,19 +10,23 @@ import (
 )
 
 type Theme struct {
-	IsDark          bool
-	PrimaryBorder   color.Color
-	ComposerStyles  textarea.Styles
-	GlamourStyle    ansi.StyleConfig
-	MessageToolCall lipgloss.Style
+	IsDark           bool
+	PrimaryBorder    color.Color
+	FooterBackground color.Color
+	FooterText       color.Color
+	ComposerStyles   textarea.Styles
+	GlamourStyle     ansi.StyleConfig
+	MessageToolCall  lipgloss.Style
 }
 
 func DefaultTheme(isDark bool) *Theme {
 	lightDark := lipgloss.LightDark(isDark)
 	theme := &Theme{
-		IsDark:         isDark,
-		PrimaryBorder:  lightDark(lipgloss.Color("013"), lipgloss.Color("008")),
-		ComposerStyles: textarea.DefaultStyles(isDark),
+		IsDark:           isDark,
+		PrimaryBorder:    lightDark(lipgloss.Color("013"), lipgloss.Color("008")),
+		FooterBackground: lightDark(lipgloss.Color("#FFFFFF"), lipgloss.Color("#5A3F7F")),
+		FooterText:       lightDark(lipgloss.Color("#000000"), lipgloss.Color("#FFFFFF")),
+		ComposerStyles:   textarea.DefaultStyles(isDark),
 	}
 	// Composer styles
 	theme.ComposerStyles.Cursor.Blink = false

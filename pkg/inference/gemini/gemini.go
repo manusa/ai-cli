@@ -13,7 +13,7 @@ import (
 )
 
 type Provider struct {
-	inference.BasicInferenceProvider
+	api.BasicInferenceProvider
 }
 
 var _ api.InferenceProvider = &Provider{}
@@ -44,8 +44,8 @@ func (p *Provider) GetDefaultPolicies() map[string]any {
 }
 
 var instance = &Provider{
-	inference.BasicInferenceProvider{
-		BasicInferenceAttributes: inference.BasicInferenceAttributes{
+	api.BasicInferenceProvider{
+		BasicInferenceAttributes: api.BasicInferenceAttributes{
 			BasicFeatureAttributes: api.BasicFeatureAttributes{
 				FeatureName:        "gemini",
 				FeatureDescription: "Google Gemini inference provider",
