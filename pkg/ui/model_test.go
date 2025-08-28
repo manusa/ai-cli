@@ -29,7 +29,16 @@ func (c *testContext) beforeEach(t *testing.T) {
 	if llm == nil {
 		llm = &test.ChatModel{}
 	}
-	aiAgent := ai.New(llm, []*api.Tool{fs.FileList}, config.New())
+	inferenceProvider := &test.InferenceProvider{
+		BasicInferenceProvider: api.BasicInferenceProvider{
+			BasicInferenceAttributes: api.BasicInferenceAttributes{
+				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "inference-provider"},
+			},
+		},
+		Available: true,
+		Llm:       llm,
+	}
+	aiAgent := ai.New(config.New(), inferenceProvider, []*api.Tool{fs.FileList})
 	if err := aiAgent.Run(t.Context()); err != nil {
 		t.Fatalf("failed to run AI: %v", err)
 	}
@@ -229,6 +238,12 @@ func TestFooter(t *testing.T) {
 		t.Run("Footer displays version", func(t *testing.T) {
 			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
 				return strings.HasSuffix(string(b), " 0.0.0 ")
+			})
+		})
+		c.tm.Send(tea.WindowSizeMsg{Width: 80, Height: 24}) // Force repaint
+		t.Run("Footer displays inference provider name", func(t *testing.T) {
+			teatest.WaitFor(t, c.tm.Output(), func(b []byte) bool {
+				return strings.Contains(string(b), "inference-provider")
 			})
 		})
 	})

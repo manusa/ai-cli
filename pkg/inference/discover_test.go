@@ -1,31 +1,13 @@
 package inference
 
 import (
-	"context"
 	"testing"
 
-	"github.com/cloudwego/eino/components/model"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/test"
 	"github.com/stretchr/testify/assert"
 )
-
-type TestProvider struct {
-	BasicInferenceProvider
-	Available bool
-}
-
-func (t *TestProvider) IsAvailable(_ *config.Config, _ any) bool {
-	return t.Available
-}
-
-func (t *TestProvider) GetDefaultPolicies() map[string]any {
-	return nil
-}
-
-func (t *TestProvider) GetInference(_ context.Context, _ *config.Config) (model.ToolCallingChatModel, error) {
-	return nil, nil
-}
 
 type testContext struct {
 }
@@ -53,12 +35,11 @@ func TestRegister(t *testing.T) {
 	// Registering a provider should add it to the providers map
 	testCase(t, func(c *testContext) {
 		t.Run("Registering a provider adds it to the providers map", func(t *testing.T) {
-			Register(&TestProvider{
-				BasicInferenceProvider: BasicInferenceProvider{
-					BasicInferenceAttributes: BasicInferenceAttributes{
-						api.BasicFeatureAttributes{FeatureName: "testProvider", FeatureDescription: "Test Provider"},
-						true,
-						false,
+			Register(&test.InferenceProvider{
+				BasicInferenceProvider: api.BasicInferenceProvider{
+					BasicInferenceAttributes: api.BasicInferenceAttributes{
+						BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "testProvider", FeatureDescription: "Test Provider"},
+						LocalAttr:              true,
 					},
 				},
 				Available: true,
@@ -70,12 +51,11 @@ func TestRegister(t *testing.T) {
 	// Registering a provider with the same name should panic
 	testCase(t, func(c *testContext) {
 		t.Run("Registering a provider with the same name panics", func(t *testing.T) {
-			provider := &TestProvider{
-				BasicInferenceProvider: BasicInferenceProvider{
-					BasicInferenceAttributes: BasicInferenceAttributes{
-						api.BasicFeatureAttributes{FeatureName: "duplicateProvider", FeatureDescription: "Test Provider"},
-						true,
-						false,
+			provider := &test.InferenceProvider{
+				BasicInferenceProvider: api.BasicInferenceProvider{
+					BasicInferenceAttributes: api.BasicInferenceAttributes{
+						BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "duplicateProvider", FeatureDescription: "Test Provider"},
+						LocalAttr:              true,
 					},
 				},
 				Available: true,
@@ -99,22 +79,20 @@ func TestDiscover(t *testing.T) {
 	})
 	// With one available provider, it should return that provider
 	testCase(t, func(c *testContext) {
-		Register(&TestProvider{
-			BasicInferenceProvider: BasicInferenceProvider{
-				BasicInferenceAttributes: BasicInferenceAttributes{
-					api.BasicFeatureAttributes{FeatureName: "provider-available", FeatureDescription: "Test Provider"},
-					true,
-					false,
+		Register(&test.InferenceProvider{
+			BasicInferenceProvider: api.BasicInferenceProvider{
+				BasicInferenceAttributes: api.BasicInferenceAttributes{
+					BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-available", FeatureDescription: "Test Provider"},
+					LocalAttr:              true,
 				},
 			},
 			Available: true,
 		})
-		Register(&TestProvider{
-			BasicInferenceProvider: BasicInferenceProvider{
-				BasicInferenceAttributes: BasicInferenceAttributes{
-					api.BasicFeatureAttributes{FeatureName: "provider-unavailable", FeatureDescription: "Test Provider"},
-					true,
-					false,
+		Register(&test.InferenceProvider{
+			BasicInferenceProvider: api.BasicInferenceProvider{
+				BasicInferenceAttributes: api.BasicInferenceAttributes{
+					BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-unavailable", FeatureDescription: "Test Provider"},
+					LocalAttr:              true,
 				},
 			},
 			Available: false,

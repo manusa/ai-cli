@@ -21,3 +21,36 @@ type InferenceAttributes interface {
 	// Public indicates if the inference provider is public (e.g. OpenAI, Gemini) or private (e.g. Enterprise internal)
 	Public() bool
 }
+
+type BasicInferenceProvider struct {
+	InferenceProvider `json:"-"`
+	BasicInferenceAttributes
+	IsAvailableReason string   `json:"reason"`
+	ProviderModels    []string `json:"models"`
+}
+
+func (p *BasicInferenceProvider) Attributes() InferenceAttributes {
+	return &p.BasicInferenceAttributes
+}
+
+func (p *BasicInferenceProvider) Reason() string {
+	return p.IsAvailableReason
+}
+
+func (p *BasicInferenceProvider) Models() []string {
+	return p.ProviderModels
+}
+
+type BasicInferenceAttributes struct {
+	BasicFeatureAttributes
+	LocalAttr  bool `json:"local"`
+	PublicAttr bool `json:"public"`
+}
+
+func (a *BasicInferenceAttributes) Local() bool {
+	return a.LocalAttr
+}
+
+func (a *BasicInferenceAttributes) Public() bool {
+	return a.PublicAttr
+}

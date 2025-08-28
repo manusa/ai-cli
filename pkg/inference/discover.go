@@ -11,39 +11,6 @@ import (
 
 var providers = map[string]api.InferenceProvider{}
 
-type BasicInferenceProvider struct {
-	api.InferenceProvider `json:"-"`
-	BasicInferenceAttributes
-	IsAvailableReason string   `json:"reason"`
-	ProviderModels    []string `json:"models"`
-}
-
-func (p *BasicInferenceProvider) Attributes() api.InferenceAttributes {
-	return &p.BasicInferenceAttributes
-}
-
-func (p *BasicInferenceProvider) Reason() string {
-	return p.IsAvailableReason
-}
-
-func (p *BasicInferenceProvider) Models() []string {
-	return p.ProviderModels
-}
-
-type BasicInferenceAttributes struct {
-	api.BasicFeatureAttributes
-	LocalAttr  bool `json:"local"`
-	PublicAttr bool `json:"public"`
-}
-
-func (a *BasicInferenceAttributes) Local() bool {
-	return a.LocalAttr
-}
-
-func (a *BasicInferenceAttributes) Public() bool {
-	return a.PublicAttr
-}
-
 // Register a new inference provider
 func Register(provider api.InferenceProvider) {
 	if provider == nil {

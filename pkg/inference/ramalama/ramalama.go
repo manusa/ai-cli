@@ -15,7 +15,7 @@ import (
 )
 
 type Provider struct {
-	inference.BasicInferenceProvider
+	api.BasicInferenceProvider
 	processes []ramalamaProcess
 }
 
@@ -106,8 +106,8 @@ func (p *Provider) getRamalamaBinaryName() string {
 }
 
 var instance = &Provider{
-	inference.BasicInferenceProvider{
-		BasicInferenceAttributes: inference.BasicInferenceAttributes{
+	api.BasicInferenceProvider{
+		BasicInferenceAttributes: api.BasicInferenceAttributes{
 			BasicFeatureAttributes: api.BasicFeatureAttributes{
 				FeatureName:        "ramalama",
 				FeatureDescription: "Ramalama local inference provider",
