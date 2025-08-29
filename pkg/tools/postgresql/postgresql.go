@@ -17,7 +17,7 @@ import (
 )
 
 type Provider struct {
-	tools.BasicToolsProvider
+	api.BasicToolsProvider
 	ReadOnly bool `json:"-"`
 }
 
@@ -57,11 +57,11 @@ var (
 	}
 )
 
-func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
+func (p *Provider) Initialize(_ *config.Config, toolPolicies any) {
 	// TODO: This should probably be generalized to all tools and inference providers
 	if !policies.IsEnabledByPolicies(toolPolicies) {
 		p.IsAvailableReason = "postgresql is not authorized by policies"
-		return false
+		return
 	}
 
 	if policies.IsReadOnlyByPolicies(toolPolicies) {
@@ -72,17 +72,19 @@ func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
 	p.McpSettings, err = p.findBestMcpServerSettings(p.ReadOnly)
 	if err != nil {
 		p.IsAvailableReason = err.Error()
-		return false
+		return
 	}
 
 	if available := strings.HasPrefix(os.Getenv(databaseUriEnvVar), "postgresql://"); available {
+		p.Available = true
 		p.IsAvailableReason = fmt.Sprintf("%s is set with postgresql schema", databaseUriEnvVar)
-		return true
+		return
 	}
 
 	if pgpassword := os.Getenv(pgPasswordEnvVar); pgpassword != "" {
+		p.Available = true
 		p.IsAvailableReason = fmt.Sprintf("%s is set (will also consider %s)", pgPasswordEnvVar, strings.Join([]string{pgDatabaseEnvVar, pgHostEnvVar, pgPortEnvVar, pgUserEnvVar}, ", "))
-		return true
+		return
 	}
 
 	if os.Getenv(databaseUriEnvVar) == "" {
@@ -90,8 +92,6 @@ func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
 	} else {
 		p.IsAvailableReason = fmt.Sprintf("%s is not set with postgresql schema and %s is not set", databaseUriEnvVar, pgPasswordEnvVar)
 	}
-
-	return false
 }
 
 func (p *Provider) GetTools(ctx context.Context, _ *config.Config) ([]*api.Tool, error) {
@@ -161,8 +161,8 @@ func (p *Provider) getEnvVarValueOrDefault(envVar string, defaultValue string) s
 }
 
 var instance = &Provider{
-	BasicToolsProvider: tools.BasicToolsProvider{
-		BasicToolsAttributes: tools.BasicToolsAttributes{
+	BasicToolsProvider: api.BasicToolsProvider{
+		BasicToolsAttributes: api.BasicToolsAttributes{
 			BasicFeatureAttributes: api.BasicFeatureAttributes{
 				FeatureName:        "postgresql",
 				FeatureDescription: "Provides access to a PostgreSQL database, allowing execution of SQL queries and retrieval of data.",

@@ -94,7 +94,8 @@ func TestIsAvailable(t *testing.T) {
 			t.Setenv("PGPORT", tt.pgPort)
 			t.Setenv("PGUSER", tt.pgUser)
 			provider := &Provider{}
-			available := provider.IsAvailable(nil, nil)
+			provider.Initialize(nil, nil)
+			available := provider.IsAvailable()
 			if available != tt.available {
 				t.Errorf("expected postgresql to be %v", tt.available)
 			}

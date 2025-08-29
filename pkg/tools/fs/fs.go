@@ -12,7 +12,7 @@ import (
 )
 
 type Provider struct {
-	tools.BasicToolsProvider
+	api.BasicToolsProvider
 }
 
 var _ api.ToolsProvider = &Provider{}
@@ -21,15 +21,15 @@ type FsPolicies struct {
 	policies.ToolPolicies
 }
 
-func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
+func (p *Provider) Initialize(_ *config.Config, toolPolicies any) {
 	// TODO: This should probably be generalized to all tools and inference providers
 	if !policies.IsEnabledByPolicies(toolPolicies) {
 		p.IsAvailableReason = "filesystem is not authorized by policies"
-		return false
+		return
 	}
 	// ReadOnly is not considered for fs, as all operations are read-only
+	p.Available = true
 	p.IsAvailableReason = "filesystem is accessible"
-	return true
 }
 
 func (p *Provider) GetTools(_ context.Context, _ *config.Config) ([]*api.Tool, error) {
@@ -94,8 +94,8 @@ func (p *Provider) GetDefaultPolicies() map[string]any {
 }
 
 var instance = &Provider{
-	tools.BasicToolsProvider{
-		BasicToolsAttributes: tools.BasicToolsAttributes{
+	api.BasicToolsProvider{
+		BasicToolsAttributes: api.BasicToolsAttributes{
 			BasicFeatureAttributes: api.BasicFeatureAttributes{
 				FeatureName:        "fs",
 				FeatureDescription: "Provides access to the local filesystem, allowing listing of files and directories.",

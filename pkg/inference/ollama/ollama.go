@@ -63,7 +63,7 @@ func (p *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, err
 	return modelsNames, nil
 }
 
-func (p *Provider) IsAvailable(cfg *config.Config, policies any) bool {
+func (p *Provider) Initialize(cfg *config.Config, _ any) {
 	baseURL := p.baseURL()
 	isBaseURLConfigured := p.isBaseURLConfigured()
 	resp, err := http.Get(baseURL + "/v1/models")
@@ -73,11 +73,11 @@ func (p *Provider) IsAvailable(cfg *config.Config, policies any) bool {
 		} else {
 			p.IsAvailableReason = fmt.Sprintf("%s is not accessible", baseURL)
 		}
-		return false
+		return
 	}
 	_ = resp.Body.Close()
-	available := resp.StatusCode == http.StatusOK
-	if available {
+	p.Available = resp.StatusCode == http.StatusOK
+	if p.Available {
 		if isBaseURLConfigured {
 			p.IsAvailableReason = fmt.Sprintf("ollama is accessible at %s defined by the %s environment variable", baseURL, ollamaHostEnvVar)
 		} else {
@@ -94,7 +94,6 @@ func (p *Provider) IsAvailable(cfg *config.Config, policies any) bool {
 			p.IsAvailableReason = fmt.Sprintf("ollama is not accessible at %s", baseURL)
 		}
 	}
-	return available
 }
 
 func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {

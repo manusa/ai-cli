@@ -20,6 +20,34 @@ type ToolsAttributes interface {
 	FeatureAttributes
 }
 
+type BasicToolsProvider struct {
+	ToolsProvider `json:"-"`
+	BasicToolsAttributes
+	Available         bool         `json:"-"`
+	IsAvailableReason string       `json:"reason"`
+	McpSettings       *McpSettings `json:"mcp_settings,omitempty"`
+}
+
+func (p *BasicToolsProvider) Attributes() ToolsAttributes {
+	return &p.BasicToolsAttributes
+}
+
+func (p *BasicToolsProvider) IsAvailable() bool {
+	return p.Available
+}
+
+func (p *BasicToolsProvider) Reason() string {
+	return p.IsAvailableReason
+}
+
+func (p *BasicToolsProvider) GetMcpSettings() *McpSettings {
+	return p.McpSettings
+}
+
+type BasicToolsAttributes struct {
+	BasicFeatureAttributes
+}
+
 type Tool struct {
 	Name        string
 	Description string

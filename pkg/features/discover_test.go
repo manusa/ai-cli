@@ -19,19 +19,16 @@ import (
 )
 
 type TestProvider struct {
-	Available bool `json:"-"`
 }
 
-func (t *TestProvider) IsAvailable(_ *config.Config, _ any) bool {
-	return t.Available
-}
+func (t *TestProvider) Initialize(_ *config.Config, _ any) {}
 
 func (t *TestProvider) GetDefaultPolicies() map[string]any {
 	return nil
 }
 
 type TestToolsProvider struct {
-	tools.BasicToolsProvider
+	api.BasicToolsProvider
 	TestProvider
 }
 
@@ -60,26 +57,26 @@ func (s *DiscoverTestSuite) TearDownTest() {
 	}
 }
 
-func (s *DiscoverTestSuite) TestDiscoverInference() {
+func (s *DiscoverTestSuite) TestDiscoverInferenceWithNoProviders() {
+	features := Discover(config.New(), nil)
+	s.Run("With no providers registered returns empty", func() {
+		s.Empty(features.Inferences, "expected no discovered inferences to be returned when no providers are registered")
+		s.Empty(features.InferencesNotAvailable, "expected no discovered inferences to be returned when no providers are registered")
+		s.Nil(features.Inference, "expected no discovered inference to be returned when no providers are registered")
+	})
+}
+
+func (s *DiscoverTestSuite) TestDiscoverInferenceWithOneProviderAvailable() {
 	// With one available inference provider, it should return that provider
-	inference.Register(&test.InferenceProvider{
-		BasicInferenceProvider: api.BasicInferenceProvider{
-			BasicInferenceAttributes: api.BasicInferenceAttributes{
-				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-available", FeatureDescription: "Test Provider"},
-				LocalAttr:              true,
-			},
-		},
-		Available: true,
-	})
-	inference.Register(&test.InferenceProvider{
-		BasicInferenceProvider: api.BasicInferenceProvider{
-			BasicInferenceAttributes: api.BasicInferenceAttributes{
-				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-unavailable", FeatureDescription: "Test Provider"},
-				LocalAttr:              true,
-			},
-		},
-		Available: false,
-	})
+	inference.Register(test.NewInferenceProvider(
+		"provider-available",
+		test.WithInferenceAvailable(),
+		test.WithInferenceLocal(),
+	))
+	inference.Register(test.NewInferenceProvider(
+		"provider-unavailable",
+		test.WithInferenceLocal(),
+	))
 	features := Discover(config.New(), nil)
 	s.Run("With one available provider returns features", func() {
 		s.NotNil(features, "expected an inference to be returned")
@@ -89,6 +86,11 @@ func (s *DiscoverTestSuite) TestDiscoverInference() {
 		s.Equal("provider-available", features.Inferences[0].Attributes().Name(),
 			"expected the available provider to be returned")
 	})
+	s.Run("With one available provider InferencesNotAvailable has one unavailable provider", func() {
+		s.Len(features.InferencesNotAvailable, 1, "expected one inference provider to be returned")
+		s.Equal("provider-unavailable", features.InferencesNotAvailable[0].Attributes().Name(),
+			"expected the unavailable provider to be returned")
+	})
 	s.Run("With one available provider Inference is set to that provider", func() {
 		s.Equal("provider-available", (*features.Inference).Attributes().Name(),
 			"expected the available provider to be returned")
@@ -96,33 +98,19 @@ func (s *DiscoverTestSuite) TestDiscoverInference() {
 }
 
 func (s *DiscoverTestSuite) TestDiscoverInferenceConfiguredProvider() {
-	inference.Register(&test.InferenceProvider{
-		BasicInferenceProvider: api.BasicInferenceProvider{
-			BasicInferenceAttributes: api.BasicInferenceAttributes{
-				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-1", FeatureDescription: "Test Provider"},
-				LocalAttr:              true,
-			},
-		},
-		Available: true,
-	})
-	inference.Register(&test.InferenceProvider{
-		BasicInferenceProvider: api.BasicInferenceProvider{
-			BasicInferenceAttributes: api.BasicInferenceAttributes{
-				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-2", FeatureDescription: "Test Provider"},
-				LocalAttr:              true,
-			},
-		},
-		Available: true,
-	})
-	inference.Register(&test.InferenceProvider{
-		BasicInferenceProvider: api.BasicInferenceProvider{
-			BasicInferenceAttributes: api.BasicInferenceAttributes{
-				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-3", FeatureDescription: "Test Provider"},
-				LocalAttr:              true,
-			},
-		},
-		Available: false,
-	})
+	inference.Register(test.NewInferenceProvider(
+		"provider-1",
+		test.WithInferenceAvailable(),
+		test.WithInferenceLocal(),
+	))
+	inference.Register(test.NewInferenceProvider(
+		"provider-2",
+		test.WithInferenceAvailable(),
+	))
+	inference.Register(test.NewInferenceProvider(
+		"provider-3",
+		test.WithInferenceAvailable(),
+	))
 	cfg := config.New()
 	cfg.Inference = func(s string) *string {
 		return &s
@@ -135,24 +123,14 @@ func (s *DiscoverTestSuite) TestDiscoverInferenceConfiguredProvider() {
 }
 
 func (s *DiscoverTestSuite) TestDiscoverInferenceConfiguredProviderUnknown() {
-	inference.Register(&test.InferenceProvider{
-		BasicInferenceProvider: api.BasicInferenceProvider{
-			BasicInferenceAttributes: api.BasicInferenceAttributes{
-				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-1", FeatureDescription: "Test Provider"},
-				LocalAttr:              true,
-			},
-		},
-		Available: false,
-	})
-	inference.Register(&test.InferenceProvider{
-		BasicInferenceProvider: api.BasicInferenceProvider{
-			BasicInferenceAttributes: api.BasicInferenceAttributes{
-				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-2", FeatureDescription: "Test Provider"},
-				LocalAttr:              true,
-			},
-		},
-		Available: false,
-	})
+	inference.Register(test.NewInferenceProvider(
+		"provider-1",
+		test.WithInferenceAvailable(),
+	))
+	inference.Register(test.NewInferenceProvider(
+		"provider-2",
+		test.WithInferenceAvailable(),
+	))
 	cfg := config.New()
 	cfg.Inference = func(s string) *string {
 		return &s
@@ -163,36 +141,35 @@ func (s *DiscoverTestSuite) TestDiscoverInferenceConfiguredProviderUnknown() {
 	})
 }
 
-func (s *DiscoverTestSuite) TestDiscoverTools() {
-	tools.Register(&TestToolsProvider{
-		tools.BasicToolsProvider{
-			BasicToolsAttributes: tools.BasicToolsAttributes{
-				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-available", FeatureDescription: "Test Provider"},
-			},
-		},
-		TestProvider{Available: true},
+func (s *DiscoverTestSuite) TestDiscoverToolsWithNoProviders() {
+	features := Discover(config.New(), nil)
+	s.Run("With no providers registered returns empty", func() {
+		s.Empty(features.Tools, "expected no discovered tools to be returned when no providers are registered")
+		s.Empty(features.ToolsNotAvailable, "expected no discovered tools to be returned when no providers are registered")
 	})
+}
+
+func (s *DiscoverTestSuite) TestDiscoverToolsWithOneProviderAvailable() {
+	tools.Register(test.NewToolsProvider("provider-available", test.WithToolsAvailable()))
+	tools.Register(test.NewToolsProvider("provider-unavailable"))
 	features := Discover(config.New(), nil)
 	s.Run("With one available provider returns features", func() {
 		s.NotNil(features, "expected features to be returned")
 	})
 	s.Run("With one available Tools provider has one provider", func() {
-		s.Len(features.ToolsNotAvailable, 0, "expected no not available tools provider to be returned")
 		s.Len(features.Tools, 1, "expected one tool provider to be returned")
 		s.Equal("provider-available", features.Tools[0].Attributes().Name(),
 			"expected provider-available provider to be returned")
 	})
+	s.Run("With one available provider ToolsNotAvailable has one unavailable provider", func() {
+		s.Len(features.ToolsNotAvailable, 1, "expected one tools provider to be returned")
+		s.Equal("provider-unavailable", features.ToolsNotAvailable[0].Attributes().Name(),
+			"expected the unavailable provider to be returned")
+	})
 }
 
 func (s *DiscoverTestSuite) TestDiscoverToolsWithEnabledPolicies() {
-	tools.Register(&TestToolsProvider{
-		tools.BasicToolsProvider{
-			BasicToolsAttributes: tools.BasicToolsAttributes{
-				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-available", FeatureDescription: "Test Provider"},
-			},
-		},
-		TestProvider{Available: true},
-	})
+	tools.Register(test.NewToolsProvider("provider-available", test.WithToolsAvailable()))
 	structuredPolicies := policies.Policies{
 		Tools: map[string]any{
 			"provider-available": map[string]any{
@@ -213,12 +190,12 @@ func (s *DiscoverTestSuite) TestDiscoverToolsWithDisabledPolicies() {
 	// TODO: See TODOs about policy centralization.
 	s.T().Skip("Disabled until policies are centralized and evaluated in the features discovery")
 	tools.Register(&TestToolsProvider{
-		tools.BasicToolsProvider{
-			BasicToolsAttributes: tools.BasicToolsAttributes{
+		BasicToolsProvider: api.BasicToolsProvider{
+			BasicToolsAttributes: api.BasicToolsAttributes{
 				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-available", FeatureDescription: "Test Provider"},
 			},
+			Available: true,
 		},
-		TestProvider{Available: true},
 	})
 	structuredPolicies := policies.Policies{
 		Tools: map[string]any{
@@ -237,37 +214,32 @@ func (s *DiscoverTestSuite) TestDiscoverToolsWithDisabledPolicies() {
 }
 
 func (s *DiscoverTestSuite) TestDiscoverToJSON() {
-	inference.Register(&test.InferenceProvider{
-		BasicInferenceProvider: api.BasicInferenceProvider{
-			BasicInferenceAttributes: api.BasicInferenceAttributes{
-				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "inference-provider-available", FeatureDescription: "Test Provider"},
-				LocalAttr:              true,
-			},
-			IsAvailableReason: "conditions met",
-			ProviderModels:    []string{"model-1"},
+	inference.Register(test.NewInferenceProvider(
+		"inference-provider-available",
+		test.WithInferenceAvailable(),
+		test.WithInferenceLocal(),
+		func(provider *test.InferenceProvider) {
+			provider.FeatureDescription = "Test Provider"
+			provider.IsAvailableReason = "conditions met"
+			provider.ProviderModels = []string{"model-1"}
 		},
-		Available: true,
-	})
-	inference.Register(&test.InferenceProvider{
-		BasicInferenceProvider: api.BasicInferenceProvider{
-			BasicInferenceAttributes: api.BasicInferenceAttributes{
-				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "inference-provider-unavailable", FeatureDescription: "Test Provider"},
-				LocalAttr:              false,
-				PublicAttr:             true,
-			},
-			IsAvailableReason: "conditions NOT met",
+	))
+	inference.Register(test.NewInferenceProvider(
+		"inference-provider-unavailable",
+		test.WithInferencePublic(),
+		func(provider *test.InferenceProvider) {
+			provider.FeatureDescription = "Test Provider"
+			provider.IsAvailableReason = "conditions NOT met"
 		},
-		Available: false,
-	})
-	tools.Register(&TestToolsProvider{
-		tools.BasicToolsProvider{
-			BasicToolsAttributes: tools.BasicToolsAttributes{
-				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "tools-provider-available", FeatureDescription: "Test Provider"},
-			},
-			IsAvailableReason: "tools conditions met",
+	))
+	tools.Register(test.NewToolsProvider(
+		"tools-provider-available",
+		test.WithToolsAvailable(),
+		func(provider *test.ToolsProvider) {
+			provider.FeatureDescription = "Test Provider"
+			provider.IsAvailableReason = "tools conditions met"
 		},
-		TestProvider{Available: true},
-	})
+	))
 	features := Discover(config.New(), nil)
 	jsonString, err := features.ToJSON()
 	s.Run("Marshalling returns no error", func() {
@@ -279,7 +251,7 @@ func (s *DiscoverTestSuite) TestDiscoverToJSON() {
 			`"inferences":[{"description":"Test Provider","local":true,"models":["model-1"],"name":"inference-provider-available","public":false,"reason":"conditions met"}],`+
 			`"inferencesNotAvailable":[{"description":"Test Provider","local":false,"models":null,"name":"inference-provider-unavailable","public":true,"reason":"conditions NOT met"}],`+
 			`"tools":[{"description":"Test Provider","name":"tools-provider-available","reason":"tools conditions met"}],`+
-			`"toolsNotAvailable":null}`,
+			`"toolsNotAvailable":[]}`,
 			jsonString,
 			"expected JSON to match the expected format")
 	})

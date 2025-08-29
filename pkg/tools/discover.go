@@ -2,8 +2,8 @@ package tools
 
 import (
 	"fmt"
+	"maps"
 	"slices"
-	"strings"
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
@@ -11,31 +11,11 @@ import (
 
 var providers = map[string]api.ToolsProvider{}
 
-type BasicToolsProvider struct {
-	api.ToolsProvider `json:"-"`
-	BasicToolsAttributes
-	IsAvailableReason string           `json:"reason"`
-	McpSettings       *api.McpSettings `json:"mcp_settings,omitempty"`
-}
-
-func (p *BasicToolsProvider) Attributes() api.ToolsAttributes {
-	return &p.BasicToolsAttributes
-}
-
-func (p *BasicToolsProvider) Reason() string {
-	return p.IsAvailableReason
-}
-
-func (p *BasicToolsProvider) GetMcpSettings() *api.McpSettings {
-	return p.McpSettings
-}
-
-type BasicToolsAttributes struct {
-	api.BasicFeatureAttributes
-}
-
 // Register a new tools provider
 func Register(provider api.ToolsProvider) {
+	if provider == nil {
+		panic("cannot register a nil tools provider")
+	}
 	if _, ok := providers[provider.Attributes().Name()]; ok {
 		panic(fmt.Sprintf("tool provider already registered: %s", provider.Attributes().Name()))
 	}
@@ -47,22 +27,12 @@ func Clear() {
 	providers = map[string]api.ToolsProvider{}
 }
 
-// Discover the available tools based on the user preferences
-func Discover(cfg *config.Config, policies map[string]any) (availableTools []api.ToolsProvider, notAvailableTools []api.ToolsProvider) {
+// Initialize initializes the registered providers based on the user preferences
+func Initialize(cfg *config.Config, policies map[string]any) []api.ToolsProvider {
 	for _, provider := range providers {
-		if provider.IsAvailable(cfg, policies[provider.Attributes().Name()]) {
-			availableTools = append(availableTools, provider)
-		} else {
-			notAvailableTools = append(notAvailableTools, provider)
-		}
+		provider.Initialize(cfg, policies[provider.Attributes().Name()])
 	}
-	slices.SortFunc(availableTools, func(a, b api.ToolsProvider) int {
-		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
-	})
-	slices.SortFunc(notAvailableTools, func(a, b api.ToolsProvider) int {
-		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
-	})
-	return availableTools, notAvailableTools
+	return slices.SortedFunc(maps.Values(providers), api.FeatureSorter)
 }
 
 func GetDefaultPolicies() map[string]any {

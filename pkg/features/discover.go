@@ -3,6 +3,7 @@ package features
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/manusa/ai-cli/pkg/api"
@@ -60,7 +61,7 @@ func toHumanReadable[A api.FeatureAttributes](p api.Feature[A]) string {
 }
 
 func Discover(cfg *config.Config, policies *policies.Policies) *Features {
-	availableInferences, notAvailableInferences := inference.Discover(cfg, nil) // TODO: pass preferences for inference
+	availableInferences, notAvailableInferences := classify(inference.Initialize(cfg, nil)) // TODO: pass preferences for inference
 
 	var selectedInference *api.InferenceProvider
 	if cfg.Inference != nil {
@@ -75,11 +76,12 @@ func Discover(cfg *config.Config, policies *policies.Policies) *Features {
 		// For now, we just select the first available inference
 		selectedInference = &availableInferences[0]
 	}
+	// TODO: should be moved to policies loading
 	toolsPolicies := map[string]any{}
 	if policies != nil {
 		toolsPolicies = policies.Tools
 	}
-	availableTools, notAvailableTools := tools.Discover(cfg, toolsPolicies)
+	availableTools, notAvailableTools := classify(tools.Initialize(cfg, toolsPolicies))
 	return &Features{
 		Inferences:             availableInferences,
 		InferencesNotAvailable: notAvailableInferences,
@@ -87,6 +89,21 @@ func Discover(cfg *config.Config, policies *policies.Policies) *Features {
 		Tools:                  availableTools,
 		ToolsNotAvailable:      notAvailableTools,
 	}
+}
+
+func classify[A api.FeatureAttributes, F api.Feature[A]](providers []F) (availableFeatures []F, notAvailableFeatures []F) {
+	availableFeatures = []F{}
+	notAvailableFeatures = []F{}
+	for _, provider := range providers {
+		if provider.IsAvailable() {
+			availableFeatures = append(availableFeatures, provider)
+		} else {
+			notAvailableFeatures = append(notAvailableFeatures, provider)
+		}
+	}
+	slices.SortFunc(availableFeatures, api.FeatureSorter)
+	slices.SortFunc(notAvailableFeatures, api.FeatureSorter)
+	return
 }
 
 func GetDefaultPolicies() map[string]any {
