@@ -26,6 +26,10 @@ func (p *BasicToolsProvider) Reason() string {
 	return p.IsAvailableReason
 }
 
+func (p *BasicToolsProvider) GetMcpSettings() *api.McpSettings {
+	return p.McpSettings
+}
+
 type BasicToolsAttributes struct {
 	api.BasicFeatureAttributes
 }

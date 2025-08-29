@@ -101,6 +101,33 @@ func (s *DiscoverTestSuite) TestOutputJson() {
 	})
 }
 
+func (s *DiscoverTestSuite) TestMcpConfigUnknownEditor() {
+	s.rootCmd.SetArgs([]string{"discover", "--mcp-config", "unknown"})
+	output, err := captureOutput(s.rootCmd.Execute)
+	s.Run("Returns an error", func() {
+		s.Empty(output, "Expected empty output")
+		s.NotEmpty(err, "Expected error")
+	})
+}
+
+func (s *DiscoverTestSuite) TestMcpConfigNoValue() {
+	s.rootCmd.SetArgs([]string{"discover", "--mcp-config"})
+	output, err := captureOutput(s.rootCmd.Execute)
+	s.Run("Returns an error", func() {
+		s.Empty(output, "Expected empty output")
+		s.NotEmpty(err, "Expected error")
+	})
+}
+
+func (s *DiscoverTestSuite) TestMcpConfigEmptyValue() {
+	s.rootCmd.SetArgs([]string{"discover", "--mcp-config", ""})
+	output, err := captureOutput(s.rootCmd.Execute)
+	s.Run("Returns an error", func() {
+		s.Empty(output, "Expected empty output")
+		s.NotEmpty(err, "Expected error")
+	})
+}
+
 func TestDiscover(t *testing.T) {
 	suite.Run(t, new(DiscoverTestSuite))
 }

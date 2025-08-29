@@ -5,6 +5,7 @@ go 1.24.2
 toolchain go1.24.6
 
 require (
+	github.com/adrg/xdg v0.5.3
 	github.com/charmbracelet/bubbles/v2 v2.0.0-beta.1.0.20250716191546-1e2ffbbcf5c5
 	github.com/charmbracelet/bubbletea/v2 v2.0.0-beta.4.0.20250813213544-5cc219db8892
 	github.com/charmbracelet/glamour/v2 v2.0.0-20250811143442-a27abb32f018
