@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"slices"
+	"strings"
 
 	"github.com/cloudwego/eino-ext/components/model/ollama"
 	"github.com/cloudwego/eino/components/model"
@@ -15,9 +17,17 @@ import (
 	"github.com/manusa/ai-cli/pkg/inference"
 )
 
-const defaultBaseURL = "http://localhost:11434"
-const defaultModel = "llama3.2:3b"
 const ollamaHostEnvVar = "OLLAMA_HOST"
+
+var (
+	// DefaultBaseURL is the default base URL for the Ollama API (Exposed for testing purposes)
+	DefaultBaseURL  = "http://localhost:11434"
+	preferredModels = []string{
+		"llama3.2:3b",
+		"granite3.3:latest",
+		"mistral:7b",
+	}
+)
 
 type Provider struct {
 	api.BasicInferenceProvider
@@ -88,7 +98,13 @@ func (p *Provider) IsAvailable(cfg *config.Config, policies any) bool {
 }
 
 func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
-	model := defaultModel
+	var model string
+	for _, preferredModel := range preferredModels {
+		if slices.Contains(p.Models(), preferredModel) {
+			model = preferredModel
+			break
+		}
+	}
 	if cfg.Model != nil {
 		model = *cfg.Model
 	}
@@ -100,9 +116,12 @@ func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.
 
 func (p *Provider) baseURL() string {
 	if baseURL := os.Getenv(ollamaHostEnvVar); baseURL != "" {
+		if !strings.HasPrefix(baseURL, "http://") {
+			baseURL = "http://" + baseURL
+		}
 		return baseURL
 	}
-	return defaultBaseURL
+	return DefaultBaseURL
 }
 
 func (p *Provider) isBaseURLConfigured() bool {
