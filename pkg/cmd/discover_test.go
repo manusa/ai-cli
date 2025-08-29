@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/inference/ollama"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
@@ -21,9 +22,13 @@ func (s *DiscoverTestSuite) SetupTest() {
 	// Get the tmpdir before cleaning the environment
 	// to avoid error on Windows
 	tmpdir := s.T().TempDir()
+	config.FileSystem = afero.NewBasePathFs(afero.NewOsFs(), tmpdir)
+
 	s.originalEnv = os.Environ()
 	os.Clearenv()
-	config.FileSystem = afero.NewBasePathFs(afero.NewOsFs(), tmpdir)
+
+	ollama.DefaultBaseURL = "http://localhost:1337"
+
 	s.rootCmd = NewAiCli()
 }
 
@@ -54,7 +59,7 @@ func (s *DiscoverTestSuite) TestOutputText() {
 			"    Reason: http://localhost:1234 is not accessible\n" +
 			"  - ollama\n" +
 			"    Description: Ollama local inference provider\n" +
-			"    Reason: http://localhost:11434 is not accessible\n" +
+			"    Reason: http://localhost:1337 is not accessible\n" +
 			"  - ramalama\n" +
 			"    Description: Ramalama local inference provider\n" +
 			"    Reason: ramalama is not installed\n" +
@@ -89,7 +94,7 @@ func (s *DiscoverTestSuite) TestOutputJson() {
 			`"inferencesNotAvailable":[` +
 			`{"description":"Google Gemini inference provider","name":"gemini","local":false,"public":true,"reason":"GEMINI_API_KEY is not set","models":null},` +
 			`{"description":"LM Studio local inference provider","name":"lmstudio","local":true,"public":false,"reason":"http://localhost:1234 is not accessible","models":null},` +
-			`{"description":"Ollama local inference provider","name":"ollama","local":true,"public":false,"reason":"http://localhost:11434 is not accessible","models":null},` +
+			`{"description":"Ollama local inference provider","name":"ollama","local":true,"public":false,"reason":"http://localhost:1337 is not accessible","models":null},` +
 			`{"description":"Ramalama local inference provider","name":"ramalama","local":true,"public":false,"reason":"ramalama is not installed","models":null}],` +
 			`"inference":null,` +
 			`"tools":[{"description":"Provides access to the local filesystem, allowing listing of files and directories.","name":"fs","reason":"filesystem is accessible"}],` +
