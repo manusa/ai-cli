@@ -17,7 +17,7 @@ import (
 )
 
 type Provider struct {
-	tools.BasicToolsProvider
+	api.BasicToolsProvider
 	ReadOnly bool `json:"-"`
 }
 
@@ -51,32 +51,32 @@ var (
 	}
 )
 
-func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
+func (p *Provider) Initialize(_ *config.Config, toolPolicies any) {
 	// TODO: This should probably be generalized to all tools and inference providers
 	if !policies.IsEnabledByPolicies(toolPolicies) {
 		p.IsAvailableReason = "github is not authorized by policies"
-		return false
+		return
 	}
 
 	if policies.IsReadOnlyByPolicies(toolPolicies) {
 		p.ReadOnly = true
 	}
 
-	available := os.Getenv(accessTokenEnvVar) != ""
-	if !available {
+	hasAccessToken := os.Getenv(accessTokenEnvVar) != ""
+	if !hasAccessToken {
 		p.IsAvailableReason = fmt.Sprintf("%s is not set", accessTokenEnvVar)
-		return false
+		return
 	}
 
 	var err error
 	p.McpSettings, err = findBestMcpServerSettings(p.ReadOnly)
 	if err != nil {
 		p.IsAvailableReason = err.Error()
-		return false
+		return
 	}
 
+	p.Available = true
 	p.IsAvailableReason = fmt.Sprintf("%s is set and has suitable MCP settings", accessTokenEnvVar)
-	return true
 }
 
 func (p *Provider) GetTools(ctx context.Context, _ *config.Config) ([]*api.Tool, error) {
@@ -124,8 +124,8 @@ func (p *Provider) GetDefaultPolicies() map[string]any {
 }
 
 var instance = &Provider{
-	BasicToolsProvider: tools.BasicToolsProvider{
-		BasicToolsAttributes: tools.BasicToolsAttributes{
+	BasicToolsProvider: api.BasicToolsProvider{
+		BasicToolsAttributes: api.BasicToolsAttributes{
 			BasicFeatureAttributes: api.BasicFeatureAttributes{
 				FeatureName:        "github",
 				FeatureDescription: "Provides access to GitHub repositories, issues, pull requests, and more.",

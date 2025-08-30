@@ -18,15 +18,14 @@ type Provider struct {
 
 var _ api.InferenceProvider = &Provider{}
 
-func (p *Provider) IsAvailable(cfg *config.Config, policies any) bool {
-	available := cfg.GoogleApiKey != ""
-	if available {
+func (p *Provider) Initialize(cfg *config.Config, _ any) {
+	p.Available = cfg.GoogleApiKey != ""
+	if p.Available {
 		p.IsAvailableReason = "GEMINI_API_KEY is set"
 		p.ProviderModels = []string{"gemini-2.0-flash"}
 	} else {
 		p.IsAvailableReason = "GEMINI_API_KEY is not set"
 	}
-	return available
 }
 
 func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {

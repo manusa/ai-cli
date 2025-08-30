@@ -1,12 +1,10 @@
 package cursor
 
 import (
-	"context"
 	"testing"
 
 	"github.com/manusa/ai-cli/pkg/api"
-	"github.com/manusa/ai-cli/pkg/config"
-	"github.com/manusa/ai-cli/pkg/tools"
+	"github.com/manusa/ai-cli/pkg/test"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -15,6 +13,7 @@ type CursorTestSuite struct {
 }
 
 type TestToolsProvider struct {
+	test.ToolsProvider
 	mcpSettings *api.McpSettings
 }
 
@@ -22,31 +21,8 @@ func (p *TestToolsProvider) GetMcpSettings() *api.McpSettings {
 	return p.mcpSettings
 }
 
-func (p *TestToolsProvider) Attributes() api.ToolsAttributes {
-	return &tools.BasicToolsProvider{
-		BasicToolsAttributes: tools.BasicToolsAttributes{
-			BasicFeatureAttributes: api.BasicFeatureAttributes{
-				FeatureName:        "testtool",
-				FeatureDescription: "A test tool",
-			},
-		},
-	}
-}
-
 func (p *TestToolsProvider) GetDefaultPolicies() map[string]any {
 	return nil
-}
-
-func (p *TestToolsProvider) GetTools(ctx context.Context, cfg *config.Config) ([]*api.Tool, error) {
-	return nil, nil
-}
-
-func (p *TestToolsProvider) IsAvailable(_ *config.Config, _ any) bool {
-	return true
-}
-
-func (p *TestToolsProvider) Reason() string {
-	return ""
 }
 
 func (s *CursorTestSuite) SetupTest() {}
@@ -58,7 +34,7 @@ func TestCursor(t *testing.T) {
 func (s *CursorTestSuite) TestGetConfigEmpty() {
 	s.Run("GetConfig returns an empty config with no tools", func() {
 		provider := &CursorMcpConfig{}
-		tools := []api.ToolsProvider{}
+		var tools []api.ToolsProvider
 		result, err := provider.GetConfig(tools)
 		s.NoError(err)
 		s.JSONEq(string(result), `{ "mcpServers": {} }`)
@@ -70,6 +46,16 @@ func (s *CursorTestSuite) TestGetConfigWithTools() {
 		provider := &CursorMcpConfig{}
 		tools := []api.ToolsProvider{
 			&TestToolsProvider{
+				ToolsProvider: test.ToolsProvider{
+					BasicToolsProvider: api.BasicToolsProvider{
+						BasicToolsAttributes: api.BasicToolsAttributes{
+							BasicFeatureAttributes: api.BasicFeatureAttributes{
+								FeatureName:        "testtool",
+								FeatureDescription: "Test Tool",
+							},
+						},
+					},
+				},
 				mcpSettings: &api.McpSettings{
 					Type:    api.McpTypeStdio,
 					Command: "mycmd",

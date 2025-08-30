@@ -50,16 +50,16 @@ func (p *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, err
 	return modelsNames, nil
 }
 
-func (p *Provider) IsAvailable(cfg *config.Config, policies any) bool {
+func (p *Provider) Initialize(cfg *config.Config, _ any) {
 	baseURL := p.baseURL()
 	resp, err := http.Get(baseURL + "/v1/models")
 	if err != nil {
 		p.IsAvailableReason = fmt.Sprintf("%s is not accessible", baseURL)
-		return false
+		return
 	}
 	_ = resp.Body.Close()
-	available := resp.StatusCode == http.StatusOK
-	if available {
+	p.Available = resp.StatusCode == http.StatusOK
+	if p.Available {
 		p.IsAvailableReason = fmt.Sprintf("LM Studio is accessible at %s", baseURL)
 		models, err := p.GetModels(context.Background(), cfg)
 		if err == nil {
@@ -68,7 +68,7 @@ func (p *Provider) IsAvailable(cfg *config.Config, policies any) bool {
 	} else {
 		p.IsAvailableReason = fmt.Sprintf("LM Studio is not accessible at %s", baseURL)
 	}
-	return available
+
 }
 
 func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {

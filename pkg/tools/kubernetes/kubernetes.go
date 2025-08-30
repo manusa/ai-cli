@@ -18,7 +18,7 @@ import (
 )
 
 type Provider struct {
-	tools.BasicToolsProvider
+	api.BasicToolsProvider
 	ReadOnly           bool `json:"-"`
 	DisableDestructive bool `json:"-"`
 }
@@ -117,11 +117,11 @@ func homedir() string {
 	return os.Getenv("HOME")
 }
 
-func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
+func (p *Provider) Initialize(_ *config.Config, toolPolicies any) {
 	// TODO: This should probably be generalized to all tools and inference providers
 	if !policies.IsEnabledByPolicies(toolPolicies) {
 		p.IsAvailableReason = "kubernetes is not authorized by policies"
-		return false
+		return
 	}
 
 	if policies.IsReadOnlyByPolicies(toolPolicies) {
@@ -136,7 +136,7 @@ func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
 	p.McpSettings, err = findBestMcpServerSettings(p.ReadOnly, p.DisableDestructive)
 	if err != nil {
 		p.IsAvailableReason = err.Error()
-		return false
+		return
 	}
 
 	// using the same logic as kubectl to find the config files
@@ -157,7 +157,8 @@ func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
 			} else {
 				p.IsAvailableReason = "kubeconfig file found in the locations specified by the KUBECONFIG environment variable"
 			}
-			return true
+			p.Available = true
+			return
 		}
 	}
 	if len(envVarFiles) == 0 {
@@ -165,7 +166,6 @@ func (p *Provider) IsAvailable(_ *config.Config, toolPolicies any) bool {
 	} else {
 		p.IsAvailableReason = "no kubeconfig file found in the locations specified by the KUBECONFIG environment variable"
 	}
-	return false
 }
 
 func (p *Provider) GetTools(ctx context.Context, _ *config.Config) ([]*api.Tool, error) {
@@ -237,8 +237,8 @@ func (p *Provider) GetDefaultPolicies() map[string]any {
 }
 
 var instance = &Provider{
-	BasicToolsProvider: tools.BasicToolsProvider{
-		BasicToolsAttributes: tools.BasicToolsAttributes{
+	BasicToolsProvider: api.BasicToolsProvider{
+		BasicToolsAttributes: api.BasicToolsAttributes{
 			BasicFeatureAttributes: api.BasicFeatureAttributes{
 				FeatureName:        "kubernetes",
 				FeatureDescription: "Provides access to Kubernetes clusters, allowing management and interaction with cluster resources.",

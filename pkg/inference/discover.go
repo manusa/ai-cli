@@ -2,8 +2,8 @@ package inference
 
 import (
 	"fmt"
+	"maps"
 	"slices"
-	"strings"
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
@@ -27,21 +27,10 @@ func Clear() {
 	providers = map[string]api.InferenceProvider{}
 }
 
-// Discover the available and not available inference providers based on the user preferences
-func Discover(cfg *config.Config, policies map[string]any) (availableInferences []api.InferenceProvider, notAvailableInferences []api.InferenceProvider) {
-	availableInferences, notAvailableInferences = []api.InferenceProvider{}, []api.InferenceProvider{}
+// Initialize initializes the registered providers based on the user preferences
+func Initialize(cfg *config.Config, policies map[string]any) []api.InferenceProvider {
 	for _, provider := range providers {
-		if provider.IsAvailable(cfg, policies) {
-			availableInferences = append(availableInferences, provider)
-		} else {
-			notAvailableInferences = append(notAvailableInferences, provider)
-		}
+		provider.Initialize(cfg, policies[provider.Attributes().Name()])
 	}
-	slices.SortFunc(availableInferences, func(a, b api.InferenceProvider) int {
-		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
-	})
-	slices.SortFunc(notAvailableInferences, func(a, b api.InferenceProvider) int {
-		return strings.Compare(a.Attributes().Name(), b.Attributes().Name())
-	})
-	return availableInferences, notAvailableInferences
+	return slices.Collect(maps.Values(providers))
 }

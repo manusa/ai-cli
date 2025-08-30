@@ -25,12 +25,17 @@ type InferenceAttributes interface {
 type BasicInferenceProvider struct {
 	InferenceProvider `json:"-"`
 	BasicInferenceAttributes
+	Available         bool     `json:"-"`
 	IsAvailableReason string   `json:"reason"`
 	ProviderModels    []string `json:"models"`
 }
 
 func (p *BasicInferenceProvider) Attributes() InferenceAttributes {
 	return &p.BasicInferenceAttributes
+}
+
+func (p *BasicInferenceProvider) IsAvailable() bool {
+	return p.Available
 }
 
 func (p *BasicInferenceProvider) Reason() string {

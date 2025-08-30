@@ -44,21 +44,21 @@ func (p *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, err
 	return models, nil
 }
 
-func (p *Provider) IsAvailable(cfg *config.Config, policies any) bool {
+func (p *Provider) Initialize(cfg *config.Config, _ any) {
 	_, err := exec.LookPath(p.getRamalamaBinaryName())
 	if err != nil {
 		p.IsAvailableReason = "ramalama is not installed"
-		return false
+		return
 	}
 	models, err := p.GetModels(context.Background(), cfg)
 	if err != nil || len(models) == 0 {
 		p.IsAvailableReason = "ramalama is installed but no models are served"
-		return false
+		return
 	}
 	p.ProviderModels = models
 
+	p.Available = true
 	p.IsAvailableReason = "ramalama is serving models"
-	return true
 }
 
 func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
