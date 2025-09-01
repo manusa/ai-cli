@@ -1,6 +1,7 @@
 package postgresql
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -94,7 +95,7 @@ func TestIsAvailable(t *testing.T) {
 			t.Setenv("PGPORT", tt.pgPort)
 			t.Setenv("PGUSER", tt.pgUser)
 			provider := &Provider{}
-			provider.Initialize(nil, nil)
+			provider.Initialize(context.Background(), nil)
 			available := provider.IsAvailable()
 			if available != tt.available {
 				t.Errorf("expected postgresql to be %v", tt.available)

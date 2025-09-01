@@ -2,8 +2,7 @@ package api
 
 import (
 	"cmp"
-
-	"github.com/manusa/ai-cli/pkg/config"
+	"context"
 )
 
 type Feature[a FeatureAttributes] interface {
@@ -12,7 +11,7 @@ type Feature[a FeatureAttributes] interface {
 	// Populates the internal state of the feature and its availability
 	// TODO: Policies should not be treated in a per-feature way but rather in a global way
 	// TODO: for each feature proider (inferences, tools, etc.) this should be handled in the Initialize function
-	Initialize(cfg *config.Config, policies any)
+	Initialize(ctx context.Context, policies any)
 	// IsAvailable Returns true if the feature is available
 	IsAvailable() bool
 	// Reason provides the reason why the feature is or is not available

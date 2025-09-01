@@ -117,7 +117,7 @@ func homedir() string {
 	return os.Getenv("HOME")
 }
 
-func (p *Provider) Initialize(_ *config.Config, toolPolicies any) {
+func (p *Provider) Initialize(_ context.Context, toolPolicies any) {
 	// TODO: This should probably be generalized to all tools and inference providers
 	if !policies.IsEnabledByPolicies(toolPolicies) {
 		p.IsAvailableReason = "kubernetes is not authorized by policies"
@@ -168,7 +168,7 @@ func (p *Provider) Initialize(_ *config.Config, toolPolicies any) {
 	}
 }
 
-func (p *Provider) GetTools(ctx context.Context, _ *config.Config) ([]*api.Tool, error) {
+func (p *Provider) GetTools(ctx context.Context) ([]*api.Tool, error) {
 	mcpSettings, err := findBestMcpServerSettings(p.ReadOnly, p.DisableDestructive)
 	if err != nil || mcpSettings.Type != api.McpTypeStdio {
 		return nil, err

@@ -77,7 +77,9 @@ func (o *DiscoverCmdOptions) Validate(cmd *cobra.Command) error {
 }
 
 // Run executes the main logic of the command once its complete and validated
-func (o *DiscoverCmdOptions) Run(_ *cobra.Command) error {
+func (o *DiscoverCmdOptions) Run(cmd *cobra.Command) error {
+	cmd.SetContext(config.WithConfig(cmd.Context(), config.New()))
+
 	if o.policiesSample {
 		policies := features.GetDefaultPolicies()
 		bytes, err := yaml.Marshal(policies)
@@ -96,8 +98,9 @@ func (o *DiscoverCmdOptions) Run(_ *cobra.Command) error {
 			return fmt.Errorf("failed to read preferences: %w", err)
 		}
 	}
+	cmd.SetContext(policies.WithPolicies(cmd.Context(), userPolicies))
 
-	discoveredFeatures := features.Discover(config.New(), userPolicies)
+	discoveredFeatures := features.Discover(cmd.Context())
 
 	if o.mcpConfig != "" {
 		var mcpConfigProvider api.MCPConfig

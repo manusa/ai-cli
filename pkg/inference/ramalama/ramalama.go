@@ -27,7 +27,7 @@ type ramalamaProcess struct {
 	Labels map[string]string
 }
 
-func (p *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, error) {
+func (p *Provider) GetModels(_ context.Context) ([]string, error) {
 	cmd := exec.Command(p.getRamalamaBinaryName(), "ps", "--format", "json")
 	output, err := cmd.Output()
 	if err != nil {
@@ -44,13 +44,13 @@ func (p *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, err
 	return models, nil
 }
 
-func (p *Provider) Initialize(cfg *config.Config, _ any) {
+func (p *Provider) Initialize(ctx context.Context, _ any) {
 	_, err := exec.LookPath(p.getRamalamaBinaryName())
 	if err != nil {
 		p.IsAvailableReason = "ramalama is not installed"
 		return
 	}
-	models, err := p.GetModels(context.Background(), cfg)
+	models, err := p.GetModels(ctx)
 	if err != nil || len(models) == 0 {
 		p.IsAvailableReason = "ramalama is installed but no models are served"
 		return
@@ -61,8 +61,9 @@ func (p *Provider) Initialize(cfg *config.Config, _ any) {
 	p.IsAvailableReason = "ramalama is serving models"
 }
 
-func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
+func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel, error) {
 	model := p.ProviderModels[0]
+	cfg := config.GetConfig(ctx)
 	if cfg.Model != nil {
 		model = *cfg.Model
 	}

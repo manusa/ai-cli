@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/manusa/ai-cli/pkg/api"
-	"github.com/manusa/ai-cli/pkg/config"
 )
 
 type ToolsProviderOption func(*ToolsProvider)
@@ -38,7 +37,7 @@ type ToolsProvider struct {
 	Policies    map[string]any `json:"-"`
 }
 
-func (t *ToolsProvider) Initialize(_ *config.Config, _ any) {
+func (t *ToolsProvider) Initialize(_ context.Context, _ any) {
 	t.Initialized = true
 }
 
@@ -46,6 +45,6 @@ func (t *ToolsProvider) GetDefaultPolicies() map[string]any {
 	return t.Policies
 }
 
-func (t *ToolsProvider) GetTools(_ context.Context, _ *config.Config) ([]*api.Tool, error) {
+func (t *ToolsProvider) GetTools(_ context.Context) ([]*api.Tool, error) {
 	return t.Tools, nil
 }

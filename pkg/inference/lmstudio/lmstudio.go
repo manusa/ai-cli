@@ -29,7 +29,7 @@ type ModelsList struct {
 	} `json:"data"`
 }
 
-func (p *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, error) {
+func (p *Provider) GetModels(_ context.Context) ([]string, error) {
 	resp, err := http.Get(p.baseURL() + "/v1/models")
 	if err != nil {
 		return nil, err
@@ -50,7 +50,7 @@ func (p *Provider) GetModels(_ context.Context, _ *config.Config) ([]string, err
 	return modelsNames, nil
 }
 
-func (p *Provider) Initialize(cfg *config.Config, _ any) {
+func (p *Provider) Initialize(ctx context.Context, _ any) {
 	baseURL := p.baseURL()
 	resp, err := http.Get(baseURL + "/v1/models")
 	if err != nil {
@@ -61,7 +61,7 @@ func (p *Provider) Initialize(cfg *config.Config, _ any) {
 	p.Available = resp.StatusCode == http.StatusOK
 	if p.Available {
 		p.IsAvailableReason = fmt.Sprintf("LM Studio is accessible at %s", baseURL)
-		models, err := p.GetModels(context.Background(), cfg)
+		models, err := p.GetModels(ctx)
 		if err == nil {
 			p.ProviderModels = models
 		}
@@ -71,8 +71,9 @@ func (p *Provider) Initialize(cfg *config.Config, _ any) {
 
 }
 
-func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
+func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel, error) {
 	model := p.ProviderModels[0]
+	cfg := config.GetConfig(ctx)
 	if cfg.Model != nil {
 		model = *cfg.Model
 	}

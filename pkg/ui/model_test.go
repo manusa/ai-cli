@@ -53,7 +53,7 @@ func (s *BaseSuite) Repaint() {
 func (s *BaseSuite) SetupTest() {
 	_ = os.Setenv("TEA_STANDARD_RENDERER", "true")
 	s.Llm = &test.ChatModel{}
-	aiAgent := ai.New(config.New(), &test.InferenceProvider{
+	aiAgent := ai.New(&test.InferenceProvider{
 		BasicInferenceProvider: api.BasicInferenceProvider{
 			BasicInferenceAttributes: api.BasicInferenceAttributes{
 				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "inference-provider"},
@@ -61,7 +61,8 @@ func (s *BaseSuite) SetupTest() {
 		},
 		Llm: s.Llm,
 	}, []*api.Tool{fs.FileList})
-	if err := aiAgent.Run(s.T().Context()); err != nil {
+	ctx := config.WithConfig(s.T().Context(), config.New())
+	if err := aiAgent.Run(ctx); err != nil {
 		s.T().Fatalf("failed to run AI: %v", err)
 	}
 	s.model = NewModel(aiAgent)

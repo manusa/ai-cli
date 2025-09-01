@@ -5,7 +5,6 @@ import (
 
 	"github.com/cloudwego/eino/components/model"
 	"github.com/manusa/ai-cli/pkg/api"
-	"github.com/manusa/ai-cli/pkg/config"
 )
 
 type InferenceProviderOption func(*InferenceProvider)
@@ -50,7 +49,7 @@ type InferenceProvider struct {
 	Llm         model.ToolCallingChatModel `json:"-"`
 }
 
-func (i *InferenceProvider) Initialize(_ *config.Config, _ any) {
+func (i *InferenceProvider) Initialize(_ context.Context, _ any) {
 	i.Initialized = true
 }
 
@@ -58,6 +57,6 @@ func (i *InferenceProvider) GetDefaultPolicies() map[string]any {
 	return nil
 }
 
-func (i *InferenceProvider) GetInference(_ context.Context, _ *config.Config) (model.ToolCallingChatModel, error) {
+func (i *InferenceProvider) GetInference(_ context.Context) (model.ToolCallingChatModel, error) {
 	return i.Llm, nil
 }
