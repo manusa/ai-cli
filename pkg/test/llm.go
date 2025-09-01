@@ -8,7 +8,8 @@ import (
 )
 
 type ChatModel struct {
-	StreamReader func(input []*schema.Message, opts ...model.Option) (*schema.StreamReader[*schema.Message], error)
+	StreamReader  func(input []*schema.Message, opts ...model.Option) (*schema.StreamReader[*schema.Message], error)
+	WithToolsFunc func(tools []*schema.ToolInfo) (model.ToolCallingChatModel, error)
 }
 
 var _ model.ToolCallingChatModel = &ChatModel{}
@@ -24,7 +25,9 @@ func (c *ChatModel) Stream(_ context.Context, input []*schema.Message, opts ...m
 	return schema.StreamReaderFromArray([]*schema.Message{schema.AssistantMessage("AI is not running, this is a test", nil)}), nil
 }
 
-func (c *ChatModel) WithTools(_ []*schema.ToolInfo) (model.ToolCallingChatModel, error) {
-	// TODO
+func (c *ChatModel) WithTools(tools []*schema.ToolInfo) (model.ToolCallingChatModel, error) {
+	if c.WithToolsFunc != nil {
+		return c.WithToolsFunc(tools)
+	}
 	return c, nil
 }

@@ -199,7 +199,7 @@ func render(context *context.ModelContext, msg api.Message) string {
 		out := guttered.Render(strings.Trim(msg.Text, "\n"))
 		return out[:1] + "👤" + out[3:]
 	case api.MessageTypeTool:
-		return guttered.Render(context.Theme.MessageToolCall.MaxWidth(maxWidth - marginSize).Render("🔧 " + msg.Text))
+		return guttered.Render(context.Theme.MessageToolCall.MaxWidth(maxWidth - marginSize).Render("🔧 " + msg.ToolName))
 	case api.MessageTypeAssistant:
 		tr, err := glamour.NewTermRenderer(
 			glamour.WithStyles(context.Theme.GlamourStyle),

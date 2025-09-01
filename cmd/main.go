@@ -1,8 +1,9 @@
 package main
 
 import (
-	"github.com/manusa/ai-cli/pkg/cmd"
 	"os"
+
+	"github.com/manusa/ai-cli/pkg/cmd"
 
 	"github.com/spf13/pflag"
 )
