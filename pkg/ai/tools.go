@@ -41,8 +41,8 @@ func toType(t api.ToolParameterType) schema.DataType {
 
 func toInvokableTool(t *api.Tool) *invokableTool {
 	var parameters *schema.ParamsOneOf
-	if t.ParametersSchema != nil {
-		parameters = schema.NewParamsOneOfByOpenAPIV3(t.ParametersSchema)
+	if t.JSONSchema != nil {
+		parameters = schema.NewParamsOneOfByJSONSchema(t.JSONSchema)
 	} else {
 		params := make(map[string]*schema.ParameterInfo, len(t.Parameters))
 		for parameterKey, parameter := range t.Parameters {
