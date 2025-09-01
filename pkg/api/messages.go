@@ -13,6 +13,9 @@ const (
 type Message struct {
 	Type MessageType
 	Text string
+
+	// ToolMessage specific fields
+	ToolName string
 }
 
 func NewSystemMessage(text string) Message {
@@ -31,9 +34,12 @@ func NewErrorMessage(text string) Message {
 	return Message{Type: MessageTypeError, Text: text}
 }
 
-func NewToolMessage(text string) Message {
-	// TODO: probably want fine-grained fields
-	return Message{Type: MessageTypeTool, Text: text}
+func NewToolMessage(text, toolName string) Message {
+	return Message{
+		Type:     MessageTypeTool,
+		Text:     text,
+		ToolName: toolName,
+	}
 }
 
 func (m *Message) Role() string {

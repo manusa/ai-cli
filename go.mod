@@ -17,6 +17,7 @@ require (
 	github.com/cloudwego/eino-ext/components/model/openai v0.0.0-20250828061307-a19adf5c9b50
 	github.com/cloudwego/eino-ext/components/tool/mcp v0.0.4
 	github.com/eino-contrib/jsonschema v1.0.0
+	github.com/google/uuid v1.6.0
 	github.com/invopop/yaml v0.1.0
 	github.com/mark3labs/mcp-go v0.36.0
 	github.com/muesli/termenv v0.16.0
@@ -63,7 +64,6 @@ require (
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
 	github.com/google/s2a-go v0.1.8 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/goph/emperror v0.17.2 // indirect

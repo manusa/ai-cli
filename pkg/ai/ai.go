@@ -17,6 +17,7 @@ import (
 	"github.com/cloudwego/eino/flow/agent/react"
 	"github.com/cloudwego/eino/schema"
 	callbackutils "github.com/cloudwego/eino/utils/callbacks"
+	"github.com/google/uuid"
 	"github.com/manusa/ai-cli/pkg/api"
 )
 
@@ -122,6 +123,7 @@ func (a *Ai) Run(ctx context.Context) (err error) {
 func (a *Ai) prompt(ctx context.Context, userInput api.Message) {
 	a.setRunning(true)
 	defer func() { a.setRunning(false) }()
+	a.setError(nil) // Clear previous error
 	a.appendMessage(userInput)
 	reactAgent, err := a.setUpAgent(ctx)
 	if err != nil {
@@ -133,12 +135,13 @@ func (a *Ai) prompt(ctx context.Context, userInput api.Message) {
 	stream, err := reactAgent.Stream(
 		ctx,
 		a.schemaMessages(),
-		agent.WithComposeOptions(compose.WithCallbacks(callbackutils.NewHandlerHelper().Tool(&callbackutils.ToolCallbackHandler{
-			OnEnd: func(ctx context.Context, info *callbacks.RunInfo, output *tool.CallbackOutput) context.Context {
-				a.appendMessage(api.NewToolMessage(info.Name))
-				return ctx
-			},
-		}).Handler())),
+		agent.WithComposeOptions(
+			compose.WithCallbacks(callbackutils.NewHandlerHelper().Tool(&callbackutils.ToolCallbackHandler{
+				OnEnd: func(ctx context.Context, info *callbacks.RunInfo, output *tool.CallbackOutput) context.Context {
+					a.appendMessage(api.NewToolMessage(output.Response, info.Name))
+					return ctx
+				},
+			}).Handler())),
 	)
 	if err != nil {
 		a.setError(err)
@@ -183,8 +186,11 @@ func (a *Ai) schemaMessages() []*schema.Message {
 		case api.MessageTypeAssistant:
 			schemaMessages = append(schemaMessages, schema.AssistantMessage(message.Text, nil))
 		case api.MessageTypeTool:
-			// TODO
-			//schemaMessages = append(schemaMessages, schema.ErrorMessage(message.Text))
+			randomId := uuid.New().String()
+			schemaMessages = append(schemaMessages, schema.AssistantMessage("", []schema.ToolCall{
+				{ID: randomId, Type: "function", Function: schema.FunctionCall{Name: message.ToolName, Arguments: "{}"}},
+			}))
+			schemaMessages = append(schemaMessages, schema.ToolMessage(message.Text, randomId, schema.WithToolName(message.ToolName)))
 		}
 	}
 	return schemaMessages
@@ -206,7 +212,8 @@ func (a *Ai) setUpAgent(ctx context.Context) (*react.Agent, error) {
 		ToolCallingModel: llmWithTools,
 		MaxStep:          10,
 		ToolsConfig: compose.ToolsNodeConfig{
-			Tools: baseTools,
+			Tools:               baseTools,
+			ExecuteSequentially: true,
 		},
 	})
 }
