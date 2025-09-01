@@ -18,13 +18,11 @@ import (
 	"github.com/cloudwego/eino/schema"
 	callbackutils "github.com/cloudwego/eino/utils/callbacks"
 	"github.com/manusa/ai-cli/pkg/api"
-	"github.com/manusa/ai-cli/pkg/config"
 )
 
 type Notification struct{}
 
 type Ai struct {
-	config            *config.Config
 	inferenceProvider api.InferenceProvider
 	tools             []*api.Tool
 	Input             chan api.Message
@@ -35,10 +33,9 @@ type Ai struct {
 	llm model.ToolCallingChatModel
 }
 
-func New(cfg *config.Config, inferenceProvider api.InferenceProvider, tools []*api.Tool) *Ai {
+func New(inferenceProvider api.InferenceProvider, tools []*api.Tool) *Ai {
 	session := &Session{}
 	return &Ai{
-		config:            cfg,
 		inferenceProvider: inferenceProvider,
 		tools:             tools,
 		Input:             make(chan api.Message),
@@ -103,7 +100,7 @@ func (a *Ai) Reset() {
 }
 
 func (a *Ai) Run(ctx context.Context) (err error) {
-	a.llm, err = a.inferenceProvider.GetInference(ctx, a.config)
+	a.llm, err = a.inferenceProvider.GetInference(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get inference: %w", err)
 	}

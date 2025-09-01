@@ -1,12 +1,12 @@
 package inference
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"slices"
 
 	"github.com/manusa/ai-cli/pkg/api"
-	"github.com/manusa/ai-cli/pkg/config"
 )
 
 var providers = map[string]api.InferenceProvider{}
@@ -28,9 +28,9 @@ func Clear() {
 }
 
 // Initialize initializes the registered providers based on the user preferences
-func Initialize(cfg *config.Config, policies map[string]any) []api.InferenceProvider {
+func Initialize(ctx context.Context, policies map[string]any) []api.InferenceProvider {
 	for _, provider := range providers {
-		provider.Initialize(cfg, policies[provider.Attributes().Name()])
+		provider.Initialize(ctx, policies[provider.Attributes().Name()])
 	}
 	return slices.Collect(maps.Values(providers))
 }

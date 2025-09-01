@@ -10,7 +10,6 @@ import (
 	"slices"
 
 	"github.com/manusa/ai-cli/pkg/api"
-	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/manusa/ai-cli/pkg/tools/utils/eino"
@@ -51,7 +50,7 @@ var (
 	}
 )
 
-func (p *Provider) Initialize(_ *config.Config, toolPolicies any) {
+func (p *Provider) Initialize(_ context.Context, toolPolicies any) {
 	// TODO: This should probably be generalized to all tools and inference providers
 	if !policies.IsEnabledByPolicies(toolPolicies) {
 		p.IsAvailableReason = "github is not authorized by policies"
@@ -79,7 +78,7 @@ func (p *Provider) Initialize(_ *config.Config, toolPolicies any) {
 	p.IsAvailableReason = fmt.Sprintf("%s is set and has suitable MCP settings", accessTokenEnvVar)
 }
 
-func (p *Provider) GetTools(ctx context.Context, _ *config.Config) ([]*api.Tool, error) {
+func (p *Provider) GetTools(ctx context.Context) ([]*api.Tool, error) {
 	mcpSettings, err := findBestMcpServerSettings(p.ReadOnly)
 	if err != nil || mcpSettings.Type != api.McpTypeStdio {
 		return nil, err

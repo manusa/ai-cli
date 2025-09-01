@@ -21,7 +21,6 @@ type ChatCmdOptions struct {
 	tools        []string
 	notools      bool
 
-	cfg          *config.Config
 	features     *features.Features
 	enabledTools []*api.Tool
 }
@@ -68,14 +67,15 @@ func NewChatCmd() *cobra.Command {
 // Complete fills in any missing information by gathering data from flags, environment, or other sources
 // It converts user input into a usable configuration
 func (o *ChatCmdOptions) Complete(cmd *cobra.Command, _ []string) error {
-	o.cfg = config.New() // TODO, will need to infer or load from a file
+	cfg := config.New()
 
 	if o.inference != "" {
-		o.cfg.Inference = &o.inference
+		cfg.Inference = &o.inference
 	}
 	if o.model != "" {
-		o.cfg.Model = &o.model
+		cfg.Model = &o.model
 	}
+	cmd.SetContext(config.WithConfig(cmd.Context(), cfg))
 
 	var userPolicies *policies.Policies
 	if len(o.policiesFile) > 0 {
@@ -85,14 +85,15 @@ func (o *ChatCmdOptions) Complete(cmd *cobra.Command, _ []string) error {
 			return fmt.Errorf("failed to read preferences: %w", err)
 		}
 	}
+	cmd.SetContext(policies.WithPolicies(cmd.Context(), userPolicies))
 
-	o.features = features.Discover(o.cfg, userPolicies)
+	o.features = features.Discover(cmd.Context())
 
 	for _, toolProvider := range o.features.Tools {
 		if !useTool(toolProvider.Attributes().Name(), o.notools, o.tools) {
 			continue
 		}
-		tools, err := toolProvider.GetTools(cmd.Context(), o.cfg)
+		tools, err := toolProvider.GetTools(cmd.Context())
 		if err != nil {
 			return fmt.Errorf("failed to get tools from provider %s: %w", toolProvider.Attributes().Name(), err)
 		}
@@ -111,7 +112,7 @@ func (o *ChatCmdOptions) Validate() error {
 
 // Run executes the main logic of the command once its complete and validated
 func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
-	aiAgent := ai.New(o.cfg, *o.features.Inference, o.enabledTools)
+	aiAgent := ai.New(*o.features.Inference, o.enabledTools)
 	if err := aiAgent.Run(cmd.Context()); err != nil {
 		return fmt.Errorf("failed to run AI: %w", err)
 	}

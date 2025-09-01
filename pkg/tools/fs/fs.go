@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/manusa/ai-cli/pkg/api"
-	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 )
@@ -21,7 +20,7 @@ type FsPolicies struct {
 	policies.ToolPolicies
 }
 
-func (p *Provider) Initialize(_ *config.Config, toolPolicies any) {
+func (p *Provider) Initialize(_ context.Context, toolPolicies any) {
 	// TODO: This should probably be generalized to all tools and inference providers
 	if !policies.IsEnabledByPolicies(toolPolicies) {
 		p.IsAvailableReason = "filesystem is not authorized by policies"
@@ -32,7 +31,7 @@ func (p *Provider) Initialize(_ *config.Config, toolPolicies any) {
 	p.IsAvailableReason = "filesystem is accessible"
 }
 
-func (p *Provider) GetTools(_ context.Context, _ *config.Config) ([]*api.Tool, error) {
+func (p *Provider) GetTools(_ context.Context) ([]*api.Tool, error) {
 	return []*api.Tool{
 		FileList,
 	}, nil

@@ -18,7 +18,8 @@ type Provider struct {
 
 var _ api.InferenceProvider = &Provider{}
 
-func (p *Provider) Initialize(cfg *config.Config, _ any) {
+func (p *Provider) Initialize(ctx context.Context, _ any) {
+	cfg := config.GetConfig(ctx)
 	p.Available = cfg.GoogleApiKey != ""
 	if p.Available {
 		p.IsAvailableReason = "GEMINI_API_KEY is set"
@@ -28,7 +29,8 @@ func (p *Provider) Initialize(cfg *config.Config, _ any) {
 	}
 }
 
-func (p *Provider) GetInference(ctx context.Context, cfg *config.Config) (model.ToolCallingChatModel, error) {
+func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel, error) {
+	cfg := config.GetConfig(ctx)
 	geminiCli, err := genai.NewClient(ctx, &genai.ClientConfig{
 		APIKey: cfg.GoogleApiKey,
 	})

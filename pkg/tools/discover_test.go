@@ -1,6 +1,7 @@
 package tools
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"testing"
@@ -66,7 +67,7 @@ func (s *DiscoverTestSuite) TestRegister() {
 func (s *DiscoverTestSuite) TestInitialize() {
 	provider := test.NewToolsProvider("the-provider")
 	Register(provider)
-	Initialize(nil, nil)
+	Initialize(context.Background(), nil)
 	s.Run("Initialize calls Initialize on all providers", func() {
 		s.True(provider.Initialized, "expected provider to be initialized")
 	})
@@ -87,7 +88,8 @@ func (s *DiscoverTestSuite) TestMarshalling() {
 			provider.FeatureDescription = "Test Provider"
 		},
 	))
-	discoveredTools := Initialize(config.New(), nil)
+	ctx := config.WithConfig(context.Background(), config.New())
+	discoveredTools := Initialize(ctx, nil)
 	bytes, err := json.Marshal(discoveredTools)
 	s.Run("Marshalling returns no error", func() {
 		s.Nil(err, "expected no error when marshalling inferences")

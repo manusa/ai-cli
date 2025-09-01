@@ -1,12 +1,12 @@
 package tools
 
 import (
+	"context"
 	"fmt"
 	"maps"
 	"slices"
 
 	"github.com/manusa/ai-cli/pkg/api"
-	"github.com/manusa/ai-cli/pkg/config"
 )
 
 var providers = map[string]api.ToolsProvider{}
@@ -28,9 +28,9 @@ func Clear() {
 }
 
 // Initialize initializes the registered providers based on the user preferences
-func Initialize(cfg *config.Config, policies map[string]any) []api.ToolsProvider {
+func Initialize(ctx context.Context, policies map[string]any) []api.ToolsProvider {
 	for _, provider := range providers {
-		provider.Initialize(cfg, policies[provider.Attributes().Name()])
+		provider.Initialize(ctx, policies[provider.Attributes().Name()])
 	}
 	return slices.SortedFunc(maps.Values(providers), api.FeatureSorter)
 }

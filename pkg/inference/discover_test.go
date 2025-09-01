@@ -1,6 +1,7 @@
 package inference
 
 import (
+	"context"
 	"testing"
 
 	"github.com/manusa/ai-cli/pkg/test"
@@ -49,7 +50,7 @@ func (s *DiscoverTestSuite) TestRegister() {
 func (s *DiscoverTestSuite) TestInitialize() {
 	provider := test.NewInferenceProvider("the-provider")
 	Register(provider)
-	Initialize(nil, nil)
+	Initialize(context.Background(), nil)
 	s.Run("Initialize calls Initialize on all providers", func() {
 		s.True(provider.Initialized, "expected provider to be initialized")
 	})

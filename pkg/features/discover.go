@@ -1,6 +1,7 @@
 package features
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -60,8 +61,10 @@ func toHumanReadable[A api.FeatureAttributes](p api.Feature[A]) string {
 	return ret.String()
 }
 
-func Discover(cfg *config.Config, policies *policies.Policies) *Features {
-	availableInferences, notAvailableInferences := classify(inference.Initialize(cfg, nil)) // TODO: pass preferences for inference
+func Discover(ctx context.Context) *Features {
+	cfg := config.GetConfig(ctx)
+	policies := policies.GetPolicies(ctx)
+	availableInferences, notAvailableInferences := classify(inference.Initialize(ctx, nil)) // TODO: pass preferences for inference
 
 	var selectedInference *api.InferenceProvider
 	if cfg.Inference != nil {
@@ -81,7 +84,7 @@ func Discover(cfg *config.Config, policies *policies.Policies) *Features {
 	if policies != nil {
 		toolsPolicies = policies.Tools
 	}
-	availableTools, notAvailableTools := classify(tools.Initialize(cfg, toolsPolicies))
+	availableTools, notAvailableTools := classify(tools.Initialize(ctx, toolsPolicies))
 	return &Features{
 		Inferences:             availableInferences,
 		InferencesNotAvailable: notAvailableInferences,
