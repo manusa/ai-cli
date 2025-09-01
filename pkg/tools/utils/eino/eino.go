@@ -35,14 +35,14 @@ func GetTools(ctx context.Context, cli client.MCPClient) ([]*api.Tool, error) {
 		if err != nil {
 			return nil, err
 		}
-		schema, err := info.ToOpenAPIV3()
+		schema, err := info.ToJSONSchema()
 		if err != nil {
 			return nil, err
 		}
 		apiTools[i] = &api.Tool{
-			Name:             info.Name,
-			Description:      info.Desc,
-			ParametersSchema: schema,
+			Name:        info.Name,
+			Description: info.Desc,
+			JSONSchema:  schema,
 			Function: func(args map[string]interface{}) (string, error) {
 				jsonArgs, err := json.Marshal(args)
 				if err != nil {

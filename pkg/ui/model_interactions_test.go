@@ -45,8 +45,7 @@ func (s *ModelInteractionsSuite) TestErrorMessage() {
 
 		expectedViewport := "" +
 			" 👤 Hello Alex\r\r\n" +
-			" ❗ [NodeRunError]\r\r\n" +
-			" error generating response\r\r\n"
+			" ❗ [NodeRunError] error generating response\r\r\n"
 		teatest.WaitFor(s.T(), s.TM.Output(), func(b []byte) bool {
 			return strings.Contains(string(b), expectedViewport)
 		})

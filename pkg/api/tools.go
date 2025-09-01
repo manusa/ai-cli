@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/eino-contrib/jsonschema"
 )
 
 type ToolsProvider interface {
@@ -50,8 +50,8 @@ type BasicToolsAttributes struct {
 type Tool struct {
 	Name        string
 	Description string
-	// Parameters in OpenAPI format
-	ParametersSchema *openapi3.Schema
+	// Parameters in JSONSchema format
+	JSONSchema *jsonschema.Schema
 	// Parameters in map format (if ParametersSchema is not set)
 	Parameters map[string]ToolParameter
 	Function   func(args map[string]interface{}) (string, error)
