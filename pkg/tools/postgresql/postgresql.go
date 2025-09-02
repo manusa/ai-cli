@@ -109,7 +109,7 @@ func (p *Provider) GetTools(ctx context.Context) ([]*api.Tool, error) {
 
 func (p *Provider) findBestMcpServerSettings(readOnly bool) (*api.McpSettings, error) {
 	for command, settings := range supportedMcpSettings {
-		if commandExists(command) {
+		if config.CommandExists(command) {
 			if readOnly {
 				settings.Args = append(settings.Args, "--access-mode=restricted")
 			} else {
@@ -132,11 +132,6 @@ func (p *Provider) findBestMcpServerSettings(readOnly bool) (*api.McpSettings, e
 		}
 	}
 	return nil, errors.New("no suitable MCP settings found for the PostgreSQL MCP server")
-}
-
-func commandExists(command string) bool {
-	_, err := config.LookPath(command)
-	return err == nil
 }
 
 func (p *Provider) GetDefaultPolicies() map[string]any {

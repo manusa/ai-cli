@@ -9,5 +9,6 @@ import (
 	_ "github.com/manusa/ai-cli/pkg/tools/fs"
 	_ "github.com/manusa/ai-cli/pkg/tools/github"
 	_ "github.com/manusa/ai-cli/pkg/tools/kubernetes"
+	_ "github.com/manusa/ai-cli/pkg/tools/playwright"
 	_ "github.com/manusa/ai-cli/pkg/tools/postgresql"
 )

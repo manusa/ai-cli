@@ -6,10 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"slices"
 
 	"github.com/manusa/ai-cli/pkg/api"
+	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/manusa/ai-cli/pkg/tools/utils/eino"
@@ -93,7 +93,7 @@ func (p *Provider) GetTools(ctx context.Context) ([]*api.Tool, error) {
 
 func findBestMcpServerSettings(readOnly bool) (*api.McpSettings, error) {
 	for command, settings := range supportedMcpSettings {
-		if commandExists(command) {
+		if config.CommandExists(command) {
 			if readOnly {
 				settings.Args = append(settings.Args, "--read-only")
 			}
@@ -101,11 +101,6 @@ func findBestMcpServerSettings(readOnly bool) (*api.McpSettings, error) {
 		}
 	}
 	return nil, errors.New("no suitable MCP settings found for the Github MCP server")
-}
-
-func commandExists(command string) bool {
-	_, err := exec.LookPath(command)
-	return err == nil
 }
 
 func (p *Provider) GetDefaultPolicies() map[string]any {
