@@ -3,9 +3,10 @@ package inference
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/manusa/ai-cli/pkg/api"
-	"github.com/manusa/ai-cli/pkg/policies"
 )
 
 var providers = map[string]api.InferenceProvider{}
@@ -26,16 +27,10 @@ func Clear() {
 	providers = map[string]api.InferenceProvider{}
 }
 
-// Initialize initializes the registered providers based on the user preferences and policies
-func Initialize(ctx context.Context) (disabled []api.InferenceProvider, enabled []api.InferenceProvider) {
-	ctxPolicies := policies.GetPolicies(ctx)
+// Initialize initializes the registered providers based on the user preferences
+func Initialize(ctx context.Context) []api.InferenceProvider {
 	for _, provider := range providers {
-		if ctxPolicies != nil && !policies.PoliciesProvider.IsInferenceEnabledByPolicies(provider, ctxPolicies) {
-			disabled = append(disabled, provider)
-			continue
-		}
 		provider.Initialize(ctx)
-		enabled = append(enabled, provider)
 	}
-	return disabled, enabled
+	return slices.Collect(maps.Values(providers))
 }

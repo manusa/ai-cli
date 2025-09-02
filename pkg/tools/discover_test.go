@@ -88,7 +88,7 @@ func (s *DiscoverTestSuite) TestMarshalling() {
 		},
 	))
 	ctx := config.WithConfig(context.Background(), config.New())
-	_, discoveredTools := Initialize(ctx)
+	discoveredTools := Initialize(ctx)
 	bytes, err := json.Marshal(discoveredTools)
 	s.Run("Marshalling returns no error", func() {
 		s.Nil(err, "expected no error when marshalling inferences")
