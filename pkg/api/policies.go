@@ -5,6 +5,9 @@ type InferencePropertyPolicies struct {
 	Public InferenceProviderPolicies `toml:"public,omitempty"`
 }
 
+// Inference policies can be defined at different levels (highest priority first): by a provider name, by a provider property, or globally
+// Policies are pointers, this means that if a policy is not set at a specific level, the value at a lower level is used
+// If the policy is not set in any of these levels, a default value, defined in the policy package, is used
 type InferenceProviderPolicies struct {
 	Enabled *bool `toml:"enabled,omitempty"`
 }
@@ -18,6 +21,9 @@ type InferencePolicies struct {
 	InferenceProviderPolicies
 }
 
+// Tools policies can be defined at different levels (highest priority first): by a provider name, or globally
+// Policies are pointers, this means that if a policy is not set at a specific level, the value at a lower level is used
+// If the policy is not set in any of these levels, a default value, defined in the policy package, is used
 type ToolsProviderPolicies struct {
 	Enabled        *bool `toml:"enabled,omitempty"`
 	ReadOnly       *bool `toml:"read-only,omitempty"`
