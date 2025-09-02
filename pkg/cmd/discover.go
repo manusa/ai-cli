@@ -77,10 +77,10 @@ func (o *DiscoverCmdOptions) Validate(cmd *cobra.Command) error {
 func (o *DiscoverCmdOptions) Run(cmd *cobra.Command) error {
 	cmd.SetContext(config.WithConfig(cmd.Context(), config.New()))
 
-	var userPolicies *policies.Policies
+	var userPolicies *api.Policies
 	if len(o.policiesFile) > 0 {
 		var err error
-		userPolicies, err = policies.Read(o.policiesFile)
+		userPolicies, err = policies.PoliciesProvider.Read(o.policiesFile)
 		if err != nil {
 			return fmt.Errorf("failed to read preferences: %w", err)
 		}

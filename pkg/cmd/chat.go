@@ -77,10 +77,10 @@ func (o *ChatCmdOptions) Complete(cmd *cobra.Command, _ []string) error {
 	}
 	cmd.SetContext(config.WithConfig(cmd.Context(), cfg))
 
-	var userPolicies *policies.Policies
+	var userPolicies *api.Policies
 	if len(o.policiesFile) > 0 {
 		var err error
-		userPolicies, err = policies.Read(o.policiesFile)
+		userPolicies, err = policies.PoliciesProvider.Read(o.policiesFile)
 		if err != nil {
 			return fmt.Errorf("failed to read preferences: %w", err)
 		}
