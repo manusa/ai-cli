@@ -3,10 +3,9 @@ package tools
 import (
 	"context"
 	"fmt"
-	"maps"
-	"slices"
 
 	"github.com/manusa/ai-cli/pkg/api"
+	"github.com/manusa/ai-cli/pkg/policies"
 )
 
 var providers = map[string]api.ToolsProvider{}
@@ -28,18 +27,15 @@ func Clear() {
 }
 
 // Initialize initializes the registered providers based on the user preferences
-func Initialize(ctx context.Context, policies map[string]any) []api.ToolsProvider {
+func Initialize(ctx context.Context) (disabled []api.ToolsProvider, enabled []api.ToolsProvider) {
+	ctxPolicies := policies.GetPolicies(ctx)
 	for _, provider := range providers {
-		provider.Initialize(ctx, policies[provider.Attributes().Name()])
+		if ctxPolicies != nil && !policies.PoliciesProvider.IsToolEnabledByPolicies(provider, ctxPolicies) {
+			disabled = append(disabled, provider)
+			continue
+		}
+		provider.Initialize(ctx)
+		enabled = append(enabled, provider)
 	}
-	return slices.SortedFunc(maps.Values(providers), api.FeatureSorter)
-}
-
-func GetDefaultPolicies() map[string]any {
-	policies := make(map[string]any)
-	for _, provider := range providers {
-		providerPolicies := provider.GetDefaultPolicies()
-		policies[provider.Attributes().Name()] = providerPolicies
-	}
-	return policies
+	return disabled, enabled
 }

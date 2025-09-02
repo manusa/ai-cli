@@ -50,7 +50,7 @@ func (p *Provider) GetModels(_ context.Context) ([]string, error) {
 	return modelsNames, nil
 }
 
-func (p *Provider) Initialize(ctx context.Context, _ any) {
+func (p *Provider) Initialize(ctx context.Context) {
 	baseURL := p.baseURL()
 	resp, err := http.Get(baseURL + "/v1/models")
 	if err != nil {
@@ -85,10 +85,6 @@ func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel
 
 func (p *Provider) baseURL() string {
 	return defaultBaseURL
-}
-
-func (p *Provider) GetDefaultPolicies() map[string]any {
-	return nil
 }
 
 var instance = &Provider{

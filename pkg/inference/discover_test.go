@@ -50,7 +50,7 @@ func (s *DiscoverTestSuite) TestRegister() {
 func (s *DiscoverTestSuite) TestInitialize() {
 	provider := test.NewInferenceProvider("the-provider")
 	Register(provider)
-	Initialize(context.Background(), nil)
+	Initialize(context.Background())
 	s.Run("Initialize calls Initialize on all providers", func() {
 		s.True(provider.Initialized, "expected provider to be initialized")
 	})

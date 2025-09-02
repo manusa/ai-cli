@@ -18,7 +18,7 @@ type Provider struct {
 
 var _ api.InferenceProvider = &Provider{}
 
-func (p *Provider) Initialize(ctx context.Context, _ any) {
+func (p *Provider) Initialize(ctx context.Context) {
 	cfg := config.GetConfig(ctx)
 	p.Available = cfg.GoogleApiKey != ""
 	if p.Available {
@@ -38,10 +38,6 @@ func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 	return gemini.NewChatModel(ctx, &gemini.Config{Client: geminiCli, Model: "gemini-2.0-flash"})
-}
-
-func (p *Provider) GetDefaultPolicies() map[string]any {
-	return nil
 }
 
 var instance = &Provider{

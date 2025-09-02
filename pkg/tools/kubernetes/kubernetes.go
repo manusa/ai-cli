@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
-	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/manusa/ai-cli/pkg/tools/utils/eino"
 )
@@ -23,11 +21,6 @@ type Provider struct {
 }
 
 var _ api.ToolsProvider = &Provider{}
-
-type KubePolicies struct {
-	policies.ToolPolicies
-	DisableDestructive bool `yaml:"disable-destructive" json:"disable-destructive"`
-}
 
 const (
 	RecommendedConfigPathEnvVar = "KUBECONFIG"
@@ -116,21 +109,7 @@ func homedir() string {
 	return os.Getenv("HOME")
 }
 
-func (p *Provider) Initialize(_ context.Context, toolPolicies any) {
-	// TODO: This should probably be generalized to all tools and inference providers
-	if !policies.IsEnabledByPolicies(toolPolicies) {
-		p.IsAvailableReason = "kubernetes is not authorized by policies"
-		return
-	}
-
-	if policies.IsReadOnlyByPolicies(toolPolicies) {
-		p.ReadOnly = true
-	}
-
-	if isDisableDestructiveByPolicies(toolPolicies) {
-		p.DisableDestructive = true
-	}
-
+func (p *Provider) Initialize(_ context.Context) {
 	var err error
 	p.McpSettings, err = findBestMcpServerSettings(p.ReadOnly, p.DisableDestructive)
 	if err != nil {
@@ -194,40 +173,6 @@ func findBestMcpServerSettings(readOnly bool, disableDestructive bool) (*api.Mcp
 	}
 	// TODO support manual download and installation of kubernetes-mcp-server as a last resort
 	return nil, errors.New("no suitable MCP settings found for the Kubernetes MCP server")
-}
-
-// isDisableDestructiveByPolicies checks if the tool must be disabled for destructive operations by policies
-// If the tool policies are nil, it returns false
-// If the tool policies are not nil, it returns the value of the DisableDestructive field
-// If the tool policies are not a valid KubePreferences struct, it returns true
-func isDisableDestructiveByPolicies(toolPolicies any) bool {
-	if toolPolicies == nil {
-		return false
-	}
-	jsonBody, err := json.Marshal(toolPolicies)
-	if err != nil {
-		return true
-	}
-	var structuredPolicies KubePolicies
-	err = json.Unmarshal(jsonBody, &structuredPolicies)
-	if err != nil {
-		return true
-	}
-	return structuredPolicies.DisableDestructive
-}
-
-func (p *Provider) GetDefaultPolicies() map[string]any {
-	var policies = KubePolicies{}
-	jsonBody, err := json.Marshal(policies)
-	if err != nil {
-		return nil
-	}
-	var policiesMap map[string]any
-	err = json.Unmarshal(jsonBody, &policiesMap)
-	if err != nil {
-		return nil
-	}
-	return policiesMap
 }
 
 var instance = &Provider{

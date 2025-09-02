@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/invopop/yaml"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/features"
@@ -16,10 +15,9 @@ import (
 )
 
 type DiscoverCmdOptions struct {
-	outputFormat   string
-	mcpConfig      string
-	policiesFile   string
-	policiesSample bool
+	outputFormat string
+	mcpConfig    string
+	policiesFile string
 }
 
 var (
@@ -57,7 +55,6 @@ func NewDiscoverCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&o.outputFormat, "output", "o", "json", "Output format (json, text)")
 	cmd.Flags().StringVar(&o.mcpConfig, "mcp-config", "", fmt.Sprintf("Configure editor MCP config (%s). This option replaces the normal output", strings.Join(editors, ", ")))
 	cmd.Flags().StringVar(&o.policiesFile, "policies", "", "Policies file to use")
-	cmd.Flags().BoolVar(&o.policiesSample, "show-policies-sample", false, "Outputs sample policies file")
 
 	return cmd
 }
@@ -80,20 +77,10 @@ func (o *DiscoverCmdOptions) Validate(cmd *cobra.Command) error {
 func (o *DiscoverCmdOptions) Run(cmd *cobra.Command) error {
 	cmd.SetContext(config.WithConfig(cmd.Context(), config.New()))
 
-	if o.policiesSample {
-		policies := features.GetDefaultPolicies()
-		bytes, err := yaml.Marshal(policies)
-		if err != nil {
-			return fmt.Errorf("failed to marshal default policies to YAML: %w", err)
-		}
-		_, _ = fmt.Printf("%s\n", bytes)
-		return nil
-	}
-
-	var userPolicies *policies.Policies
+	var userPolicies *api.Policies
 	if len(o.policiesFile) > 0 {
 		var err error
-		userPolicies, err = policies.Read(o.policiesFile)
+		userPolicies, err = policies.PoliciesProvider.Read(o.policiesFile)
 		if err != nil {
 			return fmt.Errorf("failed to read preferences: %w", err)
 		}

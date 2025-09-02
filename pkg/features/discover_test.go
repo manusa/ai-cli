@@ -2,7 +2,6 @@ package features
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -10,11 +9,8 @@ import (
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference"
-	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/test"
 	"github.com/manusa/ai-cli/pkg/tools"
-	"github.com/manusa/ai-cli/pkg/tools/fs"
-	"github.com/manusa/ai-cli/pkg/tools/kubernetes"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -22,10 +18,6 @@ type TestProvider struct {
 }
 
 func (t *TestProvider) Initialize(_ context.Context, _ any) {}
-
-func (t *TestProvider) GetDefaultPolicies() map[string]any {
-	return nil
-}
 
 type TestToolsProvider struct {
 	api.BasicToolsProvider
@@ -174,55 +166,6 @@ func (s *DiscoverTestSuite) TestDiscoverToolsWithOneProviderAvailable() {
 	})
 }
 
-func (s *DiscoverTestSuite) TestDiscoverToolsWithEnabledPolicies() {
-	tools.Register(test.NewToolsProvider("provider-available", test.WithToolsAvailable()))
-	structuredPolicies := policies.Policies{
-		Tools: map[string]any{
-			"provider-available": map[string]any{
-				"enabled": true,
-			},
-		},
-	}
-	ctx := config.WithConfig(context.Background(), config.New())
-	ctx = policies.WithPolicies(ctx, &structuredPolicies)
-	features := Discover(ctx)
-	s.Run("Tools is set to available AND enabled in policies providers", func() {
-		s.Len(features.ToolsNotAvailable, 0, "expected no not available tools provider to be returned")
-		s.Len(features.Tools, 1, "expected one tool provider to be returned")
-		s.Equal("provider-available", features.Tools[0].Attributes().Name(),
-			"expected fs provider to be returned")
-	})
-}
-
-func (s *DiscoverTestSuite) TestDiscoverToolsWithDisabledPolicies() {
-	// TODO: See TODOs about policy centralization.
-	s.T().Skip("Disabled until policies are centralized and evaluated in the features discovery")
-	tools.Register(&TestToolsProvider{
-		BasicToolsProvider: api.BasicToolsProvider{
-			BasicToolsAttributes: api.BasicToolsAttributes{
-				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "provider-available", FeatureDescription: "Test Provider"},
-			},
-			Available: true,
-		},
-	})
-	structuredPolicies := policies.Policies{
-		Tools: map[string]any{
-			"provider-available": map[string]any{
-				"enabled": false,
-			},
-		},
-	}
-	ctx := config.WithConfig(context.Background(), config.New())
-	ctx = policies.WithPolicies(ctx, &structuredPolicies)
-	features := Discover(ctx)
-	s.Run("ToolsNotAvailable is set to available AND disabled in policies providers", func() {
-		s.Len(features.Tools, 0, "expected no not available tools provider to be returned")
-		s.Len(features.ToolsNotAvailable, 1, "expected one tool provider to be returned")
-		s.Equal("provider-available", features.ToolsNotAvailable[0].Attributes().Name(),
-			"expected fs provider to be returned")
-	})
-}
-
 func (s *DiscoverTestSuite) TestDiscoverToJSON() {
 	inference.Register(test.NewInferenceProvider(
 		"inference-provider-available",
@@ -265,29 +208,6 @@ func (s *DiscoverTestSuite) TestDiscoverToJSON() {
 			`"toolsNotAvailable":[]}`,
 			jsonString,
 			"expected JSON to match the expected format")
-	})
-}
-
-func (s *DiscoverTestSuite) TestGetDefaultPolicies() {
-	// TODO: See TODOs about policy centralization.
-	s.T().Skip("Disabled until policies are centralized and evaluated in the features discovery")
-	tools.Register(&fs.Provider{})
-	tools.Register(&kubernetes.Provider{})
-	policies := GetDefaultPolicies()
-	fmt.Printf("policies: %+v\n", policies)
-	s.Run("GetDefaultPolicies returns expected policies", func() {
-		fsPolicies := policies["tools"].(map[string]any)["fs"]
-		s.Equal(map[string]any{
-			"enabled":   false,
-			"read-only": false,
-		}, fsPolicies, "expected the fs policy to be returned")
-
-		kubernetesPolicies := policies["tools"].(map[string]any)["kubernetes"]
-		s.Equal(map[string]any{
-			"enabled":             false,
-			"read-only":           false,
-			"disable-destructive": false,
-		}, kubernetesPolicies, "expected the kubernetes policy to be returned")
 	})
 }
 

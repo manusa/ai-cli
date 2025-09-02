@@ -2,7 +2,6 @@ package postgresql
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
-	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/manusa/ai-cli/pkg/tools/utils/eino"
 )
@@ -22,10 +20,6 @@ type Provider struct {
 }
 
 var _ api.ToolsProvider = &Provider{}
-
-type PostgresqlPolicies struct {
-	policies.ToolPolicies
-}
 
 const (
 	databaseUriEnvVar = "DATABASE_URI"
@@ -57,17 +51,7 @@ var (
 	}
 )
 
-func (p *Provider) Initialize(_ context.Context, toolPolicies any) {
-	// TODO: This should probably be generalized to all tools and inference providers
-	if !policies.IsEnabledByPolicies(toolPolicies) {
-		p.IsAvailableReason = "postgresql is not authorized by policies"
-		return
-	}
-
-	if policies.IsReadOnlyByPolicies(toolPolicies) {
-		p.ReadOnly = true
-	}
-
+func (p *Provider) Initialize(_ context.Context) {
 	var err error
 	p.McpSettings, err = p.findBestMcpServerSettings(p.ReadOnly)
 	if err != nil {
@@ -132,20 +116,6 @@ func (p *Provider) findBestMcpServerSettings(readOnly bool) (*api.McpSettings, e
 		}
 	}
 	return nil, errors.New("no suitable MCP settings found for the PostgreSQL MCP server")
-}
-
-func (p *Provider) GetDefaultPolicies() map[string]any {
-	var policies = PostgresqlPolicies{}
-	jsonBody, err := json.Marshal(policies)
-	if err != nil {
-		return nil
-	}
-	var policiesMap map[string]any
-	err = json.Unmarshal(jsonBody, &policiesMap)
-	if err != nil {
-		return nil
-	}
-	return policiesMap
 }
 
 func (p *Provider) getEnvVarValueOrDefault(envVar string, defaultValue string) string {

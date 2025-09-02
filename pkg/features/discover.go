@@ -10,7 +10,6 @@ import (
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference"
-	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 )
 
@@ -63,8 +62,7 @@ func toHumanReadable[A api.FeatureAttributes](p api.Feature[A]) string {
 
 func Discover(ctx context.Context) *Features {
 	cfg := config.GetConfig(ctx)
-	policies := policies.GetPolicies(ctx)
-	availableInferences, notAvailableInferences := classify(inference.Initialize(ctx, nil)) // TODO: pass preferences for inference
+	_, availableInferences, notAvailableInferences := classify(inference.Initialize(ctx)) // TODO: pass preferences for inference
 
 	var selectedInference *api.InferenceProvider
 	if cfg.Inference != nil {
@@ -79,12 +77,8 @@ func Discover(ctx context.Context) *Features {
 		// For now, we just select the first available inference
 		selectedInference = &availableInferences[0]
 	}
-	// TODO: should be moved to policies loading
-	toolsPolicies := map[string]any{}
-	if policies != nil {
-		toolsPolicies = policies.Tools
-	}
-	availableTools, notAvailableTools := classify(tools.Initialize(ctx, toolsPolicies))
+
+	_, availableTools, notAvailableTools := classify(tools.Initialize(ctx))
 	return &Features{
 		Inferences:             availableInferences,
 		InferencesNotAvailable: notAvailableInferences,
@@ -94,23 +88,18 @@ func Discover(ctx context.Context) *Features {
 	}
 }
 
-func classify[A api.FeatureAttributes, F api.Feature[A]](providers []F) (availableFeatures []F, notAvailableFeatures []F) {
+func classify[A api.FeatureAttributes, F api.Feature[A]](disabled []F, enabled []F) (disabledFeatures []F, availableFeatures []F, notAvailableFeatures []F) {
 	availableFeatures = []F{}
 	notAvailableFeatures = []F{}
-	for _, provider := range providers {
+	for _, provider := range enabled {
 		if provider.IsAvailable() {
 			availableFeatures = append(availableFeatures, provider)
 		} else {
 			notAvailableFeatures = append(notAvailableFeatures, provider)
 		}
 	}
+	slices.SortFunc(disabled, api.FeatureSorter)
 	slices.SortFunc(availableFeatures, api.FeatureSorter)
 	slices.SortFunc(notAvailableFeatures, api.FeatureSorter)
-	return
-}
-
-func GetDefaultPolicies() map[string]any {
-	return map[string]any{
-		"tools": tools.GetDefaultPolicies(),
-	}
+	return disabled, availableFeatures, notAvailableFeatures
 }

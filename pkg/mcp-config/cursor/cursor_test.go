@@ -21,10 +21,6 @@ func (p *TestToolsProvider) GetMcpSettings() *api.McpSettings {
 	return p.mcpSettings
 }
 
-func (p *TestToolsProvider) GetDefaultPolicies() map[string]any {
-	return nil
-}
-
 func (s *CursorTestSuite) SetupTest() {}
 
 func TestCursor(t *testing.T) {

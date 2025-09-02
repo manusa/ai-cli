@@ -3,16 +3,21 @@ package policies
 import (
 	"os"
 
-	"github.com/invopop/yaml"
+	"github.com/BurntSushi/toml"
+	"github.com/manusa/ai-cli/pkg/api"
 )
 
-func Read(policiesFile string) (*Policies, error) {
-	policies := Policies{}
+func (p *Provider) Read(policiesFile string) (*api.Policies, error) {
 	fileContent, err := os.ReadFile(policiesFile)
 	if err != nil {
 		return nil, err
 	}
-	err = yaml.Unmarshal(fileContent, &policies)
+	return readToml(string(fileContent))
+}
+
+func readToml(config string) (*api.Policies, error) {
+	policies := api.Policies{}
+	_, err := toml.Decode(config, &policies)
 	if err != nil {
 		return nil, err
 	}
