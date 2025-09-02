@@ -1,3 +1,3 @@
 # AI CLI
 
-<img alt="AI CLI demo" src="docs/demo.gif" />
+<img alt="AI CLI demo" src="docs/demo.chat.gif" />
