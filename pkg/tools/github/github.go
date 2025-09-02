@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -10,7 +9,6 @@ import (
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
-	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/manusa/ai-cli/pkg/tools/utils/eino"
 )
@@ -22,9 +20,7 @@ type Provider struct {
 
 var _ api.ToolsProvider = &Provider{}
 
-type GithubPolicies struct {
-	policies.ToolPolicies
-}
+type GithubPolicies struct{}
 
 const (
 	accessTokenEnvVar = "GITHUB_PERSONAL_ACCESS_TOKEN"
@@ -50,17 +46,7 @@ var (
 	}
 )
 
-func (p *Provider) Initialize(_ context.Context, toolPolicies any) {
-	// TODO: This should probably be generalized to all tools and inference providers
-	if !policies.IsEnabledByPolicies(toolPolicies) {
-		p.IsAvailableReason = "github is not authorized by policies"
-		return
-	}
-
-	if policies.IsReadOnlyByPolicies(toolPolicies) {
-		p.ReadOnly = true
-	}
-
+func (p *Provider) Initialize(_ context.Context) {
 	hasAccessToken := os.Getenv(accessTokenEnvVar) != ""
 	if !hasAccessToken {
 		p.IsAvailableReason = fmt.Sprintf("%s is not set", accessTokenEnvVar)
@@ -101,20 +87,6 @@ func findBestMcpServerSettings(readOnly bool) (*api.McpSettings, error) {
 		}
 	}
 	return nil, errors.New("no suitable MCP settings found for the Github MCP server")
-}
-
-func (p *Provider) GetDefaultPolicies() map[string]any {
-	var policies = GithubPolicies{}
-	jsonBody, err := json.Marshal(policies)
-	if err != nil {
-		return nil
-	}
-	var policiesMap map[string]any
-	err = json.Unmarshal(jsonBody, &policiesMap)
-	if err != nil {
-		return nil
-	}
-	return policiesMap
 }
 
 var instance = &Provider{

@@ -3,7 +3,6 @@ package tools
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/manusa/ai-cli/pkg/api"
@@ -67,7 +66,7 @@ func (s *DiscoverTestSuite) TestRegister() {
 func (s *DiscoverTestSuite) TestInitialize() {
 	provider := test.NewToolsProvider("the-provider")
 	Register(provider)
-	Initialize(context.Background(), nil)
+	Initialize(context.Background())
 	s.Run("Initialize calls Initialize on all providers", func() {
 		s.True(provider.Initialized, "expected provider to be initialized")
 	})
@@ -89,7 +88,7 @@ func (s *DiscoverTestSuite) TestMarshalling() {
 		},
 	))
 	ctx := config.WithConfig(context.Background(), config.New())
-	discoveredTools := Initialize(ctx, nil)
+	discoveredTools := Initialize(ctx)
 	bytes, err := json.Marshal(discoveredTools)
 	s.Run("Marshalling returns no error", func() {
 		s.Nil(err, "expected no error when marshalling inferences")
@@ -97,31 +96,6 @@ func (s *DiscoverTestSuite) TestMarshalling() {
 	s.Run("Marshalling returns expected JSON", func() {
 		s.JSONEq(`[{"description":"Test Provider","name":"provider-one","reason":""},{"description":"Test Provider","name":"provider-two","reason":""}]`, string(bytes),
 			"expected JSON to match the expected format")
-	})
-}
-
-func (s *DiscoverTestSuite) TestGetDefaultPolicies() {
-	Register(test.NewToolsProvider(
-		"provider-one",
-		func(provider *test.ToolsProvider) {
-			provider.Policies = map[string]any{
-				"provider-one-policy": "provider-one-policy-value",
-			}
-		},
-	))
-	Register(test.NewToolsProvider(
-		"provider-two",
-		func(provider *test.ToolsProvider) {
-			provider.Policies = map[string]any{
-				"provider-two-policy": "provider-two-policy-value",
-			}
-		},
-	))
-	s.Run("GetDefaultPolicies returns expected policies", func() {
-		policies := GetDefaultPolicies()
-		fmt.Printf("policies: %+v\n", policies)
-		s.Equal(map[string]any{"provider-one-policy": "provider-one-policy-value"}, policies["provider-one"], "expected the provider-one policy to be returned")
-		s.Equal(map[string]any{"provider-two-policy": "provider-two-policy-value"}, policies["provider-two"], "expected the provider-two policy to be returned")
 	})
 }
 

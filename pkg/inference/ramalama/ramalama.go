@@ -44,7 +44,7 @@ func (p *Provider) GetModels(_ context.Context) ([]string, error) {
 	return models, nil
 }
 
-func (p *Provider) Initialize(ctx context.Context, _ any) {
+func (p *Provider) Initialize(ctx context.Context) {
 	if !config.CommandExists(p.getRamalamaBinaryName()) {
 		p.IsAvailableReason = "ramalama is not installed"
 		return
@@ -91,10 +91,6 @@ func (p *Provider) getProcessByModel(model string) *ramalamaProcess {
 			return &process
 		}
 	}
-	return nil
-}
-
-func (p *Provider) GetDefaultPolicies() map[string]any {
 	return nil
 }
 

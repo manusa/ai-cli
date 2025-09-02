@@ -49,12 +49,8 @@ type InferenceProvider struct {
 	Llm         model.ToolCallingChatModel `json:"-"`
 }
 
-func (i *InferenceProvider) Initialize(_ context.Context, _ any) {
+func (i *InferenceProvider) Initialize(_ context.Context) {
 	i.Initialized = true
-}
-
-func (i *InferenceProvider) GetDefaultPolicies() map[string]any {
-	return nil
 }
 
 func (i *InferenceProvider) GetInference(_ context.Context) (model.ToolCallingChatModel, error) {

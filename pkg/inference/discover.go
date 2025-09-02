@@ -28,9 +28,9 @@ func Clear() {
 }
 
 // Initialize initializes the registered providers based on the user preferences
-func Initialize(ctx context.Context, policies map[string]any) []api.InferenceProvider {
+func Initialize(ctx context.Context) []api.InferenceProvider {
 	for _, provider := range providers {
-		provider.Initialize(ctx, policies[provider.Attributes().Name()])
+		provider.Initialize(ctx)
 	}
 	return slices.Collect(maps.Values(providers))
 }

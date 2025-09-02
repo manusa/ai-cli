@@ -63,7 +63,7 @@ func (p *Provider) GetModels(_ context.Context) ([]string, error) {
 	return modelsNames, nil
 }
 
-func (p *Provider) Initialize(ctx context.Context, _ any) {
+func (p *Provider) Initialize(ctx context.Context) {
 	baseURL := p.baseURL()
 	isBaseURLConfigured := p.isBaseURLConfigured()
 	resp, err := http.Get(baseURL + "/v1/models")
@@ -126,10 +126,6 @@ func (p *Provider) baseURL() string {
 
 func (p *Provider) isBaseURLConfigured() bool {
 	return os.Getenv(ollamaHostEnvVar) != ""
-}
-
-func (p *Provider) GetDefaultPolicies() map[string]any {
-	return nil
 }
 
 var instance = &Provider{

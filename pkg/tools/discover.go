@@ -28,18 +28,9 @@ func Clear() {
 }
 
 // Initialize initializes the registered providers based on the user preferences
-func Initialize(ctx context.Context, policies map[string]any) []api.ToolsProvider {
+func Initialize(ctx context.Context) []api.ToolsProvider {
 	for _, provider := range providers {
-		provider.Initialize(ctx, policies[provider.Attributes().Name()])
+		provider.Initialize(ctx)
 	}
 	return slices.SortedFunc(maps.Values(providers), api.FeatureSorter)
-}
-
-func GetDefaultPolicies() map[string]any {
-	policies := make(map[string]any)
-	for _, provider := range providers {
-		providerPolicies := provider.GetDefaultPolicies()
-		policies[provider.Attributes().Name()] = providerPolicies
-	}
-	return policies
 }
