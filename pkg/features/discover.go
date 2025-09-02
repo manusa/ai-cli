@@ -10,6 +10,7 @@ import (
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference"
+	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 )
 
@@ -61,6 +62,8 @@ func toHumanReadable[A api.FeatureAttributes](p api.Feature[A]) string {
 }
 
 func Discover(ctx context.Context) *Features {
+	unregisterDisabledInferences(ctx)
+	unregisterDisabledTools(ctx)
 	cfg := config.GetConfig(ctx)
 	availableInferences, notAvailableInferences := classify(inference.Initialize(ctx)) // TODO: pass preferences for inference
 
@@ -85,6 +88,26 @@ func Discover(ctx context.Context) *Features {
 		Inference:              selectedInference,
 		Tools:                  availableTools,
 		ToolsNotAvailable:      notAvailableTools,
+	}
+}
+
+func unregisterDisabledInferences(ctx context.Context) {
+	ctxPolicies := policies.GetPolicies(ctx)
+	for name, provider := range inference.GetProviders() {
+		if ctxPolicies != nil && !policies.PoliciesProvider.IsInferenceEnabledByPolicies(provider, ctxPolicies) {
+			inference.Unregister(name)
+			continue
+		}
+	}
+}
+
+func unregisterDisabledTools(ctx context.Context) {
+	ctxPolicies := policies.GetPolicies(ctx)
+	for name, provider := range tools.GetProviders() {
+		if ctxPolicies != nil && !policies.PoliciesProvider.IsToolEnabledByPolicies(provider, ctxPolicies) {
+			tools.Unregister(name)
+			continue
+		}
 	}
 }
 
