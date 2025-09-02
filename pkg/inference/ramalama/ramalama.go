@@ -45,8 +45,7 @@ func (p *Provider) GetModels(_ context.Context) ([]string, error) {
 }
 
 func (p *Provider) Initialize(ctx context.Context, _ any) {
-	_, err := exec.LookPath(p.getRamalamaBinaryName())
-	if err != nil {
+	if !config.CommandExists(p.getRamalamaBinaryName()) {
 		p.IsAvailableReason = "ramalama is not installed"
 		return
 	}

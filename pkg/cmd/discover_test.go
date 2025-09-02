@@ -74,6 +74,9 @@ func (s *DiscoverTestSuite) TestOutputText() {
 			"  - kubernetes\n" +
 			"    Description: Provides access to Kubernetes clusters, allowing management and interaction with cluster resources.\n" +
 			"    Reason: no suitable MCP settings found for the Kubernetes MCP server\n" +
+			"  - playwright\n" +
+			"    Description: Automate and interact with web browsers using Playwright.\n" +
+			"    Reason: npx command not found\n" +
 			"  - postgresql\n" +
 			"    Description: Provides access to a PostgreSQL database, allowing execution of SQL queries and retrieval of data.\n" +
 			"    Reason: no suitable MCP settings found for the PostgreSQL MCP server\n"
@@ -100,7 +103,9 @@ func (s *DiscoverTestSuite) TestOutputJson() {
 			`"tools":[{"description":"Provides access to the local filesystem, allowing listing of files and directories.","name":"fs","reason":"filesystem is accessible"}],` +
 			`"toolsNotAvailable":[` +
 			`{"description":"Provides access to GitHub repositories, issues, pull requests, and more.","name":"github","reason":"GITHUB_PERSONAL_ACCESS_TOKEN is not set"},` +
-			`{"description":"Provides access to Kubernetes clusters, allowing management and interaction with cluster resources.","name":"kubernetes","reason":"no suitable MCP settings found for the Kubernetes MCP server"},` + `{"description":"Provides access to a PostgreSQL database, allowing execution of SQL queries and retrieval of data.","name":"postgresql","reason":"no suitable MCP settings found for the PostgreSQL MCP server"}` +
+			`{"description":"Provides access to Kubernetes clusters, allowing management and interaction with cluster resources.","name":"kubernetes","reason":"no suitable MCP settings found for the Kubernetes MCP server"},` +
+			`{"description":"Automate and interact with web browsers using Playwright.","name":"playwright","reason":"npx command not found"},` +
+			`{"description":"Provides access to a PostgreSQL database, allowing execution of SQL queries and retrieval of data.","name":"postgresql","reason":"no suitable MCP settings found for the PostgreSQL MCP server"}` +
 			`]}`
 		s.JSONEq(expectedOutput, output, "Expected JSON output does not match")
 	})

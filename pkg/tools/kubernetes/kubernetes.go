@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 	"slices"
@@ -183,7 +182,7 @@ func (p *Provider) GetTools(ctx context.Context) ([]*api.Tool, error) {
 
 func findBestMcpServerSettings(readOnly bool, disableDestructive bool) (*api.McpSettings, error) {
 	for command, settings := range supportedMcpSettings {
-		if commandExists(command) {
+		if config.CommandExists(command) {
 			if readOnly {
 				settings.Args = append(settings.Args, "--read-only")
 			}
@@ -195,11 +194,6 @@ func findBestMcpServerSettings(readOnly bool, disableDestructive bool) (*api.Mcp
 	}
 	// TODO support manual download and installation of kubernetes-mcp-server as a last resort
 	return nil, errors.New("no suitable MCP settings found for the Kubernetes MCP server")
-}
-
-func commandExists(command string) bool {
-	_, err := exec.LookPath(command)
-	return err == nil
 }
 
 // isDisableDestructiveByPolicies checks if the tool must be disabled for destructive operations by policies
