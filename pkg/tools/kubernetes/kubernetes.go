@@ -22,10 +22,6 @@ type Provider struct {
 
 var _ api.ToolsProvider = &Provider{}
 
-type KubePolicies struct {
-	DisableDestructive bool `yaml:"disable-destructive" json:"disable-destructive"`
-}
-
 const (
 	RecommendedConfigPathEnvVar = "KUBECONFIG"
 	RecommendedHomeDir          = ".kube"

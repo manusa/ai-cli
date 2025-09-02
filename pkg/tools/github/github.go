@@ -20,8 +20,6 @@ type Provider struct {
 
 var _ api.ToolsProvider = &Provider{}
 
-type GithubPolicies struct{}
-
 const (
 	accessTokenEnvVar = "GITHUB_PERSONAL_ACCESS_TOKEN"
 )

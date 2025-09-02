@@ -21,8 +21,6 @@ type Provider struct {
 
 var _ api.ToolsProvider = &Provider{}
 
-type PostgresqlPolicies struct{}
-
 const (
 	databaseUriEnvVar = "DATABASE_URI"
 

@@ -15,8 +15,6 @@ type Provider struct {
 
 var _ api.ToolsProvider = &Provider{}
 
-type FsPolicies struct{}
-
 func (p *Provider) Initialize(_ context.Context) {
 	// ReadOnly is not considered for fs, as all operations are read-only
 	p.Available = true
