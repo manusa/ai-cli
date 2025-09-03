@@ -22,14 +22,6 @@ func Register(provider api.InferenceProvider) {
 	providers[provider.Attributes().Name()] = provider
 }
 
-func GetProviders() map[string]api.InferenceProvider {
-	return providers
-}
-
-func Unregister(name string) {
-	delete(providers, name)
-}
-
 // Clear the registered tools providers (Exposed for testing purposes)
 func Clear() {
 	providers = map[string]api.InferenceProvider{}

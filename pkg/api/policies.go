@@ -5,6 +5,8 @@ type InferencePropertyPolicies struct {
 	Public InferenceProviderPolicies `toml:"public,omitempty"`
 }
 
+// InferenceProviderPolicies struct to define policies for inference providers
+//
 // Inference policies can be defined at different levels (highest priority first): by a provider name, by a provider property, or globally
 // Policies are pointers, this means that if a policy is not set at a specific level, the value at a lower level is used
 // If the policy is not set in any of these levels, a default value, defined in the policy package, is used
@@ -21,6 +23,8 @@ type InferencePolicies struct {
 	InferenceProviderPolicies
 }
 
+// ToolsProviderPolicies struct to define policies for tools providers
+//
 // Tools policies can be defined at different levels (highest priority first): by a provider name, or globally
 // Policies are pointers, this means that if a policy is not set at a specific level, the value at a lower level is used
 // If the policy is not set in any of these levels, a default value, defined in the policy package, is used
@@ -45,6 +49,8 @@ type Policies struct {
 	Inferences InferencePolicies `toml:"inferences,omitempty"`
 	Tools      ToolsPolicies     `toml:"tools,omitempty"`
 }
+
+type PolicyVerifier[a FeatureAttributes] func(feature Feature[a], policies *Policies) bool
 
 type PoliciesProvider interface {
 	Read(policiesFile string) (*Policies, error)
