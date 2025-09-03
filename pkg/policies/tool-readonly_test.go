@@ -11,7 +11,7 @@ import (
 func TestIsToolReadonlyByPolicies(t *testing.T) {
 	for _, tt := range []struct {
 		name         string
-		feature      api.Feature[api.ToolsAttributes]
+		feature      api.Feature[api.ToolsAttributes, api.ToolsInitializeOptions]
 		policiesToml string
 		expected     bool
 	}{

@@ -44,7 +44,7 @@ func (p *Provider) GetModels(_ context.Context) ([]string, error) {
 	return models, nil
 }
 
-func (p *Provider) Initialize(ctx context.Context) {
+func (p *Provider) Initialize(ctx context.Context, options api.InferenceInitializeOptions) {
 	if !config.CommandExists(p.getRamalamaBinaryName()) {
 		p.IsAvailableReason = "ramalama is not installed"
 		return

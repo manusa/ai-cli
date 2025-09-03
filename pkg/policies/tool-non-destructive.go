@@ -6,7 +6,7 @@ const (
 	DefaultToolNonDestructive = false
 )
 
-func (p *Provider) IsToolNonDestructiveByPolicies(feature api.Feature[api.ToolsAttributes], policies *api.Policies) bool {
+func (p *Provider) IsToolNonDestructiveByPolicies(feature api.Feature[api.ToolsAttributes, api.ToolsInitializeOptions], policies *api.Policies) bool {
 	providerName := feature.Attributes().Name()
 	if policies.Tools.Provider[providerName].NonDestructive != nil {
 		return *policies.Tools.Provider[providerName].NonDestructive

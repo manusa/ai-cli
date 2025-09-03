@@ -50,7 +50,7 @@ func (p *Provider) GetModels(_ context.Context) ([]string, error) {
 	return modelsNames, nil
 }
 
-func (p *Provider) Initialize(ctx context.Context) {
+func (p *Provider) Initialize(ctx context.Context, options api.InferenceInitializeOptions) {
 	baseURL := p.baseURL()
 	resp, err := http.Get(baseURL + "/v1/models")
 	if err != nil {

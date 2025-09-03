@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 
@@ -53,7 +54,7 @@ func (f *Features) ToHumanReadable() string {
 	return ret.String()
 }
 
-func toHumanReadable[A api.FeatureAttributes](p api.Feature[A]) string {
+func toHumanReadable[A api.FeatureAttributes, B any](p api.Feature[A, B]) string {
 	ret := &strings.Builder{}
 	_, _ = fmt.Fprintf(ret, "  - %s\n", p.Attributes().Name())
 	_, _ = fmt.Fprintf(ret, "    Description: %s\n", p.Attributes().Description())
@@ -64,10 +65,10 @@ func toHumanReadable[A api.FeatureAttributes](p api.Feature[A]) string {
 func Discover(ctx context.Context) *Features {
 	unregisterDisabledInferences(ctx)
 	unregisterDisabledTools(ctx)
-	cfg := config.GetConfig(ctx)
-	availableInferences, notAvailableInferences := classify(inference.Initialize(ctx)) // TODO: pass preferences for inference
+	availableInferences, notAvailableInferences := initializeInferenceProviders(ctx)
 
 	var selectedInference *api.InferenceProvider
+	cfg := config.GetConfig(ctx)
 	if cfg.Inference != nil {
 		for _, i := range availableInferences {
 			if i.Attributes().Name() == *cfg.Inference {
@@ -81,7 +82,7 @@ func Discover(ctx context.Context) *Features {
 		selectedInference = &availableInferences[0]
 	}
 
-	availableTools, notAvailableTools := classify(tools.Initialize(ctx))
+	availableTools, notAvailableTools := initializeToolsProviders(ctx)
 	return &Features{
 		Inferences:             availableInferences,
 		InferencesNotAvailable: notAvailableInferences,
@@ -111,7 +112,34 @@ func unregisterDisabledTools(ctx context.Context) {
 	}
 }
 
-func classify[A api.FeatureAttributes, F api.Feature[A]](providers []F) (availableFeatures []F, notAvailableFeatures []F) {
+func initializeInferenceProviders(ctx context.Context) (availableInferences []api.InferenceProvider, notAvailableInferences []api.InferenceProvider) {
+	for _, provider := range inference.GetProviders() {
+		provider.Initialize(ctx, api.InferenceInitializeOptions{})
+	}
+	inferenceProviders := slices.Collect(maps.Values(inference.GetProviders()))
+	return classify(inferenceProviders)
+}
+
+func initializeToolsProviders(ctx context.Context) (availableTools []api.ToolsProvider, notAvailableTools []api.ToolsProvider) {
+	ctxPolicies := policies.GetPolicies(ctx)
+	for _, provider := range tools.GetProviders() {
+		options := api.ToolsInitializeOptions{
+			Local:          false,
+			NonDestructive: false,
+			ReadOnly:       false,
+		}
+		if ctxPolicies != nil {
+			options.Local = policies.PoliciesProvider.IsToolLocalByPolicies(provider, ctxPolicies)
+			options.NonDestructive = policies.PoliciesProvider.IsToolNonDestructiveByPolicies(provider, ctxPolicies)
+			options.ReadOnly = policies.PoliciesProvider.IsToolReadonlyByPolicies(provider, ctxPolicies)
+		}
+		provider.Initialize(ctx, options)
+	}
+	toolsProviders := slices.Collect(maps.Values(tools.GetProviders()))
+	return classify(toolsProviders)
+}
+
+func classify[A api.FeatureAttributes, B any, F api.Feature[A, B]](providers []F) (availableFeatures []F, notAvailableFeatures []F) {
 	availableFeatures = []F{}
 	notAvailableFeatures = []F{}
 	for _, provider := range providers {

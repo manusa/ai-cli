@@ -51,7 +51,8 @@ var (
 	}
 )
 
-func (p *Provider) Initialize(_ context.Context) {
+func (p *Provider) Initialize(_ context.Context, options api.ToolsInitializeOptions) {
+	p.ReadOnly = options.ReadOnly || options.NonDestructive
 	var err error
 	p.McpSettings, err = p.findBestMcpServerSettings(p.ReadOnly)
 	if err != nil {

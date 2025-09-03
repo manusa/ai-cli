@@ -1,7 +1,6 @@
 package inference
 
 import (
-	"context"
 	"testing"
 
 	"github.com/manusa/ai-cli/pkg/test"
@@ -44,15 +43,6 @@ func (s *DiscoverTestSuite) TestRegister() {
 		s.Panics(func() {
 			Register(nil)
 		}, "expected panic when registering a nil provider")
-	})
-}
-
-func (s *DiscoverTestSuite) TestInitialize() {
-	provider := test.NewInferenceProvider("the-provider")
-	Register(provider)
-	Initialize(context.Background())
-	s.Run("Initialize calls Initialize on all providers", func() {
-		s.True(provider.Initialized, "expected provider to be initialized")
 	})
 }
 

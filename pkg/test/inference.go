@@ -49,7 +49,7 @@ type InferenceProvider struct {
 	Llm         model.ToolCallingChatModel `json:"-"`
 }
 
-func (i *InferenceProvider) Initialize(_ context.Context) {
+func (i *InferenceProvider) Initialize(_ context.Context, _ api.InferenceInitializeOptions) {
 	i.Initialized = true
 }
 

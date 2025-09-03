@@ -6,7 +6,7 @@ const (
 	DefaultToolEnabled = true
 )
 
-func (p *Provider) IsToolEnabledByPolicies(feature api.Feature[api.ToolsAttributes], policies *api.Policies) bool {
+func (p *Provider) IsToolEnabledByPolicies(feature api.Feature[api.ToolsAttributes, api.ToolsInitializeOptions], policies *api.Policies) bool {
 	providerName := feature.Attributes().Name()
 	if policies.Tools.Provider[providerName].Enabled != nil {
 		return *policies.Tools.Provider[providerName].Enabled

@@ -18,7 +18,7 @@ type Provider struct {
 
 var _ api.InferenceProvider = &Provider{}
 
-func (p *Provider) Initialize(ctx context.Context) {
+func (p *Provider) Initialize(ctx context.Context, options api.InferenceInitializeOptions) {
 	cfg := config.GetConfig(ctx)
 	p.Available = cfg.GoogleApiKey != ""
 	if p.Available {

@@ -1,15 +1,11 @@
 package tools
 
 import (
-	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/test"
 	"github.com/stretchr/testify/suite"
-
-	"github.com/manusa/ai-cli/pkg/config"
 )
 
 type DiscoverTestSuite struct {
@@ -60,42 +56,6 @@ func (s *DiscoverTestSuite) TestRegister() {
 		s.Panics(func() {
 			Register(nil)
 		}, "expected panic when registering a nil provider")
-	})
-}
-
-func (s *DiscoverTestSuite) TestInitialize() {
-	provider := test.NewToolsProvider("the-provider")
-	Register(provider)
-	Initialize(context.Background())
-	s.Run("Initialize calls Initialize on all providers", func() {
-		s.True(provider.Initialized, "expected provider to be initialized")
-	})
-}
-
-func (s *DiscoverTestSuite) TestMarshalling() {
-	Register(test.NewToolsProvider(
-		"provider-one",
-		test.WithToolsAvailable(),
-		func(provider *test.ToolsProvider) {
-			provider.FeatureDescription = "Test Provider"
-		},
-	))
-	Register(test.NewToolsProvider(
-		"provider-two",
-		test.WithToolsAvailable(),
-		func(provider *test.ToolsProvider) {
-			provider.FeatureDescription = "Test Provider"
-		},
-	))
-	ctx := config.WithConfig(context.Background(), config.New())
-	discoveredTools := Initialize(ctx)
-	bytes, err := json.Marshal(discoveredTools)
-	s.Run("Marshalling returns no error", func() {
-		s.Nil(err, "expected no error when marshalling inferences")
-	})
-	s.Run("Marshalling returns expected JSON", func() {
-		s.JSONEq(`[{"description":"Test Provider","name":"provider-one","reason":""},{"description":"Test Provider","name":"provider-two","reason":""}]`, string(bytes),
-			"expected JSON to match the expected format")
 	})
 }
 

@@ -1,10 +1,7 @@
 package tools
 
 import (
-	"context"
 	"fmt"
-	"maps"
-	"slices"
 
 	"github.com/manusa/ai-cli/pkg/api"
 )
@@ -33,12 +30,4 @@ func Unregister(name string) {
 // Clear the registered tools providers (Exposed for testing purposes)
 func Clear() {
 	providers = map[string]api.ToolsProvider{}
-}
-
-// Initialize initializes the registered providers based on the user preferences
-func Initialize(ctx context.Context) []api.ToolsProvider {
-	for _, provider := range providers {
-		provider.Initialize(ctx)
-	}
-	return slices.SortedFunc(maps.Values(providers), api.FeatureSorter)
 }

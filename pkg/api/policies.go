@@ -48,9 +48,9 @@ type Policies struct {
 
 type PoliciesProvider interface {
 	Read(policiesFile string) (*Policies, error)
-	IsInferenceEnabledByPolicies(feature Feature[InferenceAttributes], policies *Policies) bool
-	IsToolEnabledByPolicies(feature Feature[ToolsAttributes], policies *Policies) bool
-	IsToolLocalByPolicies(feature Feature[ToolsAttributes], policies *Policies) bool
-	IsToolNonDestructiveByPolicies(feature Feature[ToolsAttributes], policies *Policies) bool
-	IsToolReadonlyByPolicies(feature Feature[ToolsAttributes], policies *Policies) bool
+	IsInferenceEnabledByPolicies(feature Feature[InferenceAttributes, InferenceInitializeOptions], policies *Policies) bool
+	IsToolEnabledByPolicies(feature Feature[ToolsAttributes, ToolsInitializeOptions], policies *Policies) bool
+	IsToolLocalByPolicies(feature Feature[ToolsAttributes, ToolsInitializeOptions], policies *Policies) bool
+	IsToolNonDestructiveByPolicies(feature Feature[ToolsAttributes, ToolsInitializeOptions], policies *Policies) bool
+	IsToolReadonlyByPolicies(feature Feature[ToolsAttributes, ToolsInitializeOptions], policies *Policies) bool
 }

@@ -9,8 +9,14 @@ import (
 	"github.com/eino-contrib/jsonschema"
 )
 
+type ToolsInitializeOptions struct {
+	Local          bool
+	NonDestructive bool
+	ReadOnly       bool
+}
+
 type ToolsProvider interface {
-	Feature[ToolsAttributes]
+	Feature[ToolsAttributes, ToolsInitializeOptions]
 	GetTools(ctx context.Context) ([]*Tool, error)
 	GetMcpSettings() *McpSettings
 }

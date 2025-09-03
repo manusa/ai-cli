@@ -37,7 +37,7 @@ type ToolsProvider struct {
 	Policies    map[string]any `json:"-"`
 }
 
-func (t *ToolsProvider) Initialize(_ context.Context) {
+func (t *ToolsProvider) Initialize(_ context.Context, _ api.ToolsInitializeOptions) {
 	t.Initialized = true
 }
 

@@ -20,7 +20,7 @@ type Provider struct {
 
 var _ api.ToolsProvider = &Provider{}
 
-func (p *Provider) Initialize(_ context.Context) {
+func (p *Provider) Initialize(_ context.Context, options api.ToolsInitializeOptions) {
 	if !config.CommandExists("npx") {
 		p.IsAvailableReason = "npx command not found"
 		return

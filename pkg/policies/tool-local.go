@@ -6,7 +6,7 @@ const (
 	DefaultToolLocal = false
 )
 
-func (p *Provider) IsToolLocalByPolicies(feature api.Feature[api.ToolsAttributes], policies *api.Policies) bool {
+func (p *Provider) IsToolLocalByPolicies(feature api.Feature[api.ToolsAttributes, api.ToolsInitializeOptions], policies *api.Policies) bool {
 	providerName := feature.Attributes().Name()
 	if policies.Tools.Provider[providerName].Local != nil {
 		return *policies.Tools.Provider[providerName].Local

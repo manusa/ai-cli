@@ -109,7 +109,9 @@ func homedir() string {
 	return os.Getenv("HOME")
 }
 
-func (p *Provider) Initialize(_ context.Context) {
+func (p *Provider) Initialize(_ context.Context, options api.ToolsInitializeOptions) {
+	p.ReadOnly = options.ReadOnly
+	p.DisableDestructive = options.NonDestructive
 	var err error
 	p.McpSettings, err = findBestMcpServerSettings(p.ReadOnly, p.DisableDestructive)
 	if err != nil {

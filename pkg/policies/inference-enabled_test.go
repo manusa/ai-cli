@@ -11,7 +11,7 @@ import (
 func TestIsInferenceEnabledByPolicies(t *testing.T) {
 	for _, tt := range []struct {
 		name         string
-		feature      api.Feature[api.InferenceAttributes]
+		feature      api.Feature[api.InferenceAttributes, api.InferenceInitializeOptions]
 		policiesToml string
 		expected     bool
 	}{

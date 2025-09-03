@@ -16,6 +16,7 @@ import (
 type Provider struct {
 	api.BasicToolsProvider
 	ReadOnly bool `json:"-"`
+	Local    bool `json:"-"`
 }
 
 var _ api.ToolsProvider = &Provider{}
@@ -44,7 +45,9 @@ var (
 	}
 )
 
-func (p *Provider) Initialize(_ context.Context) {
+func (p *Provider) Initialize(_ context.Context, options api.ToolsInitializeOptions) {
+	p.ReadOnly = options.ReadOnly || options.NonDestructive
+	p.Local = options.Local
 	hasAccessToken := os.Getenv(accessTokenEnvVar) != ""
 	if !hasAccessToken {
 		p.IsAvailableReason = fmt.Sprintf("%s is not set", accessTokenEnvVar)
@@ -52,7 +55,7 @@ func (p *Provider) Initialize(_ context.Context) {
 	}
 
 	var err error
-	p.McpSettings, err = findBestMcpServerSettings(p.ReadOnly)
+	p.McpSettings, err = findBestMcpServerSettings(p.ReadOnly, p.Local)
 	if err != nil {
 		p.IsAvailableReason = err.Error()
 		return
@@ -63,7 +66,7 @@ func (p *Provider) Initialize(_ context.Context) {
 }
 
 func (p *Provider) GetTools(ctx context.Context) ([]*api.Tool, error) {
-	mcpSettings, err := findBestMcpServerSettings(p.ReadOnly)
+	mcpSettings, err := findBestMcpServerSettings(p.ReadOnly, p.Local)
 	if err != nil || mcpSettings.Type != api.McpTypeStdio {
 		return nil, err
 	}
@@ -75,7 +78,8 @@ func (p *Provider) GetTools(ctx context.Context) ([]*api.Tool, error) {
 	return eino.GetTools(ctx, cli)
 }
 
-func findBestMcpServerSettings(readOnly bool) (*api.McpSettings, error) {
+func findBestMcpServerSettings(readOnly bool, _ bool) (*api.McpSettings, error) {
+	// TODO: add support for local/remote MCP server
 	for command, settings := range supportedMcpSettings {
 		if config.CommandExists(command) {
 			if readOnly {

@@ -6,7 +6,7 @@ const (
 	DefaultInferenceEnabled = true
 )
 
-func (p *Provider) IsInferenceEnabledByPolicies(feature api.Feature[api.InferenceAttributes], policies *api.Policies) bool {
+func (p *Provider) IsInferenceEnabledByPolicies(feature api.Feature[api.InferenceAttributes, api.InferenceInitializeOptions], policies *api.Policies) bool {
 	providerName := feature.Attributes().Name()
 	if policies.Inferences.Provider[providerName].Enabled != nil {
 		return *policies.Inferences.Provider[providerName].Enabled

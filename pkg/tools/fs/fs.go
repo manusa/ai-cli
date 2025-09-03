@@ -15,8 +15,8 @@ type Provider struct {
 
 var _ api.ToolsProvider = &Provider{}
 
-func (p *Provider) Initialize(_ context.Context) {
-	// ReadOnly is not considered for fs, as all operations are read-only
+func (p *Provider) Initialize(_ context.Context, _ api.ToolsInitializeOptions) {
+	// All options are set by default
 	p.Available = true
 	p.IsAvailableReason = "filesystem is accessible"
 }

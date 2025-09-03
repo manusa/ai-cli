@@ -6,7 +6,7 @@ const (
 	DefaultToolReadonly = false
 )
 
-func (p *Provider) IsToolReadonlyByPolicies(feature api.Feature[api.ToolsAttributes], policies *api.Policies) bool {
+func (p *Provider) IsToolReadonlyByPolicies(feature api.Feature[api.ToolsAttributes, api.ToolsInitializeOptions], policies *api.Policies) bool {
 	providerName := feature.Attributes().Name()
 	if policies.Tools.Provider[providerName].ReadOnly != nil {
 		return *policies.Tools.Provider[providerName].ReadOnly

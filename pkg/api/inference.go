@@ -6,8 +6,10 @@ import (
 	"github.com/cloudwego/eino/components/model"
 )
 
+type InferenceInitializeOptions struct{}
+
 type InferenceProvider interface {
-	Feature[InferenceAttributes]
+	Feature[InferenceAttributes, InferenceInitializeOptions]
 	GetInference(ctx context.Context) (model.ToolCallingChatModel, error)
 	// Models returns the list of supported models by the inference provider
 	Models() []string
