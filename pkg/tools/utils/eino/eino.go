@@ -25,7 +25,20 @@ func StartMcp(ctx context.Context, env []string, cmdAndArgs []string) (*client.C
 }
 
 func GetTools(ctx context.Context, cli client.MCPClient) ([]*api.Tool, error) {
-	tools, err := mcp.GetTools(ctx, &mcp.Config{Cli: cli})
+	tools, err := mcp.GetTools(ctx, &mcp.Config{
+		Cli: cli,
+		ToolCallResultHandler: func(ctx context.Context, name string, result *m3lmcp.CallToolResult) (*m3lmcp.CallToolResult, error) {
+			// https://github.com/cloudwego/eino-ext/issues/436
+			if result.IsError {
+				if result.Meta == nil {
+					result.Meta = make(map[string]interface{})
+				}
+				result.Meta["error"] = true
+				result.IsError = false
+			}
+			return result, nil
+		},
+	})
 	if err != nil {
 		return nil, err
 	}
