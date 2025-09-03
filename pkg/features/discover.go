@@ -10,6 +10,7 @@ import (
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference"
+	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 )
 
@@ -61,8 +62,10 @@ func toHumanReadable[A api.FeatureAttributes](p api.Feature[A]) string {
 }
 
 func Discover(ctx context.Context) *Features {
+	unregisterDisabledInferences(ctx)
+	unregisterDisabledTools(ctx)
 	cfg := config.GetConfig(ctx)
-	_, availableInferences, notAvailableInferences := classify(inference.Initialize(ctx)) // TODO: pass preferences for inference
+	availableInferences, notAvailableInferences := classify(inference.Initialize(ctx)) // TODO: pass preferences for inference
 
 	var selectedInference *api.InferenceProvider
 	if cfg.Inference != nil {
@@ -78,7 +81,7 @@ func Discover(ctx context.Context) *Features {
 		selectedInference = &availableInferences[0]
 	}
 
-	_, availableTools, notAvailableTools := classify(tools.Initialize(ctx))
+	availableTools, notAvailableTools := classify(tools.Initialize(ctx))
 	return &Features{
 		Inferences:             availableInferences,
 		InferencesNotAvailable: notAvailableInferences,
@@ -88,18 +91,37 @@ func Discover(ctx context.Context) *Features {
 	}
 }
 
-func classify[A api.FeatureAttributes, F api.Feature[A]](disabled []F, enabled []F) (disabledFeatures []F, availableFeatures []F, notAvailableFeatures []F) {
+func unregisterDisabledInferences(ctx context.Context) {
+	ctxPolicies := policies.GetPolicies(ctx)
+	for name, provider := range inference.GetProviders() {
+		if ctxPolicies != nil && !policies.PoliciesProvider.IsInferenceEnabledByPolicies(provider, ctxPolicies) {
+			inference.Unregister(name)
+			continue
+		}
+	}
+}
+
+func unregisterDisabledTools(ctx context.Context) {
+	ctxPolicies := policies.GetPolicies(ctx)
+	for name, provider := range tools.GetProviders() {
+		if ctxPolicies != nil && !policies.PoliciesProvider.IsToolEnabledByPolicies(provider, ctxPolicies) {
+			tools.Unregister(name)
+			continue
+		}
+	}
+}
+
+func classify[A api.FeatureAttributes, F api.Feature[A]](providers []F) (availableFeatures []F, notAvailableFeatures []F) {
 	availableFeatures = []F{}
 	notAvailableFeatures = []F{}
-	for _, provider := range enabled {
+	for _, provider := range providers {
 		if provider.IsAvailable() {
 			availableFeatures = append(availableFeatures, provider)
 		} else {
 			notAvailableFeatures = append(notAvailableFeatures, provider)
 		}
 	}
-	slices.SortFunc(disabled, api.FeatureSorter)
 	slices.SortFunc(availableFeatures, api.FeatureSorter)
 	slices.SortFunc(notAvailableFeatures, api.FeatureSorter)
-	return disabled, availableFeatures, notAvailableFeatures
+	return
 }
