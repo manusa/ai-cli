@@ -17,9 +17,13 @@ import (
 type Features struct {
 	Inferences             []api.InferenceProvider `json:"inferences"`             // List of available inference providers
 	InferencesNotAvailable []api.InferenceProvider `json:"inferencesNotAvailable"` // List of not available inference providers
-	Inference              *api.InferenceProvider  `json:"inference"`              // The selected inference provider based on user preferences or auto-detection, or nil if no inference provider is selected
-	Tools                  []api.ToolsProvider     `json:"tools"`                  // List of available tools
-	ToolsNotAvailable      []api.ToolsProvider     `json:"toolsNotAvailable"`      // List of not available tools
+	// TODO: should this be exposed in the outputs?
+	InferencesDisabledByPolicy []api.InferenceProvider `json:"-"`                 // List of inference providers disabled by policies
+	Inference                  *api.InferenceProvider  `json:"inference"`         // The selected inference provider based on user preferences or auto-detection, or nil if no inference provider is selected
+	Tools                      []api.ToolsProvider     `json:"tools"`             // List of available tools
+	ToolsNotAvailable          []api.ToolsProvider     `json:"toolsNotAvailable"` // List of not available tools
+	// TODO: should this be exposed in the outputs?
+	ToolsDisabledByPolicy []api.ToolsProvider `json:"-"` // List of tools providers disabled by policies
 }
 
 // ToJSON converts the features to a generic JSON string representation.
@@ -61,57 +65,49 @@ func toHumanReadable[A api.FeatureAttributes](p api.Feature[A]) string {
 	return ret.String()
 }
 
-func Discover(ctx context.Context) *Features {
-	unregisterDisabledInferences(ctx)
-	unregisterDisabledTools(ctx)
-	cfg := config.GetConfig(ctx)
-	availableInferences, notAvailableInferences := classify(inference.Initialize(ctx)) // TODO: pass preferences for inference
+func Discover(ctx context.Context) (features *Features) {
+	features = &Features{}
 
-	var selectedInference *api.InferenceProvider
-	if cfg.Inference != nil {
-		for _, i := range availableInferences {
+	var inferencesEnabled []api.InferenceProvider
+	inferencesEnabled, features.InferencesDisabledByPolicy = classifyByPolicy(ctx, inference.Initialize(ctx), policies.PoliciesProvider.IsInferenceEnabledByPolicies)
+	features.Inferences, features.InferencesNotAvailable = classifyByAvailability(inferencesEnabled) // TODO: pass preferences for inference
+
+	if cfg := config.GetConfig(ctx); cfg != nil && cfg.Inference != nil {
+		for _, i := range features.Inferences {
 			if i.Attributes().Name() == *cfg.Inference {
-				selectedInference = &i
+				features.Inference = &i
 				break
 			}
 		}
-	} else if len(availableInferences) > 0 {
+	} else if len(features.Inferences) > 0 {
 		// TODO: Implement user preferences or auto-detection logic to select the best inference
 		// For now, we just select the first available inference
-		selectedInference = &availableInferences[0]
+		features.Inference = &features.Inferences[0]
 	}
 
-	availableTools, notAvailableTools := classify(tools.Initialize(ctx))
-	return &Features{
-		Inferences:             availableInferences,
-		InferencesNotAvailable: notAvailableInferences,
-		Inference:              selectedInference,
-		Tools:                  availableTools,
-		ToolsNotAvailable:      notAvailableTools,
-	}
+	var toolsEnabled []api.ToolsProvider
+	toolsEnabled, features.ToolsDisabledByPolicy = classifyByPolicy(ctx, tools.Initialize(ctx), policies.PoliciesProvider.IsToolEnabledByPolicies)
+	features.Tools, features.ToolsNotAvailable = classifyByAvailability(toolsEnabled)
+	return
 }
 
-func unregisterDisabledInferences(ctx context.Context) {
+func classifyByPolicy[A api.FeatureAttributes, F api.Feature[A]](ctx context.Context, providers []F, verifier api.PolicyVerifier[A]) (enabledFeatures []F, disabledFeatures []F) {
+	enabledFeatures = []F{}
+	disabledFeatures = []F{}
 	ctxPolicies := policies.GetPolicies(ctx)
-	for name, provider := range inference.GetProviders() {
-		if ctxPolicies != nil && !policies.PoliciesProvider.IsInferenceEnabledByPolicies(provider, ctxPolicies) {
-			inference.Unregister(name)
-			continue
+	for _, provider := range providers {
+		if ctxPolicies == nil || verifier(provider, ctxPolicies) {
+			enabledFeatures = append(enabledFeatures, provider)
+		} else {
+			disabledFeatures = append(disabledFeatures, provider)
 		}
 	}
+	slices.SortFunc(enabledFeatures, api.FeatureSorter)
+	slices.SortFunc(disabledFeatures, api.FeatureSorter)
+	return
 }
 
-func unregisterDisabledTools(ctx context.Context) {
-	ctxPolicies := policies.GetPolicies(ctx)
-	for name, provider := range tools.GetProviders() {
-		if ctxPolicies != nil && !policies.PoliciesProvider.IsToolEnabledByPolicies(provider, ctxPolicies) {
-			tools.Unregister(name)
-			continue
-		}
-	}
-}
-
-func classify[A api.FeatureAttributes, F api.Feature[A]](providers []F) (availableFeatures []F, notAvailableFeatures []F) {
+func classifyByAvailability[A api.FeatureAttributes, F api.Feature[A]](providers []F) (availableFeatures []F, notAvailableFeatures []F) {
 	availableFeatures = []F{}
 	notAvailableFeatures = []F{}
 	for _, provider := range providers {
