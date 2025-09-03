@@ -17,6 +17,12 @@ type ToolsProvider interface {
 
 type ToolsAttributes interface {
 	FeatureAttributes
+	// SetReadOnly sets the read-only flag for the tool provider. Returns false if provider does not support it
+	SetReadOnly(readOnly bool) bool
+	// SetNonDestructive sets the non-destructive flag for the tool provider. Returns false if provider does not support it
+	SetNonDestructive(nonDestructive bool) bool
+	// SetLocal sets the local flag for the tool provider. Returns false if provider does not support it
+	SetLocal(local bool) bool
 }
 
 type BasicToolsProvider struct {
