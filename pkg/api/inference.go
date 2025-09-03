@@ -11,6 +11,7 @@ type InferenceProvider interface {
 	GetInference(ctx context.Context) (model.ToolCallingChatModel, error)
 	// Models returns the list of supported models by the inference provider
 	Models() []string
+	SystemPrompt() string
 }
 
 type InferenceAttributes interface {
@@ -43,6 +44,10 @@ func (p *BasicInferenceProvider) Reason() string {
 
 func (p *BasicInferenceProvider) Models() []string {
 	return p.ProviderModels
+}
+
+func (p *BasicInferenceProvider) SystemPrompt() string {
+	return ""
 }
 
 type BasicInferenceAttributes struct {
