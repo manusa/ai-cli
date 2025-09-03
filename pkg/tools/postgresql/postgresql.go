@@ -51,7 +51,12 @@ var (
 	}
 )
 
-func (p *Provider) Initialize(_ context.Context) {
+func (p *Provider) Initialize(ctx context.Context) {
+	cfg := config.GetConfig(ctx)
+	if cfg != nil && cfg.ToolsParameters[p.Attributes().Name()].ReadOnly {
+		p.ReadOnly = true
+	}
+
 	var err error
 	p.McpSettings, err = p.findBestMcpServerSettings(p.ReadOnly)
 	if err != nil {

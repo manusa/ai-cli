@@ -14,10 +14,12 @@ func TestIsToolLocalByPolicies(t *testing.T) {
 		feature      api.Feature[api.ToolsAttributes]
 		policiesToml string
 		expected     bool
+		enforced     bool
 	}{
 		{
 			name:     "tool not local by default",
 			expected: false,
+			enforced: false,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -30,6 +32,7 @@ func TestIsToolLocalByPolicies(t *testing.T) {
 		{
 			name:     "provider local by name",
 			expected: true,
+			enforced: true,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -45,6 +48,7 @@ local = true
 		{
 			name:     "provider not local by name",
 			expected: false,
+			enforced: true,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -63,6 +67,7 @@ local = false
 		{
 			name:     "provider local globally",
 			expected: true,
+			enforced: true,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -80,7 +85,8 @@ local = true
 			provider := &Provider{}
 			policies, err := ReadToml(tt.policiesToml)
 			assert.NoError(t, err)
-			actual := provider.IsToolLocalByPolicies(tt.feature, policies)
+			actual, enforced := provider.IsToolLocalByPolicies(tt.feature, policies)
+			assert.Equal(t, tt.enforced, enforced)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}

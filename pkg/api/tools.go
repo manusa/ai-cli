@@ -19,6 +19,12 @@ type ToolsAttributes interface {
 	FeatureAttributes
 }
 
+type ToolParameters struct {
+	Local          bool
+	NonDestructive bool
+	ReadOnly       bool
+}
+
 type BasicToolsProvider struct {
 	ToolsProvider `json:"-"`
 	BasicToolsAttributes

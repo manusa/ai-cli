@@ -34,3 +34,21 @@ func Initialize(ctx context.Context) []api.ToolsProvider {
 	}
 	return slices.SortedFunc(maps.Values(providers), api.FeatureSorter)
 }
+
+func GetProviders() map[string]api.ToolsProvider {
+	return providers
+}
+
+// GetDefaultParameters returns the default tool parameters for the registered providers
+// TODO: all parameters are set to false by default, do we want to change this?
+func GetDefaultParameters() map[string]api.ToolParameters {
+	cfg := map[string]api.ToolParameters{}
+	for _, provider := range providers {
+		cfg[provider.Attributes().Name()] = api.ToolParameters{
+			Local:          false,
+			NonDestructive: false,
+			ReadOnly:       false,
+		}
+	}
+	return cfg
+}

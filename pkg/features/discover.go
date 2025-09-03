@@ -66,6 +66,8 @@ func toHumanReadable[A api.FeatureAttributes](p api.Feature[A]) string {
 }
 
 func Discover(ctx context.Context) (features *Features) {
+	cfg := enforceConfigWithPolicy(ctx)
+	ctx = config.WithConfig(ctx, cfg)
 	features = &Features{}
 
 	var inferencesEnabled []api.InferenceProvider
@@ -96,7 +98,8 @@ func classifyByPolicy[A api.FeatureAttributes, F api.Feature[A]](ctx context.Con
 	disabledFeatures = []F{}
 	ctxPolicies := policies.GetPolicies(ctx)
 	for _, provider := range providers {
-		if ctxPolicies == nil || verifier(provider, ctxPolicies) {
+		enabled, enforced := verifier(provider, ctxPolicies)
+		if ctxPolicies == nil || !enforced || enabled {
 			enabledFeatures = append(enabledFeatures, provider)
 		} else {
 			disabledFeatures = append(disabledFeatures, provider)
@@ -120,4 +123,25 @@ func classifyByAvailability[A api.FeatureAttributes, F api.Feature[A]](providers
 	slices.SortFunc(availableFeatures, api.FeatureSorter)
 	slices.SortFunc(notAvailableFeatures, api.FeatureSorter)
 	return
+}
+
+func enforceConfigWithPolicy(ctx context.Context) *api.Config {
+	cfg := config.GetConfig(ctx)
+	cfgPolicies := policies.GetPolicies(ctx)
+	if cfgPolicies != nil {
+		for name, provider := range tools.GetProviders() {
+			params := cfg.ToolsParameters[name]
+			if value, enforced := policies.PoliciesProvider.IsToolLocalByPolicies(provider, cfgPolicies); enforced {
+				params.Local = value
+			}
+			if value, enforced := policies.PoliciesProvider.IsToolNonDestructiveByPolicies(provider, cfgPolicies); enforced {
+				params.NonDestructive = value
+			}
+			if value, enforced := policies.PoliciesProvider.IsToolReadonlyByPolicies(provider, cfgPolicies); enforced {
+				params.ReadOnly = value
+			}
+			cfg.ToolsParameters[name] = params
+		}
+	}
+	return cfg
 }

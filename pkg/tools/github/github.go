@@ -44,7 +44,12 @@ var (
 	}
 )
 
-func (p *Provider) Initialize(_ context.Context) {
+func (p *Provider) Initialize(ctx context.Context) {
+	cfg := config.GetConfig(ctx)
+	if cfg != nil && cfg.ToolsParameters[p.Attributes().Name()].ReadOnly {
+		p.ReadOnly = true
+	}
+
 	hasAccessToken := os.Getenv(accessTokenEnvVar) != ""
 	if !hasAccessToken {
 		p.IsAvailableReason = fmt.Sprintf("%s is not set", accessTokenEnvVar)
