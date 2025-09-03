@@ -68,8 +68,9 @@ func toHumanReadable[A api.FeatureAttributes](p api.Feature[A]) string {
 func Discover(ctx context.Context) (features *Features) {
 	features = &Features{}
 
-	features.Inferences, features.InferencesDisabledByPolicy = classifyByPolicy(ctx, inference.Initialize(ctx), policies.PoliciesProvider.IsInferenceEnabledByPolicies)
-	features.Inferences, features.InferencesNotAvailable = classifyByAvailability(features.Inferences) // TODO: pass preferences for inference
+	var inferencesEnabled []api.InferenceProvider
+	inferencesEnabled, features.InferencesDisabledByPolicy = classifyByPolicy(ctx, inference.Initialize(ctx), policies.PoliciesProvider.IsInferenceEnabledByPolicies)
+	features.Inferences, features.InferencesNotAvailable = classifyByAvailability(inferencesEnabled) // TODO: pass preferences for inference
 
 	if cfg := config.GetConfig(ctx); cfg != nil && cfg.Inference != nil {
 		for _, i := range features.Inferences {
@@ -84,24 +85,25 @@ func Discover(ctx context.Context) (features *Features) {
 		features.Inference = &features.Inferences[0]
 	}
 
-	features.Tools, features.ToolsDisabledByPolicy = classifyByPolicy(ctx, tools.Initialize(ctx), policies.PoliciesProvider.IsToolEnabledByPolicies)
-	features.Tools, features.ToolsNotAvailable = classifyByAvailability(features.Tools)
+	var toolsEnabled []api.ToolsProvider
+	toolsEnabled, features.ToolsDisabledByPolicy = classifyByPolicy(ctx, tools.Initialize(ctx), policies.PoliciesProvider.IsToolEnabledByPolicies)
+	features.Tools, features.ToolsNotAvailable = classifyByAvailability(toolsEnabled)
 	return
 }
 
-func classifyByPolicy[A api.FeatureAttributes, F api.Feature[A]](ctx context.Context, providers []F, verifier api.PolicyVerifier[A]) (availableFeatures []F, notAvailableFeatures []F) {
-	availableFeatures = []F{}
-	notAvailableFeatures = []F{}
+func classifyByPolicy[A api.FeatureAttributes, F api.Feature[A]](ctx context.Context, providers []F, verifier api.PolicyVerifier[A]) (enabledFeatures []F, disabledFeatures []F) {
+	enabledFeatures = []F{}
+	disabledFeatures = []F{}
 	ctxPolicies := policies.GetPolicies(ctx)
 	for _, provider := range providers {
 		if ctxPolicies == nil || verifier(provider, ctxPolicies) {
-			availableFeatures = append(availableFeatures, provider)
+			enabledFeatures = append(enabledFeatures, provider)
 		} else {
-			notAvailableFeatures = append(notAvailableFeatures, provider)
+			disabledFeatures = append(disabledFeatures, provider)
 		}
 	}
-	slices.SortFunc(availableFeatures, api.FeatureSorter)
-	slices.SortFunc(notAvailableFeatures, api.FeatureSorter)
+	slices.SortFunc(enabledFeatures, api.FeatureSorter)
+	slices.SortFunc(disabledFeatures, api.FeatureSorter)
 	return
 }
 
