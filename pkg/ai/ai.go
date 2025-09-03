@@ -36,6 +36,9 @@ type Ai struct {
 
 func New(inferenceProvider api.InferenceProvider, tools []*api.Tool) *Ai {
 	session := &Session{}
+	if inferenceProvider.SystemPrompt() != "" {
+		session.systemPrompt = api.NewSystemMessage(inferenceProvider.SystemPrompt())
+	}
 	return &Ai{
 		inferenceProvider: inferenceProvider,
 		tools:             tools,
