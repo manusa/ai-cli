@@ -46,7 +46,7 @@ func (s *BaseSuite) Repaint() {
 	_, _ = io.ReadAll(s.TM.Output()) // Clear output buffer
 	prevWidth := s.model.context.Width
 	prevHeight := s.model.context.Height
-	s.TM.Send(tea.WindowSizeMsg{Width: 10, Height: 10})
+	s.TM.Send(tea.WindowSizeMsg{Width: 5, Height: 5})
 	s.TM.Send(tea.WindowSizeMsg{Width: prevWidth, Height: prevHeight})
 }
 

@@ -78,7 +78,7 @@ non-destructive = true
 	} {
 		t.Run(tt.name, func(t *testing.T) {
 			provider := &Provider{}
-			policies, err := readToml(tt.policiesToml)
+			policies, err := ReadToml(tt.policiesToml)
 			assert.NoError(t, err)
 			actual := provider.IsToolNonDestructiveByPolicies(tt.feature, policies)
 			assert.Equal(t, tt.expected, actual)
