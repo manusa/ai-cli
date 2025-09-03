@@ -12,10 +12,10 @@ func (p *Provider) Read(policiesFile string) (*api.Policies, error) {
 	if err != nil {
 		return nil, err
 	}
-	return readToml(string(fileContent))
+	return ReadToml(string(fileContent))
 }
 
-func readToml(config string) (*api.Policies, error) {
+func ReadToml(config string) (*api.Policies, error) {
 	policies := api.Policies{}
 	_, err := toml.Decode(config, &policies)
 	if err != nil {

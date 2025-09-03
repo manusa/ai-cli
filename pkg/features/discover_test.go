@@ -1,32 +1,17 @@
 package features
 
 import (
-	"context"
 	"os"
 	"strings"
 	"testing"
 
-	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference"
+	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/test"
 	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/stretchr/testify/suite"
 )
-
-type TestProvider struct {
-}
-
-func (t *TestProvider) Initialize(_ context.Context, _ any) {}
-
-type TestToolsProvider struct {
-	api.BasicToolsProvider
-	TestProvider
-}
-
-func (t *TestToolsProvider) GetTools(_ context.Context) ([]*api.Tool, error) {
-	return nil, nil
-}
 
 type DiscoverTestSuite struct {
 	suite.Suite
@@ -50,8 +35,7 @@ func (s *DiscoverTestSuite) TearDownTest() {
 }
 
 func (s *DiscoverTestSuite) TestDiscoverInferenceWithNoProviders() {
-	ctx := config.WithConfig(context.Background(), config.New())
-	features := Discover(ctx)
+	features := Discover(config.WithConfig(s.T().Context(), config.New()))
 	s.Run("With no providers registered returns empty", func() {
 		s.Empty(features.Inferences, "expected no discovered inferences to be returned when no providers are registered")
 		s.Empty(features.InferencesNotAvailable, "expected no discovered inferences to be returned when no providers are registered")
@@ -70,8 +54,7 @@ func (s *DiscoverTestSuite) TestDiscoverInferenceWithOneProviderAvailable() {
 		"provider-unavailable",
 		test.WithInferenceLocal(),
 	))
-	ctx := config.WithConfig(context.Background(), config.New())
-	features := Discover(ctx)
+	features := Discover(config.WithConfig(s.T().Context(), config.New()))
 	s.Run("With one available provider returns features", func() {
 		s.NotNil(features, "expected an inference to be returned")
 	})
@@ -106,14 +89,51 @@ func (s *DiscoverTestSuite) TestDiscoverInferenceConfiguredProvider() {
 		test.WithInferenceAvailable(),
 	))
 	cfg := config.New()
-	ctx := config.WithConfig(context.Background(), cfg)
 	cfg.Inference = func(s string) *string {
 		return &s
 	}("provider-2")
-	features := Discover(ctx)
+	features := Discover(config.WithConfig(s.T().Context(), cfg))
 	s.Run("Inference is set to configured provider", func() {
 		s.Equal("provider-2", (*features.Inference).Attributes().Name(),
 			"expected the configured provider to be returned")
+	})
+}
+
+func (s *DiscoverTestSuite) TestDiscoverInferenceWithPolicies() {
+	inference.Register(test.NewInferenceProvider(
+		"provider-available",
+		test.WithInferenceAvailable(),
+	))
+	inference.Register(test.NewInferenceProvider(
+		"provider-available-disabled",
+		test.WithInferenceAvailable(),
+	))
+	policiesToml := `
+		[inferences.provider.provider-available-disabled]
+		enabled = false
+	`
+	ctx := policies.WithPolicies(s.T().Context(), test.Must(policies.ReadToml(policiesToml)))
+	ctx = config.WithConfig(ctx, config.New())
+	features := Discover(ctx)
+	s.Run("With two available providers and policy disabled, returns features", func() {
+		s.NotNil(features, "expected an inference to be returned")
+	})
+	s.Run("With two available providers and policy disabled, Inferences has one provider", func() {
+		s.Len(features.Inferences, 1, "expected one inference provider to be returned")
+		s.Equal("provider-available", features.Inferences[0].Attributes().Name(),
+			"expected the available provider to be returned")
+	})
+	s.Run("With two available providers and policy disabled, InferencesNotAvailable has no unavailable providers", func() {
+		s.Len(features.InferencesNotAvailable, 0, "expected no inference providers to be returned")
+	})
+	s.Run("With two available providers and policy disabled, InferencesDisabledByPolicy has one disabled provider", func() {
+		s.Len(features.InferencesDisabledByPolicy, 1, "expected one inference provider to be returned")
+		s.Equal("provider-available-disabled", features.InferencesDisabledByPolicy[0].Attributes().Name(),
+			"expected the disabled provider to be returned")
+	})
+	s.Run("With two available providers and policy disabled, Inference is set to that provider", func() {
+		s.Equal("provider-available", (*features.Inference).Attributes().Name(),
+			"expected the available provider to be returned")
 	})
 }
 
@@ -130,16 +150,14 @@ func (s *DiscoverTestSuite) TestDiscoverInferenceConfiguredProviderUnknown() {
 	cfg.Inference = func(s string) *string {
 		return &s
 	}("unknown-provider")
-	ctx := config.WithConfig(context.Background(), cfg)
-	features := Discover(ctx)
+	features := Discover(config.WithConfig(s.T().Context(), cfg))
 	s.Run("Inference IS NOT set", func() {
 		s.Nil(features.Inference, "expected nil inference to be returned")
 	})
 }
 
 func (s *DiscoverTestSuite) TestDiscoverToolsWithNoProviders() {
-	ctx := config.WithConfig(context.Background(), config.New())
-	features := Discover(ctx)
+	features := Discover(config.WithConfig(s.T().Context(), config.New()))
 	s.Run("With no providers registered returns empty", func() {
 		s.Empty(features.Tools, "expected no discovered tools to be returned when no providers are registered")
 		s.Empty(features.ToolsNotAvailable, "expected no discovered tools to be returned when no providers are registered")
@@ -149,8 +167,7 @@ func (s *DiscoverTestSuite) TestDiscoverToolsWithNoProviders() {
 func (s *DiscoverTestSuite) TestDiscoverToolsWithOneProviderAvailable() {
 	tools.Register(test.NewToolsProvider("provider-available", test.WithToolsAvailable()))
 	tools.Register(test.NewToolsProvider("provider-unavailable"))
-	ctx := config.WithConfig(context.Background(), config.New())
-	features := Discover(ctx)
+	features := Discover(config.WithConfig(s.T().Context(), config.New()))
 	s.Run("With one available provider returns features", func() {
 		s.NotNil(features, "expected features to be returned")
 	})
@@ -163,6 +180,34 @@ func (s *DiscoverTestSuite) TestDiscoverToolsWithOneProviderAvailable() {
 		s.Len(features.ToolsNotAvailable, 1, "expected one tools provider to be returned")
 		s.Equal("provider-unavailable", features.ToolsNotAvailable[0].Attributes().Name(),
 			"expected the unavailable provider to be returned")
+	})
+}
+
+func (s *DiscoverTestSuite) TestDiscoverToolsWithPolicies() {
+	tools.Register(test.NewToolsProvider("provider-available", test.WithToolsAvailable()))
+	tools.Register(test.NewToolsProvider("provider-available-disabled", test.WithToolsAvailable()))
+	policiesToml := `
+		[tools.provider.provider-available-disabled]
+		enabled = false
+	`
+	ctx := policies.WithPolicies(s.T().Context(), test.Must(policies.ReadToml(policiesToml)))
+	ctx = config.WithConfig(ctx, config.New())
+	features := Discover(ctx)
+	s.Run("With two available providers and policy disabled, returns features", func() {
+		s.NotNil(features, "expected an inference to be returned")
+	})
+	s.Run("With two available providers and policy disabled, Tools has one provider", func() {
+		s.Len(features.Tools, 1, "expected one tools provider to be returned")
+		s.Equal("provider-available", features.Tools[0].Attributes().Name(),
+			"expected the available provider to be returned")
+	})
+	s.Run("With two available providers and policy disabled, ToolsNotAvailable has no unavailable providers", func() {
+		s.Len(features.ToolsNotAvailable, 0, "expected no tools providers to be returned")
+	})
+	s.Run("With two available providers and policy disabled, ToolsDisabledByPolicy has one disabled provider", func() {
+		s.Len(features.ToolsDisabledByPolicy, 1, "expected one tools provider to be returned")
+		s.Equal("provider-available-disabled", features.ToolsDisabledByPolicy[0].Attributes().Name(),
+			"expected the disabled provider to be returned")
 	})
 }
 
@@ -193,8 +238,7 @@ func (s *DiscoverTestSuite) TestDiscoverToJSON() {
 			provider.IsAvailableReason = "tools conditions met"
 		},
 	))
-	ctx := config.WithConfig(context.Background(), config.New())
-	features := Discover(ctx)
+	features := Discover(config.WithConfig(s.T().Context(), config.New()))
 	jsonString, err := features.ToJSON()
 	s.Run("Marshalling returns no error", func() {
 		s.Nil(err, "expected no error when marshalling inferences")
