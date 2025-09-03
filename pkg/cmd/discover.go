@@ -11,6 +11,7 @@ import (
 	mcpconfig "github.com/manusa/ai-cli/pkg/mcp-config"
 	"github.com/manusa/ai-cli/pkg/mcp-config/cursor"
 	"github.com/manusa/ai-cli/pkg/policies"
+	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/spf13/cobra"
 )
 
@@ -61,7 +62,21 @@ func NewDiscoverCmd() *cobra.Command {
 
 // Complete fills in any missing information by gathering data from flags, environment, or other sources
 // It converts user input into a usable configuration
-func (o *DiscoverCmdOptions) Complete(_ *cobra.Command, _ []string) error {
+func (o *DiscoverCmdOptions) Complete(cmd *cobra.Command, _ []string) error {
+	cfg := config.New()
+	cfg.ToolsParameters = tools.GetDefaultParameters()
+	cmd.SetContext(config.WithConfig(cmd.Context(), cfg))
+
+	var userPolicies *api.Policies
+	if len(o.policiesFile) > 0 {
+		var err error
+		userPolicies, err = policies.PoliciesProvider.Read(o.policiesFile)
+		if err != nil {
+			return fmt.Errorf("failed to read preferences: %w", err)
+		}
+	}
+	cmd.SetContext(policies.WithPolicies(cmd.Context(), userPolicies))
+
 	return nil
 }
 
@@ -75,17 +90,6 @@ func (o *DiscoverCmdOptions) Validate(cmd *cobra.Command) error {
 
 // Run executes the main logic of the command once its complete and validated
 func (o *DiscoverCmdOptions) Run(cmd *cobra.Command) error {
-	cmd.SetContext(config.WithConfig(cmd.Context(), config.New()))
-
-	var userPolicies *api.Policies
-	if len(o.policiesFile) > 0 {
-		var err error
-		userPolicies, err = policies.PoliciesProvider.Read(o.policiesFile)
-		if err != nil {
-			return fmt.Errorf("failed to read preferences: %w", err)
-		}
-	}
-	cmd.SetContext(policies.WithPolicies(cmd.Context(), userPolicies))
 
 	discoveredFeatures := features.Discover(cmd.Context())
 

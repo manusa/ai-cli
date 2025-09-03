@@ -14,10 +14,12 @@ func TestIsToolNonDestructiveByPolicies(t *testing.T) {
 		feature      api.Feature[api.ToolsAttributes]
 		policiesToml string
 		expected     bool
+		enforced     bool
 	}{
 		{
 			name:     "tool not non destructive by default",
 			expected: false,
+			enforced: false,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -30,6 +32,7 @@ func TestIsToolNonDestructiveByPolicies(t *testing.T) {
 		{
 			name:     "provider non destructive by name",
 			expected: true,
+			enforced: true,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -45,6 +48,7 @@ non-destructive = true
 		{
 			name:     "provider not non destructive by name",
 			expected: false,
+			enforced: true,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -63,6 +67,7 @@ non-destructive = false
 		{
 			name:     "provider non destructive globally",
 			expected: true,
+			enforced: true,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -80,7 +85,8 @@ non-destructive = true
 			provider := &Provider{}
 			policies, err := ReadToml(tt.policiesToml)
 			assert.NoError(t, err)
-			actual := provider.IsToolNonDestructiveByPolicies(tt.feature, policies)
+			actual, enforced := provider.IsToolNonDestructiveByPolicies(tt.feature, policies)
+			assert.Equal(t, tt.enforced, enforced)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}

@@ -50,13 +50,13 @@ type Policies struct {
 	Tools      ToolsPolicies     `toml:"tools,omitempty"`
 }
 
-type PolicyVerifier[a FeatureAttributes] func(feature Feature[a], policies *Policies) bool
+type PolicyVerifier[a FeatureAttributes] func(feature Feature[a], policies *Policies) (result bool, enforced bool)
 
 type PoliciesProvider interface {
 	Read(policiesFile string) (*Policies, error)
-	IsInferenceEnabledByPolicies(feature Feature[InferenceAttributes], policies *Policies) bool
-	IsToolEnabledByPolicies(feature Feature[ToolsAttributes], policies *Policies) bool
-	IsToolLocalByPolicies(feature Feature[ToolsAttributes], policies *Policies) bool
-	IsToolNonDestructiveByPolicies(feature Feature[ToolsAttributes], policies *Policies) bool
-	IsToolReadonlyByPolicies(feature Feature[ToolsAttributes], policies *Policies) bool
+	IsInferenceEnabledByPolicies(feature Feature[InferenceAttributes], policies *Policies) (result bool, enforced bool)
+	IsToolEnabledByPolicies(feature Feature[ToolsAttributes], policies *Policies) (result bool, enforced bool)
+	IsToolLocalByPolicies(feature Feature[ToolsAttributes], policies *Policies) (result bool, enforced bool)
+	IsToolNonDestructiveByPolicies(feature Feature[ToolsAttributes], policies *Policies) (result bool, enforced bool)
+	IsToolReadonlyByPolicies(feature Feature[ToolsAttributes], policies *Policies) (result bool, enforced bool)
 }

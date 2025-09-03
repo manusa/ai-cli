@@ -109,7 +109,14 @@ func homedir() string {
 	return os.Getenv("HOME")
 }
 
-func (p *Provider) Initialize(_ context.Context) {
+func (p *Provider) Initialize(ctx context.Context) {
+	cfg := config.GetConfig(ctx)
+	if cfg != nil && cfg.ToolsParameters[p.Attributes().Name()].ReadOnly {
+		p.ReadOnly = true
+	}
+	if cfg != nil && cfg.ToolsParameters[p.Attributes().Name()].NonDestructive {
+		p.DisableDestructive = true
+	}
 	var err error
 	p.McpSettings, err = findBestMcpServerSettings(p.ReadOnly, p.DisableDestructive)
 	if err != nil {

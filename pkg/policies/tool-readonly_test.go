@@ -14,10 +14,12 @@ func TestIsToolReadonlyByPolicies(t *testing.T) {
 		feature      api.Feature[api.ToolsAttributes]
 		policiesToml string
 		expected     bool
+		enforced     bool
 	}{
 		{
 			name:     "tool not read-only by default",
 			expected: false,
+			enforced: false,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -30,6 +32,7 @@ func TestIsToolReadonlyByPolicies(t *testing.T) {
 		{
 			name:     "provider read-only by name",
 			expected: true,
+			enforced: true,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -45,6 +48,7 @@ read-only = true
 		{
 			name:     "provider not read-only by name",
 			expected: false,
+			enforced: true,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -63,6 +67,7 @@ read-only = false
 		{
 			name:     "provider read only globally",
 			expected: true,
+			enforced: true,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -80,7 +85,8 @@ read-only = true
 			provider := &Provider{}
 			policies, err := ReadToml(tt.policiesToml)
 			assert.NoError(t, err)
-			actual := provider.IsToolReadonlyByPolicies(tt.feature, policies)
+			actual, enforced := provider.IsToolReadonlyByPolicies(tt.feature, policies)
+			assert.Equal(t, tt.enforced, enforced)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
