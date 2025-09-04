@@ -32,9 +32,8 @@ func NewToolsProvider(name string, options ...ToolsProviderOption) *ToolsProvide
 
 type ToolsProvider struct {
 	api.BasicToolsProvider
-	Initialized bool           `json:"-"`
-	Tools       []*api.Tool    `json:"-"`
-	Policies    map[string]any `json:"-"`
+	Initialized bool        `json:"-"`
+	Tools       []*api.Tool `json:"-"`
 }
 
 func (t *ToolsProvider) Initialize(_ context.Context) {

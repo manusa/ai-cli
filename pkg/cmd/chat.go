@@ -75,7 +75,6 @@ func (o *ChatCmdOptions) Complete(cmd *cobra.Command, _ []string) error {
 	if o.model != "" {
 		cfg.Model = &o.model
 	}
-	cmd.SetContext(config.WithConfig(cmd.Context(), cfg))
 
 	var userPolicies *api.Policies
 	if len(o.policiesFile) > 0 {
@@ -85,7 +84,8 @@ func (o *ChatCmdOptions) Complete(cmd *cobra.Command, _ []string) error {
 			return fmt.Errorf("failed to read preferences: %w", err)
 		}
 	}
-	cmd.SetContext(policies.WithPolicies(cmd.Context(), userPolicies))
+	cfg.Enforce(userPolicies)
+	cmd.SetContext(config.WithConfig(cmd.Context(), cfg))
 
 	o.features = features.Discover(cmd.Context())
 

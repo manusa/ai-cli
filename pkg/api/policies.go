@@ -50,13 +50,6 @@ type Policies struct {
 	Tools      ToolsPolicies     `toml:"tools,omitempty"`
 }
 
-type PolicyVerifier[a FeatureAttributes] func(feature Feature[a], policies *Policies) bool
-
 type PoliciesProvider interface {
 	Read(policiesFile string) (*Policies, error)
-
-	// TODO: these might be needed or not depending on if we want to show users that this option was enforced by policies
-
-	IsInferenceEnabledByPolicies(feature Feature[InferenceAttributes], policies *Policies) bool
-	IsToolEnabledByPolicies(feature Feature[ToolsAttributes], policies *Policies) bool
 }
