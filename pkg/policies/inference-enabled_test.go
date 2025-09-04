@@ -14,12 +14,10 @@ func TestIsInferenceEnabledByPolicies(t *testing.T) {
 		feature      api.Feature[api.InferenceAttributes]
 		policiesToml string
 		expected     bool
-		enforced     bool
 	}{
 		{
 			name:     "inference enabled by default",
-			expected: false,
-			enforced: false,
+			expected: true,
 			feature: &test.InferenceProvider{
 				BasicInferenceProvider: api.BasicInferenceProvider{
 					BasicInferenceAttributes: api.BasicInferenceAttributes{
@@ -32,7 +30,6 @@ func TestIsInferenceEnabledByPolicies(t *testing.T) {
 		{
 			name:     "provider disabled by name",
 			expected: false,
-			enforced: true,
 			feature: &test.InferenceProvider{
 				BasicInferenceProvider: api.BasicInferenceProvider{
 					BasicInferenceAttributes: api.BasicInferenceAttributes{
@@ -48,7 +45,6 @@ enabled = false
 		{
 			name:     "provider enabled by name",
 			expected: true,
-			enforced: true,
 			feature: &test.InferenceProvider{
 				BasicInferenceProvider: api.BasicInferenceProvider{
 					BasicInferenceAttributes: api.BasicInferenceAttributes{
@@ -67,7 +63,6 @@ enabled = true
 		{
 			name:     "remote provider disabled by remote property",
 			expected: false,
-			enforced: true,
 			feature: &test.InferenceProvider{
 				BasicInferenceProvider: api.BasicInferenceProvider{
 					BasicInferenceAttributes: api.BasicInferenceAttributes{
@@ -84,7 +79,6 @@ enabled = false
 		{
 			name:     "remote provider enabled by remote property",
 			expected: true,
-			enforced: true,
 			feature: &test.InferenceProvider{
 				BasicInferenceProvider: api.BasicInferenceProvider{
 					BasicInferenceAttributes: api.BasicInferenceAttributes{
@@ -105,7 +99,6 @@ enabled = true
 		{
 			name:     "provider disabled globally",
 			expected: false,
-			enforced: true,
 			feature: &test.InferenceProvider{
 				BasicInferenceProvider: api.BasicInferenceProvider{
 					BasicInferenceAttributes: api.BasicInferenceAttributes{
@@ -123,9 +116,7 @@ enabled = false
 			provider := &Provider{}
 			policies, err := ReadToml(tt.policiesToml)
 			assert.NoError(t, err)
-			actual, enforced := provider.IsInferenceEnabledByPolicies(tt.feature, policies)
-			assert.Equal(t, tt.expected, actual)
-			assert.Equal(t, tt.enforced, enforced)
+			actual := provider.IsInferenceEnabledByPolicies(tt.feature, policies)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}

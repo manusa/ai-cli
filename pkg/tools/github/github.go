@@ -15,7 +15,6 @@ import (
 
 type Provider struct {
 	api.BasicToolsProvider
-	ReadOnly bool `json:"-"`
 }
 
 var _ api.ToolsProvider = &Provider{}
@@ -45,9 +44,9 @@ var (
 )
 
 func (p *Provider) Initialize(ctx context.Context) {
-	cfg := config.GetConfig(ctx)
-	if cfg != nil && cfg.ToolsParameters[p.Attributes().Name()].ReadOnly {
-		p.ReadOnly = true
+	// TODO: probably move to features.Discover orchestration
+	if cfg := config.GetConfig(ctx); cfg != nil {
+		p.ToolsParameters = cfg.ToolsParameters(p.Attributes().Name())
 	}
 
 	hasAccessToken := os.Getenv(accessTokenEnvVar) != ""
@@ -57,7 +56,7 @@ func (p *Provider) Initialize(ctx context.Context) {
 	}
 
 	var err error
-	p.McpSettings, err = findBestMcpServerSettings(p.ReadOnly)
+	p.McpSettings, err = findBestMcpServerSettings(*p.ReadOnly)
 	if err != nil {
 		p.IsAvailableReason = err.Error()
 		return
@@ -68,7 +67,7 @@ func (p *Provider) Initialize(ctx context.Context) {
 }
 
 func (p *Provider) GetTools(ctx context.Context) ([]*api.Tool, error) {
-	mcpSettings, err := findBestMcpServerSettings(p.ReadOnly)
+	mcpSettings, err := findBestMcpServerSettings(*p.ReadOnly)
 	if err != nil || mcpSettings.Type != api.McpTypeStdio {
 		return nil, err
 	}

@@ -35,10 +35,7 @@ func (s *DiscoverTestSuite) TearDownTest() {
 }
 
 func (s *DiscoverTestSuite) TestDiscoverInferenceWithNoProviders() {
-	cfg := config.New()
-	cfg.ToolsParameters = tools.GetDefaultParameters()
-	ctx := config.WithConfig(s.T().Context(), cfg)
-	features := Discover(ctx)
+	features := Discover(config.WithConfig(s.T().Context(), config.New()))
 	s.Run("With no providers registered returns empty", func() {
 		s.Empty(features.Inferences, "expected no discovered inferences to be returned when no providers are registered")
 		s.Empty(features.InferencesNotAvailable, "expected no discovered inferences to be returned when no providers are registered")
@@ -57,10 +54,7 @@ func (s *DiscoverTestSuite) TestDiscoverInferenceWithOneProviderAvailable() {
 		"provider-unavailable",
 		test.WithInferenceLocal(),
 	))
-	cfg := config.New()
-	cfg.ToolsParameters = tools.GetDefaultParameters()
-	ctx := config.WithConfig(s.T().Context(), cfg)
-	features := Discover(ctx)
+	features := Discover(config.WithConfig(s.T().Context(), config.New()))
 	s.Run("With one available provider returns features", func() {
 		s.NotNil(features, "expected an inference to be returned")
 	})
@@ -95,12 +89,10 @@ func (s *DiscoverTestSuite) TestDiscoverInferenceConfiguredProvider() {
 		test.WithInferenceAvailable(),
 	))
 	cfg := config.New()
-	cfg.ToolsParameters = tools.GetDefaultParameters()
-	ctx := config.WithConfig(s.T().Context(), cfg)
 	cfg.Inference = func(s string) *string {
 		return &s
 	}("provider-2")
-	features := Discover(ctx)
+	features := Discover(config.WithConfig(s.T().Context(), cfg))
 	s.Run("Inference is set to configured provider", func() {
 		s.Equal("provider-2", (*features.Inference).Attributes().Name(),
 			"expected the configured provider to be returned")
@@ -155,7 +147,6 @@ func (s *DiscoverTestSuite) TestDiscoverInferenceConfiguredProviderUnknown() {
 		test.WithInferenceAvailable(),
 	))
 	cfg := config.New()
-	cfg.ToolsParameters = tools.GetDefaultParameters()
 	cfg.Inference = func(s string) *string {
 		return &s
 	}("unknown-provider")
@@ -166,10 +157,7 @@ func (s *DiscoverTestSuite) TestDiscoverInferenceConfiguredProviderUnknown() {
 }
 
 func (s *DiscoverTestSuite) TestDiscoverToolsWithNoProviders() {
-	cfg := config.New()
-	cfg.ToolsParameters = tools.GetDefaultParameters()
-	ctx := config.WithConfig(s.T().Context(), cfg)
-	features := Discover(ctx)
+	features := Discover(config.WithConfig(s.T().Context(), config.New()))
 	s.Run("With no providers registered returns empty", func() {
 		s.Empty(features.Tools, "expected no discovered tools to be returned when no providers are registered")
 		s.Empty(features.ToolsNotAvailable, "expected no discovered tools to be returned when no providers are registered")
@@ -203,9 +191,7 @@ func (s *DiscoverTestSuite) TestDiscoverToolsWithPolicies() {
 		enabled = false
 	`
 	ctx := policies.WithPolicies(s.T().Context(), test.Must(policies.ReadToml(policiesToml)))
-	cfg := config.New()
-	cfg.ToolsParameters = tools.GetDefaultParameters()
-	ctx = config.WithConfig(ctx, cfg)
+	ctx = config.WithConfig(ctx, config.New())
 	features := Discover(ctx)
 	s.Run("With two available providers and policy disabled, returns features", func() {
 		s.NotNil(features, "expected an inference to be returned")
@@ -252,10 +238,7 @@ func (s *DiscoverTestSuite) TestDiscoverToJSON() {
 			provider.IsAvailableReason = "tools conditions met"
 		},
 	))
-	cfg := config.New()
-	cfg.ToolsParameters = tools.GetDefaultParameters()
-	ctx := config.WithConfig(s.T().Context(), cfg)
-	features := Discover(ctx)
+	features := Discover(config.WithConfig(s.T().Context(), config.New()))
 	jsonString, err := features.ToJSON()
 	s.Run("Marshalling returns no error", func() {
 		s.Nil(err, "expected no error when marshalling inferences")

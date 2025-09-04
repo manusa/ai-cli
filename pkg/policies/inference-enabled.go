@@ -2,28 +2,29 @@ package policies
 
 import "github.com/manusa/ai-cli/pkg/api"
 
-func (p *Provider) IsInferenceEnabledByPolicies(feature api.Feature[api.InferenceAttributes], policies *api.Policies) (value bool, enforced bool) {
-	if policies == nil {
-		return false, false
-	}
+const (
+	DefaultInferenceEnabled = true
+)
+
+func (p *Provider) IsInferenceEnabledByPolicies(feature api.Feature[api.InferenceAttributes], policies *api.Policies) bool {
 	providerName := feature.Attributes().Name()
 	if policies.Inferences.Provider[providerName].Enabled != nil {
-		return *policies.Inferences.Provider[providerName].Enabled, true
+		return *policies.Inferences.Provider[providerName].Enabled
 	}
 
 	providerLocal := feature.Attributes().Local()
 	if policies.Inferences.Property.Remote.Enabled != nil {
 		if !*policies.Inferences.Property.Remote.Enabled && !providerLocal {
-			return false, true
+			return false
 		}
 		if *policies.Inferences.Property.Remote.Enabled && !providerLocal {
-			return true, true
+			return true
 		}
 	}
 
 	if policies.Inferences.Enabled != nil {
-		return *policies.Inferences.Enabled, true
+		return *policies.Inferences.Enabled
 	}
 
-	return false, false
+	return DefaultInferenceEnabled
 }

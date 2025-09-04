@@ -11,7 +11,6 @@ import (
 	mcpconfig "github.com/manusa/ai-cli/pkg/mcp-config"
 	"github.com/manusa/ai-cli/pkg/mcp-config/cursor"
 	"github.com/manusa/ai-cli/pkg/policies"
-	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/spf13/cobra"
 )
 
@@ -64,7 +63,6 @@ func NewDiscoverCmd() *cobra.Command {
 // It converts user input into a usable configuration
 func (o *DiscoverCmdOptions) Complete(cmd *cobra.Command, _ []string) error {
 	cfg := config.New()
-	cfg.ToolsParameters = tools.GetDefaultParameters()
 	cmd.SetContext(config.WithConfig(cmd.Context(), cfg))
 
 	var userPolicies *api.Policies

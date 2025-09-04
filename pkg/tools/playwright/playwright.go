@@ -20,7 +20,11 @@ type Provider struct {
 
 var _ api.ToolsProvider = &Provider{}
 
-func (p *Provider) Initialize(_ context.Context) {
+func (p *Provider) Initialize(ctx context.Context) {
+	// TODO: probably move to features.Discover orchestration
+	if cfg := config.GetConfig(ctx); cfg != nil {
+		p.ToolsParameters = cfg.ToolsParameters(p.Attributes().Name())
+	}
 	if !config.CommandExists("npx") {
 		p.IsAvailableReason = "npx command not found"
 		return

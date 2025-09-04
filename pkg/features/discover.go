@@ -66,7 +66,12 @@ func toHumanReadable[A api.FeatureAttributes](p api.Feature[A]) string {
 }
 
 func Discover(ctx context.Context) (features *Features) {
-	cfg := enforceConfigWithPolicy(ctx)
+	cfg := config.GetConfig(ctx)
+	if cfg == nil {
+		// TODO: config should not be nil at this point, this should be ensured some way (maybe Discover gets the cfg as argument)
+		panic("config is nil")
+	}
+	cfg.Enforce(policies.GetPolicies(ctx))
 	ctx = config.WithConfig(ctx, cfg)
 	features = &Features{}
 
@@ -74,7 +79,7 @@ func Discover(ctx context.Context) (features *Features) {
 	inferencesEnabled, features.InferencesDisabledByPolicy = classifyByPolicy(ctx, inference.Initialize(ctx), policies.PoliciesProvider.IsInferenceEnabledByPolicies)
 	features.Inferences, features.InferencesNotAvailable = classifyByAvailability(inferencesEnabled) // TODO: pass preferences for inference
 
-	if cfg := config.GetConfig(ctx); cfg != nil && cfg.Inference != nil {
+	if cfg.Inference != nil {
 		for _, i := range features.Inferences {
 			if i.Attributes().Name() == *cfg.Inference {
 				features.Inference = &i
@@ -98,8 +103,7 @@ func classifyByPolicy[A api.FeatureAttributes, F api.Feature[A]](ctx context.Con
 	disabledFeatures = []F{}
 	ctxPolicies := policies.GetPolicies(ctx)
 	for _, provider := range providers {
-		enabled, enforced := verifier(provider, ctxPolicies)
-		if ctxPolicies == nil || !enforced || enabled {
+		if ctxPolicies == nil || verifier(provider, ctxPolicies) {
 			enabledFeatures = append(enabledFeatures, provider)
 		} else {
 			disabledFeatures = append(disabledFeatures, provider)
@@ -123,25 +127,4 @@ func classifyByAvailability[A api.FeatureAttributes, F api.Feature[A]](providers
 	slices.SortFunc(availableFeatures, api.FeatureSorter)
 	slices.SortFunc(notAvailableFeatures, api.FeatureSorter)
 	return
-}
-
-func enforceConfigWithPolicy(ctx context.Context) *api.Config {
-	cfg := config.GetConfig(ctx)
-	cfgPolicies := policies.GetPolicies(ctx)
-	if cfgPolicies != nil {
-		for name, provider := range tools.GetProviders() {
-			params := cfg.ToolsParameters[name]
-			if value, enforced := policies.PoliciesProvider.IsToolLocalByPolicies(provider, cfgPolicies); enforced {
-				params.Local = value
-			}
-			if value, enforced := policies.PoliciesProvider.IsToolNonDestructiveByPolicies(provider, cfgPolicies); enforced {
-				params.NonDestructive = value
-			}
-			if value, enforced := policies.PoliciesProvider.IsToolReadonlyByPolicies(provider, cfgPolicies); enforced {
-				params.ReadOnly = value
-			}
-			cfg.ToolsParameters[name] = params
-		}
-	}
-	return cfg
 }

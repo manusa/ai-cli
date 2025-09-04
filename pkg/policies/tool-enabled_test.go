@@ -14,12 +14,10 @@ func TestIsToolEnabledByPolicies(t *testing.T) {
 		feature      api.Feature[api.ToolsAttributes]
 		policiesToml string
 		expected     bool
-		enforced     bool
 	}{
 		{
 			name:     "tool enabled by default",
-			expected: false,
-			enforced: false,
+			expected: true,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -32,7 +30,6 @@ func TestIsToolEnabledByPolicies(t *testing.T) {
 		{
 			name:     "provider disabled by name",
 			expected: false,
-			enforced: true,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -48,7 +45,6 @@ enabled = false
 		{
 			name:     "provider enabled by name",
 			expected: true,
-			enforced: true,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -67,7 +63,6 @@ enabled = true
 		{
 			name:     "provider disabled globally",
 			expected: false,
-			enforced: true,
 			feature: &test.ToolsProvider{
 				BasicToolsProvider: api.BasicToolsProvider{
 					BasicToolsAttributes: api.BasicToolsAttributes{
@@ -85,9 +80,7 @@ enabled = false
 			provider := &Provider{}
 			policies, err := ReadToml(tt.policiesToml)
 			assert.NoError(t, err)
-			actual, enforced := provider.IsToolEnabledByPolicies(tt.feature, policies)
-			assert.Equal(t, tt.expected, actual)
-			assert.Equal(t, tt.enforced, enforced)
+			actual := provider.IsToolEnabledByPolicies(tt.feature, policies)
 			assert.Equal(t, tt.expected, actual)
 		})
 	}
