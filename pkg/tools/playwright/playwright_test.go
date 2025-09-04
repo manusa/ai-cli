@@ -68,8 +68,8 @@ func (s *PlaywrightTestSuite) TestInitializeWithNodeAndDesktop() {
 		s.Equal(feats.Tools[0].Reason(), "npx command found")
 	})
 	s.Run("sets MCP settings", func() {
-		s.Equal("npx", feats.Tools[0].(*Provider).Command)
-		s.Equal([]string{"-y", "@playwright/mcp@0.0.36"}, feats.Tools[0].(*Provider).Args)
+		s.Equal("npx", feats.Tools[0].(*Provider).McpSettings.Command)
+		s.Equal([]string{"-y", "@playwright/mcp@0.0.36"}, feats.Tools[0].(*Provider).McpSettings.Args)
 	})
 }
 
@@ -80,8 +80,8 @@ func (s *PlaywrightTestSuite) TestInitializeWithNodeAndNoDesktop() {
 	s.Require().Len(feats.Tools, 1)
 	s.Require().Empty(feats.ToolsNotAvailable)
 	s.Run("sets MCP settings with headless", func() {
-		s.Equal("npx", feats.Tools[0].(*Provider).Command)
-		s.Equal([]string{"-y", "@playwright/mcp@0.0.36", "--headless"}, feats.Tools[0].(*Provider).Args)
+		s.Equal("npx", feats.Tools[0].(*Provider).McpSettings.Command)
+		s.Equal([]string{"-y", "@playwright/mcp@0.0.36", "--headless"}, feats.Tools[0].(*Provider).McpSettings.Args)
 	})
 }
 

@@ -15,7 +15,6 @@ const version = "0.0.36"
 
 type Provider struct {
 	api.BasicToolsProvider
-	api.McpSettings `json:"-"`
 }
 
 var _ api.ToolsProvider = &Provider{}
@@ -31,16 +30,18 @@ func (p *Provider) Initialize(ctx context.Context) {
 	}
 	p.IsAvailableReason = "npx command found"
 	p.Available = true
-	p.Command = "npx"
-	p.Args = []string{"-y", "@playwright/mcp@" + version}
+	p.McpSettings = &api.McpSettings{}
+	p.McpSettings.Type = api.McpTypeStdio
+	p.McpSettings.Command = "npx"
+	p.McpSettings.Args = []string{"-y", "@playwright/mcp@" + version}
 
 	if !config.IsDesktop() {
-		p.Args = append(p.Args, "--headless")
+		p.McpSettings.Args = append(p.McpSettings.Args, "--headless")
 	}
 }
 
 func (p *Provider) GetTools(ctx context.Context) ([]*api.Tool, error) {
-	cli, err := eino.StartMcp(ctx, p.Env, slices.Concat([]string{p.Command}, p.Args))
+	cli, err := eino.StartMcp(ctx, p.McpSettings.Env, slices.Concat([]string{p.McpSettings.Command}, p.McpSettings.Args))
 	if err != nil {
 		return nil, err
 	}
