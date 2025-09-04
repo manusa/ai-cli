@@ -10,7 +10,6 @@ import (
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/features"
 	"github.com/manusa/ai-cli/pkg/policies"
-	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/manusa/ai-cli/pkg/ui"
 	"github.com/spf13/cobra"
 )
@@ -69,7 +68,6 @@ func NewChatCmd() *cobra.Command {
 // It converts user input into a usable configuration
 func (o *ChatCmdOptions) Complete(cmd *cobra.Command, _ []string) error {
 	cfg := config.New()
-	cfg.ToolsParameters = tools.GetDefaultParameters()
 
 	if o.inference != "" {
 		cfg.Inference = &o.inference

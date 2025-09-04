@@ -19,10 +19,13 @@ type ToolsAttributes interface {
 	FeatureAttributes
 }
 
-type ToolParameters struct {
-	Local          bool
-	NonDestructive bool
-	ReadOnly       bool
+// ToolsParameters parameters for a tool
+// TODO: maybe shareable by policies
+type ToolsParameters struct {
+	Enabled            *bool `json:"-" toml:"enabled"`
+	ReadOnly           *bool `json:"-" toml:"read-only"`
+	DisableDestructive *bool `json:"-" toml:"disable-destructive"`
+	//Local          *bool
 }
 
 type BasicToolsProvider struct {
@@ -31,6 +34,7 @@ type BasicToolsProvider struct {
 	Available         bool         `json:"-"`
 	IsAvailableReason string       `json:"reason"`
 	McpSettings       *McpSettings `json:"mcp_settings,omitempty"`
+	ToolsParameters
 }
 
 func (p *BasicToolsProvider) Attributes() ToolsAttributes {

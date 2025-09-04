@@ -21,7 +21,7 @@ var _ api.InferenceProvider = &Provider{}
 
 func (p *Provider) Initialize(ctx context.Context) {
 	cfg := config.GetConfig(ctx)
-	p.Available = cfg.GoogleApiKey != ""
+	p.Available = cfg.GoogleApiKey() != ""
 	if p.Available {
 		p.IsAvailableReason = "GEMINI_API_KEY is set"
 		p.ProviderModels = []string{"gemini-2.0-flash"}
@@ -33,7 +33,7 @@ func (p *Provider) Initialize(ctx context.Context) {
 func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel, error) {
 	cfg := config.GetConfig(ctx)
 	geminiCli, err := genai.NewClient(ctx, &genai.ClientConfig{
-		APIKey: cfg.GoogleApiKey,
+		APIKey: cfg.GoogleApiKey(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
