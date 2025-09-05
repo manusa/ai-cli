@@ -10,7 +10,6 @@ import (
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference"
-	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 )
 
@@ -18,12 +17,12 @@ type Features struct {
 	Inferences             []api.InferenceProvider `json:"inferences"`             // List of available inference providers
 	InferencesNotAvailable []api.InferenceProvider `json:"inferencesNotAvailable"` // List of not available inference providers
 	// TODO: should this be exposed in the outputs?
-	InferencesDisabledByPolicy []api.InferenceProvider `json:"-"`                 // List of inference providers disabled by policies
+	InferencesDisabledByPolicy []api.InferenceProvider `json:"-"`                 // List of inference providers disabled
 	Inference                  *api.InferenceProvider  `json:"inference"`         // The selected inference provider based on user preferences or auto-detection, or nil if no inference provider is selected
 	Tools                      []api.ToolsProvider     `json:"tools"`             // List of available tools
 	ToolsNotAvailable          []api.ToolsProvider     `json:"toolsNotAvailable"` // List of not available tools
 	// TODO: should this be exposed in the outputs?
-	ToolsDisabledByPolicy []api.ToolsProvider `json:"-"` // List of tools providers disabled by policies
+	ToolsDisabledByPolicy []api.ToolsProvider `json:"-"` // List of tools providers disabled
 }
 
 // ToJSON converts the features to a generic JSON string representation.
@@ -71,12 +70,10 @@ func Discover(ctx context.Context) (features *Features) {
 		// TODO: config should not be nil at this point, this should be ensured some way (maybe Discover gets the cfg as argument)
 		panic("config is nil")
 	}
-	cfg.Enforce(policies.GetPolicies(ctx))
-	ctx = config.WithConfig(ctx, cfg)
 	features = &Features{}
 
 	var inferencesEnabled []api.InferenceProvider
-	inferencesEnabled, features.InferencesDisabledByPolicy = classifyByPolicy(ctx, inference.Initialize(ctx), policies.PoliciesProvider.IsInferenceEnabledByPolicies)
+	inferencesEnabled, features.InferencesDisabledByPolicy = filterDisabled(inference.Initialize(ctx), cfg.IsInferenceProviderEnabled)
 	features.Inferences, features.InferencesNotAvailable = classifyByAvailability(inferencesEnabled) // TODO: pass preferences for inference
 
 	if cfg.Inference != nil {
@@ -93,17 +90,16 @@ func Discover(ctx context.Context) (features *Features) {
 	}
 
 	var toolsEnabled []api.ToolsProvider
-	toolsEnabled, features.ToolsDisabledByPolicy = classifyByPolicy(ctx, tools.Initialize(ctx), policies.PoliciesProvider.IsToolEnabledByPolicies)
+	toolsEnabled, features.ToolsDisabledByPolicy = filterDisabled(tools.Initialize(ctx), cfg.IsToolsProviderEnabled)
 	features.Tools, features.ToolsNotAvailable = classifyByAvailability(toolsEnabled)
 	return
 }
 
-func classifyByPolicy[A api.FeatureAttributes, F api.Feature[A]](ctx context.Context, providers []F, verifier api.PolicyVerifier[A]) (enabledFeatures []F, disabledFeatures []F) {
+func filterDisabled[A api.FeatureAttributes, F api.Feature[A]](providers []F, isFeatureEnabled api.IsFeatureEnabled[A]) (enabledFeatures []F, disabledFeatures []F) {
 	enabledFeatures = []F{}
 	disabledFeatures = []F{}
-	ctxPolicies := policies.GetPolicies(ctx)
 	for _, provider := range providers {
-		if ctxPolicies == nil || verifier(provider, ctxPolicies) {
+		if isFeatureEnabled(provider) {
 			enabledFeatures = append(enabledFeatures, provider)
 		} else {
 			disabledFeatures = append(disabledFeatures, provider)

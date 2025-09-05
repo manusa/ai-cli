@@ -112,9 +112,9 @@ func (s *DiscoverTestSuite) TestDiscoverInferenceWithPolicies() {
 		[inferences.provider.provider-available-disabled]
 		enabled = false
 	`
-	ctx := policies.WithPolicies(s.T().Context(), test.Must(policies.ReadToml(policiesToml)))
-	ctx = config.WithConfig(ctx, config.New())
-	features := Discover(ctx)
+	cfg := config.New()
+	cfg.Enforce(test.Must(policies.ReadToml(policiesToml)))
+	features := Discover(config.WithConfig(s.T().Context(), cfg))
 	s.Run("With two available providers and policy disabled, returns features", func() {
 		s.NotNil(features, "expected an inference to be returned")
 	})
@@ -190,9 +190,9 @@ func (s *DiscoverTestSuite) TestDiscoverToolsWithPolicies() {
 		[tools.provider.provider-available-disabled]
 		enabled = false
 	`
-	ctx := policies.WithPolicies(s.T().Context(), test.Must(policies.ReadToml(policiesToml)))
-	ctx = config.WithConfig(ctx, config.New())
-	features := Discover(ctx)
+	cfg := config.New()
+	cfg.Enforce(test.Must(policies.ReadToml(policiesToml)))
+	features := Discover(config.WithConfig(s.T().Context(), cfg))
 	s.Run("With two available providers and policy disabled, returns features", func() {
 		s.NotNil(features, "expected an inference to be returned")
 	})

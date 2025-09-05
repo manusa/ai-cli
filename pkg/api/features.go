@@ -37,6 +37,8 @@ func (a *BasicFeatureAttributes) Description() string {
 	return a.FeatureDescription
 }
 
+type IsFeatureEnabled[a FeatureAttributes] func(feature Feature[a]) bool
+
 func FeatureSorter[A FeatureAttributes, F Feature[A]](a F, b F) int {
 	return cmp.Compare(a.Attributes().Name(), b.Attributes().Name())
 }

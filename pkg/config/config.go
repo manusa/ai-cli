@@ -6,6 +6,10 @@ import (
 	"github.com/manusa/ai-cli/pkg/api"
 )
 
+const (
+	DefaultInferenceEnabled = true
+)
+
 // ToolsConfig Configuration for tools
 type ToolsConfig struct {
 	// Provider ToolParameters specific for a provider
@@ -21,15 +25,30 @@ type Config struct {
 
 	toolsConfig ToolsConfig `toml:"tools,omitempty"`
 
-	googleApiKey string // TODO: will likely be removed
-	geminiModel  string // TODO: will likely be removed
+	policies     *api.Policies // TODO: should be removed in favor of ToolsConfig and *InferenceConfig* above
+	googleApiKey string        // TODO: will likely be removed
+	geminiModel  string        // TODO: will likely be removed
 }
 
+// New creates a new configuration with defaults
+//
+//	TBD: The workflow for configuration should be:
+//	1) config.New creates a new Config with the default values (there's a test in the config package to ensure a spec)
+//	2) The default config can be overridden by the user (Either by providing a partial config file -config.Read-
+//	   or by using cmd flags -cmd.DiscoverCmdOptions-)
+//	3) The merged configuration is restricted/enforced by the policies Config.Enforce
 func New() *Config {
 	return &Config{
 		googleApiKey: os.Getenv("GEMINI_API_KEY"),
 		geminiModel:  "gemini-2.0-flash",
 		toolsConfig: ToolsConfig{
+			ToolsParameters: api.ToolsParameters{
+				Enabled: ptr(true),
+				// TODO: all parameters are set to false by default, do we want to change this?
+				// By default, tools are destructive and read-write
+				ReadOnly:           ptr(false),
+				DisableDestructive: ptr(false),
+			},
 			Provider: make(map[string]api.ToolsParameters),
 		},
 	}
@@ -44,23 +63,10 @@ func (c *Config) GeminiModel() string {
 }
 
 // ToolsParameters returns the merged tool configuration parameters for a specific tool
-//
-// TODO: moved this here from the tools package. IMO this should be maintained in this package which should hold
-//
-//	the single source of truth for configuration
-//	IMO the workflow for configuration should be:
-//	1) config.New creates a new Config with the default values (there's a test in the config package to ensure a spec)
-//	2) The default config can be overridden by the user (Either by providing a partial config file -config.Read-
-//	   or by using cmd flags -cmd.DiscoverCmdOptions-
-//	3) The merged configuration is restricted/enforced by the policies (feature.Discover +
+// It considers both the global configuration and the provider-specific configuration
+// Provider-specific configuration takes precedence over global configuration
 func (c *Config) ToolsParameters(toolName string) api.ToolsParameters {
-	mergedParameters := api.ToolsParameters{
-		Enabled: ptr(true),
-		// TODO: all parameters are set to false by default, do we want to change this?
-		// By default, tools are destructive and read-write
-		ReadOnly:           ptr(false),
-		DisableDestructive: ptr(false),
-	}
+	mergedParameters := api.ToolsParameters{}
 	mergeableParameters := []api.ToolsParameters{c.toolsConfig.ToolsParameters}
 	if toolParams, ok := c.toolsConfig.Provider[toolName]; ok {
 		mergeableParameters = append(mergeableParameters, toolParams)
@@ -84,6 +90,7 @@ func (c *Config) Enforce(policies *api.Policies) {
 	if policies == nil {
 		return
 	}
+	c.policies = policies // TODO: should be removed in favor of ToolsConfig and *InferenceConfig*
 	// Global policies override Global configurations
 	c.toolsConfig.ToolsParameters = mergeToolsPolicies(policies.Tools.ToolsProviderPolicies, c.toolsConfig.ToolsParameters)
 
@@ -104,6 +111,7 @@ func (c *Config) Enforce(policies *api.Policies) {
 
 func mergeToolsPolicies(toolsPolicies api.ToolsProviderPolicies, toolsParameters api.ToolsParameters) api.ToolsParameters {
 	if toolsPolicies.Enabled != nil {
+		// TODO there might be issues here in case policy enables a tool that's disabled by config. We need to evaluate this case specifically.
 		toolsParameters.Enabled = toolsPolicies.Enabled
 	}
 	if toolsPolicies.ReadOnly != nil {
@@ -117,6 +125,37 @@ func mergeToolsPolicies(toolsPolicies api.ToolsProviderPolicies, toolsParameters
 		// TODO: I don't understand what policies.Tools.Local is meant for
 	}
 	return toolsParameters
+}
+
+func (c *Config) IsInferenceProviderEnabled(feature api.Feature[api.InferenceAttributes]) bool {
+	if c.policies == nil {
+		return DefaultInferenceEnabled
+	}
+	providerName := feature.Attributes().Name()
+	if c.policies.Inferences.Provider[providerName].Enabled != nil {
+		return *c.policies.Inferences.Provider[providerName].Enabled
+	}
+
+	providerLocal := feature.Attributes().Local()
+	if c.policies.Inferences.Property.Remote.Enabled != nil {
+		if !*c.policies.Inferences.Property.Remote.Enabled && !providerLocal {
+			return false
+		}
+		if *c.policies.Inferences.Property.Remote.Enabled && !providerLocal {
+			return true
+		}
+	}
+
+	if c.policies.Inferences.Enabled != nil {
+		return *c.policies.Inferences.Enabled
+	}
+
+	return DefaultInferenceEnabled
+}
+
+func (c *Config) IsToolsProviderEnabled(feature api.Feature[api.ToolsAttributes]) bool {
+	// TODO should be disabled if read-only/... is set by policy and provider does not support it
+	return *c.ToolsParameters(feature.Attributes().Name()).Enabled
 }
 
 func ptr[T any](v T) *T {

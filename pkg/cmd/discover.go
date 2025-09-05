@@ -63,7 +63,6 @@ func NewDiscoverCmd() *cobra.Command {
 // It converts user input into a usable configuration
 func (o *DiscoverCmdOptions) Complete(cmd *cobra.Command, _ []string) error {
 	cfg := config.New()
-	cmd.SetContext(config.WithConfig(cmd.Context(), cfg))
 
 	var userPolicies *api.Policies
 	if len(o.policiesFile) > 0 {
@@ -73,7 +72,8 @@ func (o *DiscoverCmdOptions) Complete(cmd *cobra.Command, _ []string) error {
 			return fmt.Errorf("failed to read preferences: %w", err)
 		}
 	}
-	cmd.SetContext(policies.WithPolicies(cmd.Context(), userPolicies))
+	cfg.Enforce(userPolicies)
+	cmd.SetContext(config.WithConfig(cmd.Context(), cfg))
 
 	return nil
 }
