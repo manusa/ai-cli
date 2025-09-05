@@ -22,12 +22,18 @@ type InferenceAttributes interface {
 	Public() bool
 }
 
+type InferenceParameters struct {
+	Enabled *bool   `json:"-" toml:"enabled"`
+	Model   *string `json:"-" toml:"enabled"` // A model to use, if not set, the best model will be used
+}
+
 type BasicInferenceProvider struct {
 	InferenceProvider `json:"-"`
 	BasicInferenceAttributes
 	Available         bool     `json:"-"`
 	IsAvailableReason string   `json:"reason"`
 	ProviderModels    []string `json:"models"`
+	InferenceParameters
 }
 
 func (p *BasicInferenceProvider) Attributes() InferenceAttributes {

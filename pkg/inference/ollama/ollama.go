@@ -64,53 +64,51 @@ func (p *Provider) GetModels(_ context.Context) ([]string, error) {
 }
 
 func (p *Provider) Initialize(ctx context.Context) {
+	// TODO: probably move to features.Discover orchestration
+	if cfg := config.GetConfig(ctx); cfg != nil {
+		p.InferenceParameters = cfg.InferenceParameters(p.Attributes().Name())
+	}
+
 	baseURL := p.baseURL()
 	isBaseURLConfigured := p.isBaseURLConfigured()
 	resp, err := http.Get(baseURL + "/v1/models")
-	if err != nil {
-		if isBaseURLConfigured {
-			p.IsAvailableReason = fmt.Sprintf("%s defined by the %s environment variable is not accessible", baseURL, ollamaHostEnvVar)
-		} else {
-			p.IsAvailableReason = fmt.Sprintf("%s is not accessible", baseURL)
+	defer func(resp *http.Response) {
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
 		}
-		return
-	}
-	_ = resp.Body.Close()
-	p.Available = resp.StatusCode == http.StatusOK
-	if p.Available {
-		if isBaseURLConfigured {
-			p.IsAvailableReason = fmt.Sprintf("ollama is accessible at %s defined by the %s environment variable", baseURL, ollamaHostEnvVar)
-		} else {
-			p.IsAvailableReason = fmt.Sprintf("ollama is accessible at %s", baseURL)
-		}
-		models, err := p.GetModels(ctx)
-		if err == nil {
-			p.ProviderModels = models
-		}
-	} else {
+	}(resp)
+	if err != nil || resp.StatusCode != http.StatusOK {
 		if isBaseURLConfigured {
 			p.IsAvailableReason = fmt.Sprintf("ollama is not accessible at %s defined by the %s environment variable", baseURL, ollamaHostEnvVar)
 		} else {
 			p.IsAvailableReason = fmt.Sprintf("ollama is not accessible at %s", baseURL)
 		}
+		return
+	}
+
+	p.Available = true
+	if isBaseURLConfigured {
+		p.IsAvailableReason = fmt.Sprintf("ollama is accessible at %s defined by the %s environment variable", baseURL, ollamaHostEnvVar)
+	} else {
+		p.IsAvailableReason = fmt.Sprintf("ollama is accessible at %s", baseURL)
+	}
+	p.ProviderModels, err = p.GetModels(ctx)
+	var selectedModel string
+	for _, preferredModel := range preferredModels {
+		if err != nil && slices.Contains(p.ProviderModels, preferredModel) {
+			selectedModel = preferredModel
+			break
+		}
+	}
+	if p.Model == nil {
+		p.Model = &selectedModel
 	}
 }
 
 func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel, error) {
-	var model string
-	for _, preferredModel := range preferredModels {
-		if slices.Contains(p.Models(), preferredModel) {
-			model = preferredModel
-			break
-		}
-	}
-	cfg := config.GetConfig(ctx)
-	if cfg.Model != nil {
-		model = *cfg.Model
-	}
 	return ollama.NewChatModel(ctx, &ollama.ChatModelConfig{
 		BaseURL: p.baseURL(),
-		Model:   model,
+		Model:   *p.Model,
 	})
 }
 

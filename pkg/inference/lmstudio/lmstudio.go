@@ -51,35 +51,35 @@ func (p *Provider) GetModels(_ context.Context) ([]string, error) {
 }
 
 func (p *Provider) Initialize(ctx context.Context) {
-	baseURL := p.baseURL()
-	resp, err := http.Get(baseURL + "/v1/models")
-	if err != nil {
-		p.IsAvailableReason = fmt.Sprintf("%s is not accessible", baseURL)
-		return
-	}
-	_ = resp.Body.Close()
-	p.Available = resp.StatusCode == http.StatusOK
-	if p.Available {
-		p.IsAvailableReason = fmt.Sprintf("LM Studio is accessible at %s", baseURL)
-		models, err := p.GetModels(ctx)
-		if err == nil {
-			p.ProviderModels = models
-		}
-	} else {
-		p.IsAvailableReason = fmt.Sprintf("LM Studio is not accessible at %s", baseURL)
+	// TODO: probably move to features.Discover orchestration
+	if cfg := config.GetConfig(ctx); cfg != nil {
+		p.InferenceParameters = cfg.InferenceParameters(p.Attributes().Name())
 	}
 
+	baseURL := p.baseURL()
+	resp, err := http.Get(baseURL + "/v1/models")
+	defer func(resp *http.Response) {
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+	}(resp)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		p.IsAvailableReason = fmt.Sprintf("LM Studio is not accessible at %s", baseURL)
+		return
+	}
+
+	p.Available = true
+	p.IsAvailableReason = fmt.Sprintf("LM Studio is accessible at %s", baseURL)
+	p.ProviderModels, _ = p.GetModels(ctx)
+	if p.Model == nil && p.ProviderModels != nil && len(p.ProviderModels) > 0 {
+		p.Model = &p.ProviderModels[0]
+	}
 }
 
 func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel, error) {
-	model := p.ProviderModels[0]
-	cfg := config.GetConfig(ctx)
-	if cfg.Model != nil {
-		model = *cfg.Model
-	}
 	return openai.NewChatModel(ctx, &openai.ChatModelConfig{
 		BaseURL: fmt.Sprintf("%s/v1", p.baseURL()),
-		Model:   model,
+		Model:   *p.Model,
 	})
 }
 
@@ -88,7 +88,7 @@ func (p *Provider) baseURL() string {
 }
 
 var instance = &Provider{
-	api.BasicInferenceProvider{
+	BasicInferenceProvider: api.BasicInferenceProvider{
 		BasicInferenceAttributes: api.BasicInferenceAttributes{
 			BasicFeatureAttributes: api.BasicFeatureAttributes{
 				FeatureName:        "lmstudio",

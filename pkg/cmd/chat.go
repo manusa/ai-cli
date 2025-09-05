@@ -70,10 +70,10 @@ func (o *ChatCmdOptions) Complete(cmd *cobra.Command, _ []string) error {
 	cfg := config.New()
 
 	if o.inference != "" {
-		cfg.Inference = &o.inference
+		cfg.InferenceConfig.Inference = &o.inference
 	}
 	if o.model != "" {
-		cfg.Model = &o.model
+		cfg.InferenceConfig.Model = &o.model
 	}
 
 	var userPolicies *api.Policies

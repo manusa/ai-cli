@@ -10,6 +10,14 @@ const (
 	DefaultInferenceEnabled = true
 )
 
+type InferenceConfig struct {
+	Inference *string // An inference to use, if not set, the best inference will be used
+	// Provider InferenceParameters specific for a provider
+	Provider map[string]api.InferenceParameters `toml:"provider,omitempty"`
+	// InferenceParameters Global parameters for all tools
+	api.InferenceParameters
+}
+
 // ToolsConfig Configuration for tools
 type ToolsConfig struct {
 	// Provider ToolParameters specific for a provider
@@ -19,13 +27,10 @@ type ToolsConfig struct {
 }
 
 type Config struct {
-	// TODO: Should be moved to a separate InferenceConfig (same as is done for Tools -> ToolsConfig)
-	Inference *string // An inference to use, if not set, the best inference will be used
-	Model     *string // A model to use, if not set, the best model will be used
+	InferenceConfig InferenceConfig `toml:"inferences,omitempty"`
+	toolsConfig     ToolsConfig     `toml:"tools,omitempty"`
 
-	toolsConfig ToolsConfig `toml:"tools,omitempty"`
-
-	policies     *api.Policies // TODO: should be removed in favor of ToolsConfig and *InferenceConfig* above
+	policies     *api.Policies // TODO: should be removed in favor of ToolsConfig and InferenceConfig above
 	googleApiKey string        // TODO: will likely be removed
 	geminiModel  string        // TODO: will likely be removed
 }
@@ -41,6 +46,13 @@ func New() *Config {
 	return &Config{
 		googleApiKey: os.Getenv("GEMINI_API_KEY"),
 		geminiModel:  "gemini-2.0-flash",
+		InferenceConfig: InferenceConfig{
+			InferenceParameters: api.InferenceParameters{
+				// By default, all inference providers are enabled
+				Enabled: ptr(true),
+			},
+			Provider: make(map[string]api.InferenceParameters),
+		},
 		toolsConfig: ToolsConfig{
 			ToolsParameters: api.ToolsParameters{
 				Enabled: ptr(true),
@@ -62,13 +74,35 @@ func (c *Config) GeminiModel() string {
 	return c.geminiModel
 }
 
+func (c *Config) Inference() *string {
+	return c.InferenceConfig.Inference
+}
+
+// InferenceParameters returns the merged inference configuration parameters for a specific provider
+// It considers both the global configuration and the provider-specific configuration
+// Provider-specific configuration takes precedence over global configuration
+func (c *Config) InferenceParameters(inferenceProviderName string) api.InferenceParameters {
+	mergedParameters := api.InferenceParameters{}
+	mergeableParameters := []api.InferenceParameters{c.InferenceConfig.InferenceParameters}
+	if providerParams, ok := c.InferenceConfig.Provider[inferenceProviderName]; ok {
+		mergeableParameters = append(mergeableParameters, providerParams)
+	}
+	// Merge configurations by precedence
+	for _, params := range mergeableParameters {
+		if params.Enabled != nil {
+			mergedParameters.Enabled = params.Enabled
+		}
+	}
+	return mergedParameters
+}
+
 // ToolsParameters returns the merged tool configuration parameters for a specific tool
 // It considers both the global configuration and the provider-specific configuration
 // Provider-specific configuration takes precedence over global configuration
-func (c *Config) ToolsParameters(toolName string) api.ToolsParameters {
+func (c *Config) ToolsParameters(toolProviderName string) api.ToolsParameters {
 	mergedParameters := api.ToolsParameters{}
 	mergeableParameters := []api.ToolsParameters{c.toolsConfig.ToolsParameters}
-	if toolParams, ok := c.toolsConfig.Provider[toolName]; ok {
+	if toolParams, ok := c.toolsConfig.Provider[toolProviderName]; ok {
 		mergeableParameters = append(mergeableParameters, toolParams)
 	}
 	// Merge configurations by precedence
@@ -92,14 +126,25 @@ func (c *Config) Enforce(policies *api.Policies) {
 	}
 	c.policies = policies // TODO: should be removed in favor of ToolsConfig and *InferenceConfig*
 	// Global policies override Global configurations
+	c.InferenceConfig.InferenceParameters = mergeInferencesPolicies(policies.Inferences.InferenceProviderPolicies, c.InferenceConfig.InferenceParameters)
 	c.toolsConfig.ToolsParameters = mergeToolsPolicies(policies.Tools.ToolsProviderPolicies, c.toolsConfig.ToolsParameters)
 
 	// Global policies override provider-specific configuration
+	for providerName, providerParameters := range c.InferenceConfig.Provider {
+		c.InferenceConfig.Provider[providerName] = mergeInferencesPolicies(policies.Inferences.InferenceProviderPolicies, providerParameters)
+	}
 	for providerName, providerConfig := range c.toolsConfig.Provider {
 		c.toolsConfig.Provider[providerName] = mergeToolsPolicies(policies.Tools.ToolsProviderPolicies, providerConfig)
 	}
 
 	// Provider-specific policies override or add provider-specific configuration
+	for providerName, providerPolicies := range policies.Inferences.Provider {
+		originalParams, ok := c.InferenceConfig.Provider[providerName]
+		if !ok {
+			originalParams = api.InferenceParameters{}
+		}
+		c.InferenceConfig.Provider[providerName] = mergeInferencesPolicies(providerPolicies, originalParams)
+	}
 	for providerName, providerPolicies := range policies.Tools.Provider {
 		originalParams, ok := c.toolsConfig.Provider[providerName]
 		if !ok {
@@ -107,6 +152,15 @@ func (c *Config) Enforce(policies *api.Policies) {
 		}
 		c.toolsConfig.Provider[providerName] = mergeToolsPolicies(providerPolicies, originalParams)
 	}
+
+}
+
+func mergeInferencesPolicies(inferencesPolicies api.InferenceProviderPolicies, inferenceParameters api.InferenceParameters) api.InferenceParameters {
+	if inferencesPolicies.Enabled != nil {
+		// TODO there might be issues here in case policy enables a tool that's disabled by config. We need to evaluate this case specifically.
+		inferenceParameters.Enabled = inferencesPolicies.Enabled
+	}
+	return inferenceParameters
 }
 
 func mergeToolsPolicies(toolsPolicies api.ToolsProviderPolicies, toolsParameters api.ToolsParameters) api.ToolsParameters {
@@ -128,6 +182,15 @@ func mergeToolsPolicies(toolsPolicies api.ToolsProviderPolicies, toolsParameters
 }
 
 func (c *Config) IsInferenceProviderEnabled(feature api.Feature[api.InferenceAttributes]) bool {
+	// TODO: relying only on *c.InferenceParameters(feature.Attributes().Name()).Enabled
+	//       won't work even if we consider policies.
+	//       It becomes especially hard for the scenario:
+	//       "globally disabled and enabled by property remote, preserves remote providers enabled"
+	//       Since the provider has been disabled in the Enforce step, we cannot know if it was
+	//       disabled by global policy, provider-specific policy, or configuration.
+	//       This means that is very hard to know if the provider should be re-enabled or preserved disabled.
+
+	// TODO: considering the previous comment, for now, this method is not checking for config-disabled inferences
 	if c.policies == nil {
 		return DefaultInferenceEnabled
 	}
