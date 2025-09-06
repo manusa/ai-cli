@@ -89,7 +89,7 @@ func (s *DiscoverTestSuite) TestDiscoverInferenceConfiguredProvider() {
 		test.WithInferenceAvailable(),
 	))
 	cfg := config.New()
-	cfg.Inference = func(s string) *string {
+	cfg.InferenceConfig.Inference = func(s string) *string {
 		return &s
 	}("provider-2")
 	features := Discover(config.WithConfig(s.T().Context(), cfg))
@@ -147,7 +147,7 @@ func (s *DiscoverTestSuite) TestDiscoverInferenceConfiguredProviderUnknown() {
 		test.WithInferenceAvailable(),
 	))
 	cfg := config.New()
-	cfg.Inference = func(s string) *string {
+	cfg.InferenceConfig.Inference = func(s string) *string {
 		return &s
 	}("unknown-provider")
 	features := Discover(config.WithConfig(s.T().Context(), cfg))

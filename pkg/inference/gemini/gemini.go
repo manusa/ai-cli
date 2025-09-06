@@ -20,6 +20,11 @@ type Provider struct {
 var _ api.InferenceProvider = &Provider{}
 
 func (p *Provider) Initialize(ctx context.Context) {
+	// TODO: probably move to features.Discover orchestration
+	if cfg := config.GetConfig(ctx); cfg != nil {
+		p.InferenceParameters = cfg.InferenceParameters(p.Attributes().Name())
+	}
+
 	cfg := config.GetConfig(ctx)
 	p.Available = cfg.GoogleApiKey() != ""
 	if p.Available {

@@ -17,5 +17,7 @@ func GetConfig(ctx context.Context) *Config {
 	if !ok {
 		return nil
 	}
-	return config
+	// Return a copy to avoid side-effects and modifications of the original config
+	configCopy := *config
+	return &configCopy
 }

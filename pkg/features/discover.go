@@ -76,9 +76,9 @@ func Discover(ctx context.Context) (features *Features) {
 	inferencesEnabled, features.InferencesDisabledByPolicy = filterDisabled(inference.Initialize(ctx), cfg.IsInferenceProviderEnabled)
 	features.Inferences, features.InferencesNotAvailable = classifyByAvailability(inferencesEnabled) // TODO: pass preferences for inference
 
-	if cfg.Inference != nil {
+	if cfg.Inference() != nil {
 		for _, i := range features.Inferences {
-			if i.Attributes().Name() == *cfg.Inference {
+			if i.Attributes().Name() == *cfg.Inference() {
 				features.Inference = &i
 				break
 			}

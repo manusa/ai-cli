@@ -45,6 +45,11 @@ func (p *Provider) GetModels(_ context.Context) ([]string, error) {
 }
 
 func (p *Provider) Initialize(ctx context.Context) {
+	// TODO: probably move to features.Discover orchestration
+	if cfg := config.GetConfig(ctx); cfg != nil {
+		p.InferenceParameters = cfg.InferenceParameters(p.Attributes().Name())
+	}
+
 	if !config.CommandExists(p.getRamalamaBinaryName()) {
 		p.IsAvailableReason = "ramalama is not installed"
 		return
@@ -54,25 +59,23 @@ func (p *Provider) Initialize(ctx context.Context) {
 		p.IsAvailableReason = "ramalama is installed but no models are served"
 		return
 	}
-	p.ProviderModels = models
-
 	p.Available = true
 	p.IsAvailableReason = "ramalama is serving models"
+	p.ProviderModels = models
+	if p.Model == nil {
+		p.Model = &p.ProviderModels[0]
+	}
+
 }
 
 func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel, error) {
-	model := p.ProviderModels[0]
-	cfg := config.GetConfig(ctx)
-	if cfg.Model != nil {
-		model = *cfg.Model
-	}
-	baseURL, err := p.baseURL(model)
+	baseURL, err := p.baseURL(*p.Model)
 	if err != nil {
 		return nil, err
 	}
 	return openai.NewChatModel(ctx, &openai.ChatModelConfig{
 		BaseURL: baseURL,
-		Model:   model,
+		Model:   *p.Model,
 	})
 }
 
