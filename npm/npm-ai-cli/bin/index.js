@@ -3,12 +3,12 @@
 const childProcess = require('child_process');
 
 const BINARY_MAP = {
-  darwin_x64: {name: 'aicli-darwin-amd64', suffix: ''},
-  darwin_arm64: {name: 'aicli-darwin-arm64', suffix: ''},
-  linux_x64: {name: 'aicli-linux-amd64', suffix: ''},
-  linux_arm64: {name: 'aicli-linux-arm64', suffix: ''},
-  win32_x64: {name: 'aicli-windows-amd64', suffix: '.exe'},
-  win32_arm64: {name: 'aicli-windows-arm64', suffix: '.exe'},
+  darwin_x64: {name: 'npm-ai-cli-darwin-amd64', suffix: ''},
+  darwin_arm64: {name: 'npm-ai-cli-darwin-arm64', suffix: ''},
+  linux_x64: {name: 'npm-ai-cli-linux-amd64', suffix: ''},
+  linux_arm64: {name: 'npm-ai-cli-linux-arm64', suffix: ''},
+  win32_x64: {name: 'npm-ai-cli-windows-amd64', suffix: '.exe'},
+  win32_arm64: {name: 'npm-ai-cli-windows-arm64', suffix: '.exe'},
 };
 
 // Resolving will fail if the optionalDependency was not installed or the platform/arch is not supported
