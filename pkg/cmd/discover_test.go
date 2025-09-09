@@ -2,11 +2,11 @@ package cmd
 
 import (
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference/ollama"
+	"github.com/manusa/ai-cli/pkg/test"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
@@ -33,12 +33,7 @@ func (s *DiscoverTestSuite) SetupTest() {
 }
 
 func (s *DiscoverTestSuite) TearDownTest() {
-	os.Clearenv()
-	for _, env := range s.originalEnv {
-		if key, value, found := strings.Cut(env, "="); found {
-			_ = os.Setenv(key, value)
-		}
-	}
+	test.RestoreEnv(s.originalEnv)
 }
 
 func (s *DiscoverTestSuite) TestOutputText() {
