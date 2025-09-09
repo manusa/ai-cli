@@ -1,7 +1,7 @@
 .idea/
 .work/
 npm/**/*
-!npm/aicli/bin/index.js
+!npm/npm-ai-cli/bin/index.js
 
 /ai-cli
 /ai-cli-darwin-amd64

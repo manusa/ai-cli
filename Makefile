@@ -21,7 +21,7 @@ GOLANGCI_LINT_VERSION ?= v2.2.2
 OSES = darwin linux windows
 ARCHS = amd64 arm64
 
-NPM_PACKAGE = aicli
+NPM_PACKAGE = npm-ai-cli
 
 CLEAN_TARGETS :=
 CLEAN_TARGETS += '$(BINARY_NAME)'
