@@ -4,10 +4,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/manusa/ai-cli/internal/test"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/features"
 	"github.com/manusa/ai-cli/pkg/inference"
-	"github.com/manusa/ai-cli/pkg/test"
 	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/stretchr/testify/suite"
 )

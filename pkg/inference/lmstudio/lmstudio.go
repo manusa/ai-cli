@@ -14,7 +14,8 @@ import (
 	"github.com/manusa/ai-cli/pkg/inference"
 )
 
-const defaultBaseURL = "http://localhost:1234"
+// Default base URL for LM Studio (var can be overridden in tests)
+var defaultBaseURL = "http://localhost:1234"
 
 type Provider struct {
 	api.BasicInferenceProvider
@@ -63,8 +64,12 @@ func (p *Provider) Initialize(ctx context.Context) {
 			_ = resp.Body.Close()
 		}
 	}(resp)
-	if err != nil || resp.StatusCode != http.StatusOK {
+	if err != nil {
 		p.IsAvailableReason = fmt.Sprintf("LM Studio is not accessible at %s", baseURL)
+		return
+	}
+	if resp.StatusCode != http.StatusOK {
+		p.IsAvailableReason = fmt.Sprintf("The server at %s is accessible but is not LM Studio", baseURL)
 		return
 	}
 

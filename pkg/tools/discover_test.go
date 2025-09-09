@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/manusa/ai-cli/internal/test"
 	"github.com/manusa/ai-cli/pkg/api"
-	"github.com/manusa/ai-cli/pkg/test"
 	"github.com/stretchr/testify/suite"
 
 	"github.com/manusa/ai-cli/pkg/config"

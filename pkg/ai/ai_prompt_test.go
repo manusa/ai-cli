@@ -7,9 +7,9 @@ import (
 
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/schema"
+	"github.com/manusa/ai-cli/internal/test"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
-	"github.com/manusa/ai-cli/pkg/test"
 	"github.com/manusa/ai-cli/pkg/tools/fs"
 	"github.com/stretchr/testify/suite"
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/manusa/ai-cli/pkg/test"
+	"github.com/manusa/ai-cli/internal/test"
 	"github.com/stretchr/testify/suite"
 )
 
