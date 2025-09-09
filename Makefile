@@ -129,7 +129,9 @@ npm-copy-project-files: npm-copy-binaries ## Copy the project files to the main 
 		echo '{"name": "$(NPM_PACKAGE)-$(os)-$(arch)",' > $$OS_PACKAGE_JSON; \
 		echo '"version": "$(GIT_TAG_VERSION)",' >> $$OS_PACKAGE_JSON; \
 		echo '"os": ["$(os)"],' >> $$OS_PACKAGE_JSON; \
-		echo '"cpu": ["$(arch)"]' >> $$OS_PACKAGE_JSON; \
+		NPM_ARCH="$(arch)"; \
+		if [ "$$NPM_ARCH" = "amd64" ]; then NPM_ARCH="x64"; fi; \
+		echo '"cpu": ["'$$NPM_ARCH'"]' >> $$OS_PACKAGE_JSON; \
 		echo '}' >> $$OS_PACKAGE_JSON; \
 	))
 
