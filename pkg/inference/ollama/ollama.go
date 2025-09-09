@@ -77,12 +77,16 @@ func (p *Provider) Initialize(ctx context.Context) {
 			_ = resp.Body.Close()
 		}
 	}(resp)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		if isBaseURLConfigured {
-			p.IsAvailableReason = fmt.Sprintf("ollama is not accessible at %s defined by the %s environment variable", baseURL, ollamaHostEnvVar)
-		} else {
-			p.IsAvailableReason = fmt.Sprintf("ollama is not accessible at %s", baseURL)
-		}
+	baseURLMessage := baseURL
+	if isBaseURLConfigured {
+		baseURLMessage = fmt.Sprintf("%s defined by the %s environment variable", baseURL, ollamaHostEnvVar)
+	}
+	if err != nil {
+		p.IsAvailableReason = fmt.Sprintf("ollama is not accessible at %s", baseURLMessage)
+		return
+	}
+	if resp.StatusCode != http.StatusOK {
+		p.IsAvailableReason = fmt.Sprintf("The server at %s is accessible but is not Ollama", baseURLMessage)
 		return
 	}
 
@@ -95,7 +99,7 @@ func (p *Provider) Initialize(ctx context.Context) {
 	p.ProviderModels, err = p.GetModels(ctx)
 	var selectedModel string
 	for _, preferredModel := range preferredModels {
-		if err != nil && slices.Contains(p.ProviderModels, preferredModel) {
+		if err == nil && slices.Contains(p.ProviderModels, preferredModel) {
 			selectedModel = preferredModel
 			break
 		}
