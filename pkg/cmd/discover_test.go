@@ -59,6 +59,9 @@ func (s *DiscoverTestSuite) TestOutputText() {
 			"    Description: Ramalama local inference provider\n" +
 			"    Reason: ramalama is not installed\n" +
 			"Available Tools Providers:\n" +
+			"  - browsers\n" +
+			"    Description: Provides access to browsers\n" +
+			"    Reason: always available\n" +
 			"  - fs\n" +
 			"    Description: Provides access to the local filesystem, allowing listing of files and directories.\n" +
 			"    Reason: filesystem is accessible\n" +
@@ -95,7 +98,9 @@ func (s *DiscoverTestSuite) TestOutputJson() {
 			`{"description":"Ollama local inference provider","name":"ollama","local":true,"public":false,"reason":"ollama is not accessible at http://localhost:1337","models":null},` +
 			`{"description":"Ramalama local inference provider","name":"ramalama","local":true,"public":false,"reason":"ramalama is not installed","models":null}],` +
 			`"inference":null,` +
-			`"tools":[{"description":"Provides access to the local filesystem, allowing listing of files and directories.","name":"fs","reason":"filesystem is accessible"}],` +
+			`"tools":[` +
+			`{"description":"Provides access to browsers","mcp_settings":{"type":"stdio","command":"npx","args":["-y","browsers-mcp-server@latest"]},"name":"browsers","reason":"always available"},` +
+			`{"description":"Provides access to the local filesystem, allowing listing of files and directories.","name":"fs","reason":"filesystem is accessible"}],` +
 			`"toolsNotAvailable":[` +
 			`{"description":"Provides access to GitHub repositories, issues, pull requests, and more.","name":"github","reason":"GITHUB_PERSONAL_ACCESS_TOKEN is not set"},` +
 			`{"description":"Provides access to Kubernetes clusters, allowing management and interaction with cluster resources.","name":"kubernetes","reason":"no suitable MCP settings found for the Kubernetes MCP server"},` +
