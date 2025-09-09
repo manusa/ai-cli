@@ -124,6 +124,7 @@ npm-copy-project-files: npm-copy-binaries ## Copy the project files to the main 
 	@echo '"repository": {"type": "git", "url": "git+https://github.com/manusa/ai-cli.git"}' >> $(MAIN_PACKAGE_JSON)
 	@echo '}' >> $(MAIN_PACKAGE_JSON)
 	$(foreach os,$(OSES),$(foreach arch,$(ARCHS), \
+		echo '//registry.npmjs.org/:_authToken=$(NPM_TOKEN)' > ./npm/$(NPM_PACKAGE)-$(os)-$(arch)/.npmrc; \
 		OS_PACKAGE_JSON=./npm/$(NPM_PACKAGE)-$(os)-$(arch)/package.json; \
 		echo '{"name": "$(NPM_PACKAGE)-$(os)-$(arch)",' > $$OS_PACKAGE_JSON; \
 		echo '"version": "$(GIT_TAG_VERSION)",' >> $$OS_PACKAGE_JSON; \
