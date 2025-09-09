@@ -1,4 +1,12 @@
 .idea/
 .work/
+npm/**/*
+!npm/aicli/bin/index.js
 
 /ai-cli
+/ai-cli-darwin-amd64
+/ai-cli-darwin-arm64
+/ai-cli-linux-amd64
+/ai-cli-linux-arm64
+/ai-cli-windows-amd64.exe
+/ai-cli-windows-arm64.exe
