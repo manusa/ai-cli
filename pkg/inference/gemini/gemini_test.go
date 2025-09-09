@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/manusa/ai-cli/internal/test"
 	"github.com/manusa/ai-cli/pkg/config"
-	"github.com/manusa/ai-cli/pkg/test"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -40,7 +40,7 @@ func (s *GeminiTestSuite) TestInitializeWithNoAPIKey() {
 		s.Len(instance.Models(), 1)
 		s.Contains(instance.Models(), "gemini-2.0-flash")
 	})
-	s.Run("when GEMINI_API_KEY is set, marshaled JSON shows availability fields", func() {
+	s.Run("when GEMINI_API_KEY is not set, marshaled JSON shows availability fields", func() {
 		data, err := json.Marshal(instance)
 		s.Run("does not return an error", func() {
 			s.Nil(err)

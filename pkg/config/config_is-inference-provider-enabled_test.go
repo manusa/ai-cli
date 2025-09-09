@@ -3,8 +3,8 @@ package config
 import (
 	"testing"
 
+	"github.com/manusa/ai-cli/internal/test"
 	"github.com/manusa/ai-cli/pkg/policies"
-	"github.com/manusa/ai-cli/pkg/test"
 	"github.com/stretchr/testify/suite"
 )
 

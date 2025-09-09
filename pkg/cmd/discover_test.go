@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/manusa/ai-cli/internal/test"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference/ollama"
-	"github.com/manusa/ai-cli/pkg/test"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
