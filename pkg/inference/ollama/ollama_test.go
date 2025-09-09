@@ -19,15 +19,15 @@ type OllamaTestSuite struct {
 }
 
 func (s *OllamaTestSuite) SetupTest() {
+	s.MockServer = test.NewMockServer()
 	s.originalEnv = os.Environ()
 	os.Clearenv()
 	s.originalInstance = test.Clone(instance)
-	s.MockServer = test.NewMockServer()
 }
 func (s *OllamaTestSuite) TearDownTest() {
+	s.MockServer.Close()
 	test.RestoreEnv(s.originalEnv)
 	instance = s.originalInstance
-	s.MockServer.Close()
 }
 
 func (s *OllamaTestSuite) TestInitializeWithNoServer() {
