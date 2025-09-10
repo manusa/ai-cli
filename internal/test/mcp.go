@@ -19,9 +19,10 @@ func McpServer(t *testing.T) *api.McpSettings {
 	}
 	projectRoot, err := os.Getwd()
 	for len(projectRoot) > 0 && err == nil {
-		if _, err := os.Stat(path.Join(projectRoot, "go.mod")); err == nil {
+		if _, statErr := os.Stat(path.Join(projectRoot, "go.mod")); statErr == nil {
 			break
 		}
+		println("looking for project root in", projectRoot)
 		projectRoot = path.Dir(projectRoot)
 	}
 	output, err := exec.
