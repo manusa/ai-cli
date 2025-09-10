@@ -25,7 +25,7 @@ func (s *AiMcpSuite) SetupTest() {
 	s.Llm = &test.ChatModel{}
 	s.Ai = New(
 		test.NewInferenceProvider("inference-provider", test.WithInferenceAvailable(), test.WithInferenceLlm(s.Llm)),
-		[]api.ToolsProvider{test.NewToolsProvider("test-tools-provider", test.WithToolsAvailable(), test.WithToolsMcpSettings(test.McpServer(s.T())))},
+		[]api.ToolsProvider{test.NewToolsProvider("test-tools-provider", test.WithToolsAvailable(), test.WithToolsMcpSettings(test.McpServer()))},
 	)
 	if err := s.Ai.Run(config.WithConfig(s.T().Context(), config.New())); err != nil {
 		s.T().Fatalf("failed to run AI: %v", err)
