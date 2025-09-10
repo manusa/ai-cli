@@ -40,6 +40,6 @@ func (t *ToolsProvider) Initialize(_ context.Context) {
 	t.Initialized = true
 }
 
-func (t *ToolsProvider) GetTools(_ context.Context) ([]*api.Tool, error) {
-	return t.Tools, nil
+func (t *ToolsProvider) GetTools(_ context.Context) []*api.Tool {
+	return t.Tools
 }

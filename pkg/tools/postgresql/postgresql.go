@@ -5,13 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"slices"
 	"strings"
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/tools"
-	"github.com/manusa/ai-cli/pkg/tools/utils/eino"
 )
 
 type Provider struct {
@@ -80,19 +78,6 @@ func (p *Provider) Initialize(ctx context.Context) {
 	} else {
 		p.IsAvailableReason = fmt.Sprintf("%s is not set with postgresql schema and %s is not set", databaseUriEnvVar, pgPasswordEnvVar)
 	}
-}
-
-func (p *Provider) GetTools(ctx context.Context) ([]*api.Tool, error) {
-	mcpSettings, err := p.findBestMcpServerSettings(*p.ReadOnly)
-	if err != nil || mcpSettings.Type != api.McpTypeStdio {
-		return nil, err
-	}
-
-	cli, err := eino.StartMcp(ctx, mcpSettings.Env, slices.Concat([]string{mcpSettings.Command}, mcpSettings.Args))
-	if err != nil {
-		return nil, err
-	}
-	return eino.GetTools(ctx, cli)
 }
 
 func (p *Provider) findBestMcpServerSettings(readOnly bool) (*api.McpSettings, error) {

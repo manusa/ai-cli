@@ -2,12 +2,10 @@ package playwright
 
 import (
 	"context"
-	"slices"
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/tools"
-	"github.com/manusa/ai-cli/pkg/tools/utils/eino"
 )
 
 // TODO: Centralize version management elsewhere
@@ -38,14 +36,6 @@ func (p *Provider) Initialize(ctx context.Context) {
 	if !config.IsDesktop() {
 		p.McpSettings.Args = append(p.McpSettings.Args, "--headless")
 	}
-}
-
-func (p *Provider) GetTools(ctx context.Context) ([]*api.Tool, error) {
-	cli, err := eino.StartMcp(ctx, p.McpSettings.Env, slices.Concat([]string{p.McpSettings.Command}, p.McpSettings.Args))
-	if err != nil {
-		return nil, err
-	}
-	return eino.GetTools(ctx, cli)
 }
 
 var instance = &Provider{

@@ -10,7 +10,6 @@ import (
 	"github.com/manusa/ai-cli/internal/test"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
-	"github.com/manusa/ai-cli/pkg/tools/fs"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -29,7 +28,7 @@ func (s *AiSuite) SetupTest() {
 			},
 		},
 		Llm: s.Llm,
-	}, []*api.Tool{fs.FileList})
+	}, []api.ToolsProvider{test.NewToolsProvider("test-tools-provider", test.WithToolsAvailable())})
 	if err := s.Ai.Run(config.WithConfig(s.T().Context(), config.New())); err != nil {
 		s.T().Fatalf("failed to run AI: %v", err)
 	}

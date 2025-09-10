@@ -19,13 +19,16 @@ import (
 	callbackutils "github.com/cloudwego/eino/utils/callbacks"
 	"github.com/google/uuid"
 	"github.com/manusa/ai-cli/pkg/api"
+	"github.com/mark3labs/mcp-go/client"
 )
 
 type Notification struct{}
 
 type Ai struct {
 	inferenceProvider api.InferenceProvider
-	tools             []*api.Tool
+	toolsProviders    []api.ToolsProvider
+	tools             []tool.BaseTool
+	mcpClients        []*client.Client
 	Input             chan api.Message
 	Output            chan Notification
 	session           *Session
@@ -34,14 +37,14 @@ type Ai struct {
 	llm model.ToolCallingChatModel
 }
 
-func New(inferenceProvider api.InferenceProvider, tools []*api.Tool) *Ai {
+func New(inferenceProvider api.InferenceProvider, toolsProviders []api.ToolsProvider) *Ai {
 	session := &Session{}
 	if inferenceProvider.SystemPrompt() != "" {
 		session.systemPrompt = api.NewSystemMessage(inferenceProvider.SystemPrompt())
 	}
 	return &Ai{
 		inferenceProvider: inferenceProvider,
-		tools:             tools,
+		toolsProviders:    toolsProviders,
 		Input:             make(chan api.Message),
 		Output:            make(chan Notification),
 		session:           session,
@@ -104,10 +107,16 @@ func (a *Ai) Reset() {
 }
 
 func (a *Ai) Run(ctx context.Context) (err error) {
+	// Inference Provider (LLM)
 	a.llm, err = a.inferenceProvider.GetInference(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get inference: %w", err)
 	}
+	// Tools Providers + MCP
+	a.tools = make([]tool.BaseTool, 0)
+	a.tools = append(a.tools, toInvokableTools(ctx, a.toolsProviders)...)
+	a.mcpClients = startMcpClients(ctx, a.toolsProviders)
+	a.tools = append(a.tools, mcpClientTools(ctx, a.mcpClients)...)
 	go func() {
 		for {
 			select {
@@ -119,6 +128,10 @@ func (a *Ai) Run(ctx context.Context) (err error) {
 		}
 	}()
 	return
+}
+
+func (a *Ai) Close() {
+	stopMcpClients(a.mcpClients)
 }
 
 // Prompt sends a prompt to the AI model.
@@ -200,12 +213,13 @@ func (a *Ai) schemaMessages() []*schema.Message {
 }
 
 func (a *Ai) setUpAgent(ctx context.Context) (*react.Agent, error) {
-	baseTools := make([]tool.BaseTool, 0, len(a.tools))
 	toolInfos := make([]*schema.ToolInfo, 0, len(a.tools))
-	for _, t := range a.tools {
-		it := toInvokableTool(t)
-		baseTools = append(baseTools, it)
-		toolInfos = append(toolInfos, it.toolInfo)
+	for _, it := range a.tools {
+		toolInfo, err := it.Info(ctx)
+		if err != nil {
+			return nil, err
+		}
+		toolInfos = append(toolInfos, toolInfo)
 	}
 	llmWithTools, err := a.llm.WithTools(toolInfos)
 	if err != nil {
@@ -215,7 +229,7 @@ func (a *Ai) setUpAgent(ctx context.Context) (*react.Agent, error) {
 		ToolCallingModel: llmWithTools,
 		MaxStep:          10,
 		ToolsConfig: compose.ToolsNodeConfig{
-			Tools:               baseTools,
+			Tools:               a.tools,
 			ExecuteSequentially: true,
 		},
 	})

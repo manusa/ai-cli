@@ -2,12 +2,10 @@ package browsers
 
 import (
 	"context"
-	"slices"
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/tools"
-	"github.com/manusa/ai-cli/pkg/tools/utils/eino"
 )
 
 type Provider struct {
@@ -39,19 +37,6 @@ func (p *Provider) Initialize(ctx context.Context) {
 
 	p.Available = true
 	p.IsAvailableReason = "always available"
-}
-
-func (p *Provider) GetTools(ctx context.Context) ([]*api.Tool, error) {
-	mcpSettings, err := p.findBestMcpServerSettings()
-	if err != nil || mcpSettings.Type != api.McpTypeStdio {
-		return nil, err
-	}
-
-	cli, err := eino.StartMcp(ctx, mcpSettings.Env, slices.Concat([]string{mcpSettings.Command}, mcpSettings.Args))
-	if err != nil {
-		return nil, err
-	}
-	return eino.GetTools(ctx, cli)
 }
 
 func (p *Provider) findBestMcpServerSettings() (*api.McpSettings, error) {
