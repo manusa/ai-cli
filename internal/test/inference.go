@@ -27,6 +27,12 @@ func WithInferencePublic() InferenceProviderOption {
 	}
 }
 
+func WithInferenceLlm(llm model.ToolCallingChatModel) InferenceProviderOption {
+	return func(i *InferenceProvider) {
+		i.Llm = llm
+	}
+}
+
 func NewInferenceProvider(name string, options ...InferenceProviderOption) *InferenceProvider {
 	p := &InferenceProvider{
 		BasicInferenceProvider: api.BasicInferenceProvider{
