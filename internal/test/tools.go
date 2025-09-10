@@ -14,6 +14,12 @@ func WithToolsAvailable() ToolsProviderOption {
 	}
 }
 
+func WithToolsMcpSettings(mcpSettings *api.McpSettings) ToolsProviderOption {
+	return func(i *ToolsProvider) {
+		i.McpSettings = mcpSettings
+	}
+}
+
 func NewToolsProvider(name string, options ...ToolsProviderOption) *ToolsProvider {
 	p := &ToolsProvider{
 		BasicToolsProvider: api.BasicToolsProvider{

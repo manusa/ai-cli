@@ -13,32 +13,32 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type AiSuite struct {
+type AiPromptSuite struct {
 	suite.Suite
 	Llm *test.ChatModel
 	Ai  *Ai
 }
 
-func (s *AiSuite) SetupTest() {
+func (s *AiPromptSuite) SetupTest() {
 	s.Llm = &test.ChatModel{}
-	s.Ai = New(&test.InferenceProvider{
-		BasicInferenceProvider: api.BasicInferenceProvider{
-			BasicInferenceAttributes: api.BasicInferenceAttributes{
-				BasicFeatureAttributes: api.BasicFeatureAttributes{FeatureName: "inference-provider"},
-			},
-		},
-		Llm: s.Llm,
-	}, []api.ToolsProvider{test.NewToolsProvider("test-tools-provider", test.WithToolsAvailable())})
+	s.Ai = New(
+		test.NewInferenceProvider("inference-provider", test.WithInferenceAvailable(), test.WithInferenceLlm(s.Llm)),
+		[]api.ToolsProvider{test.NewToolsProvider("test-tools-provider", test.WithToolsAvailable())},
+	)
 	if err := s.Ai.Run(config.WithConfig(s.T().Context(), config.New())); err != nil {
 		s.T().Fatalf("failed to run AI: %v", err)
 	}
 }
 
-func (s *AiSuite) WaitForRunToComplete() {
+func (s *AiPromptSuite) TeardownTest() {
+	s.Ai.Close()
+}
+
+func (s *AiPromptSuite) WaitForRunToComplete() {
 	s.Eventually(func() bool { return !s.Ai.Session().IsRunning() }, 10*time.Second, 100*time.Millisecond, "Expected AI session to finish")
 }
 
-func (s *AiSuite) TestInput_SendsPrompt() {
+func (s *AiPromptSuite) TestInput_SendsPrompt() {
 	s.Ai.Input <- api.NewUserMessage("Hello AItana!")
 
 	s.WaitForRunToComplete()
@@ -49,7 +49,7 @@ func (s *AiSuite) TestInput_SendsPrompt() {
 	})
 }
 
-func (s *AiSuite) TestInput_SendsPrompt_SetUpAgentError() {
+func (s *AiPromptSuite) TestInput_SendsPrompt_SetUpAgentError() {
 	s.Llm.WithToolsFunc = func(tools []*schema.ToolInfo) (model.ToolCallingChatModel, error) {
 		return s.Llm, errors.New("error setting up tools")
 	}
@@ -61,7 +61,7 @@ func (s *AiSuite) TestInput_SendsPrompt_SetUpAgentError() {
 	})
 }
 
-func (s *AiSuite) TestInput_SendsPrompt_ReceivesAssistantMessage() {
+func (s *AiPromptSuite) TestInput_SendsPrompt_ReceivesAssistantMessage() {
 	s.Llm.StreamReader = func(input []*schema.Message, opts ...model.Option) (*schema.StreamReader[*schema.Message], error) {
 		return schema.StreamReaderFromArray([]*schema.Message{
 			schema.AssistantMessage("Hello, I am AItana!", nil),
@@ -76,7 +76,7 @@ func (s *AiSuite) TestInput_SendsPrompt_ReceivesAssistantMessage() {
 	})
 }
 
-func (s *AiSuite) TestInput_SendsPrompt_ReceivesAssistantStreamedMessage() {
+func (s *AiPromptSuite) TestInput_SendsPrompt_ReceivesAssistantStreamedMessage() {
 	s.Llm.StreamReader = func(input []*schema.Message, opts ...model.Option) (*schema.StreamReader[*schema.Message], error) {
 		return schema.StreamReaderFromArray([]*schema.Message{
 			schema.AssistantMessage("Hello, ", nil),
@@ -92,7 +92,7 @@ func (s *AiSuite) TestInput_SendsPrompt_ReceivesAssistantStreamedMessage() {
 	})
 }
 
-func (s *AiSuite) TestInput_SendsPrompt_WithSessionMessages() {
+func (s *AiPromptSuite) TestInput_SendsPrompt_WithSessionMessages() {
 	invocation := 0
 	assistantMessages := [][]*schema.Message{
 		{schema.AssistantMessage("Hello, how can I help you?", nil)},
@@ -123,6 +123,6 @@ func (s *AiSuite) TestInput_SendsPrompt_WithSessionMessages() {
 	})
 }
 
-func TestAi(t *testing.T) {
-	suite.Run(t, new(AiSuite))
+func TestAiPrompt(t *testing.T) {
+	suite.Run(t, new(AiPromptSuite))
 }
