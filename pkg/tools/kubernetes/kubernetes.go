@@ -6,12 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/tools"
-	"github.com/manusa/ai-cli/pkg/tools/utils/eino"
 )
 
 type Provider struct {
@@ -146,19 +144,6 @@ func (p *Provider) Initialize(ctx context.Context) {
 	} else {
 		p.IsAvailableReason = "no kubeconfig file found in the locations specified by the KUBECONFIG environment variable"
 	}
-}
-
-func (p *Provider) GetTools(ctx context.Context) ([]*api.Tool, error) {
-	mcpSettings, err := findBestMcpServerSettings(*p.ReadOnly, *p.DisableDestructive)
-	if err != nil || mcpSettings.Type != api.McpTypeStdio {
-		return nil, err
-	}
-
-	cli, err := eino.StartMcp(ctx, mcpSettings.Env, slices.Concat([]string{mcpSettings.Command}, mcpSettings.Args))
-	if err != nil {
-		return nil, err
-	}
-	return eino.GetTools(ctx, cli)
 }
 
 func findBestMcpServerSettings(readOnly bool, disableDestructive bool) (*api.McpSettings, error) {

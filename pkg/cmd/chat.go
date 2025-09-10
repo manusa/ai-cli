@@ -21,8 +21,8 @@ type ChatCmdOptions struct {
 	tools        []string
 	notools      bool
 
-	features     *features.Features
-	enabledTools []*api.Tool
+	features              *features.Features
+	enabledToolsProviders []api.ToolsProvider
 }
 
 func NewChatCmdOptions() *ChatCmdOptions {
@@ -93,11 +93,7 @@ func (o *ChatCmdOptions) Complete(cmd *cobra.Command, _ []string) error {
 		if !useTool(toolProvider.Attributes().Name(), o.notools, o.tools) {
 			continue
 		}
-		tools, err := toolProvider.GetTools(cmd.Context())
-		if err != nil {
-			return fmt.Errorf("failed to get tools from provider %s: %w", toolProvider.Attributes().Name(), err)
-		}
-		o.enabledTools = append(o.enabledTools, tools...)
+		o.enabledToolsProviders = append(o.enabledToolsProviders, toolProvider)
 	}
 	return nil
 }
@@ -112,7 +108,8 @@ func (o *ChatCmdOptions) Validate() error {
 
 // Run executes the main logic of the command once its complete and validated
 func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
-	aiAgent := ai.New(*o.features.Inference, o.enabledTools)
+	aiAgent := ai.New(*o.features.Inference, o.enabledToolsProviders)
+	defer aiAgent.Close()
 	if err := aiAgent.Run(cmd.Context()); err != nil {
 		return fmt.Errorf("failed to run AI: %w", err)
 	}
@@ -137,10 +134,11 @@ func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
 		}
 	}()
 	// Run TUI
+	var tuiErr error
 	if _, err := p.Run(); err != nil {
-		return fmt.Errorf("failed to run program: %w", err)
+		tuiErr = fmt.Errorf("failed to run program: %w", err)
 	}
-	return nil
+	return tuiErr
 }
 
 func useTool(toolName string, notools bool, toolsToUse []string) bool {

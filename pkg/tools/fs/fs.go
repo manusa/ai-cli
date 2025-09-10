@@ -16,15 +16,14 @@ type Provider struct {
 var _ api.ToolsProvider = &Provider{}
 
 func (p *Provider) Initialize(_ context.Context) {
-	// ReadOnly is not considered for fs, as all operations are read-only
 	p.Available = true
 	p.IsAvailableReason = "filesystem is accessible"
 }
 
-func (p *Provider) GetTools(_ context.Context) ([]*api.Tool, error) {
+func (p *Provider) GetTools(_ context.Context) []*api.Tool {
 	return []*api.Tool{
 		FileList,
-	}, nil
+	}
 }
 
 var FileList = &api.Tool{

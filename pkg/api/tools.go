@@ -5,14 +5,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-
-	"github.com/eino-contrib/jsonschema"
 )
 
 type ToolsProvider interface {
 	Feature[ToolsAttributes]
-	GetTools(ctx context.Context) ([]*Tool, error)
+	// GetMcpSettings returns the MCP settings if the provider uses an MCP server, or nil otherwise
 	GetMcpSettings() *McpSettings
+	// GetTools returns the list of built-in, native, available tools
+	GetTools(ctx context.Context) []*Tool
 }
 
 type ToolsAttributes interface {
@@ -53,6 +53,10 @@ func (p *BasicToolsProvider) GetMcpSettings() *McpSettings {
 	return p.McpSettings
 }
 
+func (p *BasicToolsProvider) GetTools(_ context.Context) []*Tool {
+	return nil
+}
+
 type BasicToolsAttributes struct {
 	BasicFeatureAttributes
 }
@@ -60,8 +64,6 @@ type BasicToolsAttributes struct {
 type Tool struct {
 	Name        string
 	Description string
-	// Parameters in JSONSchema format
-	JSONSchema *jsonschema.Schema
 	// Parameters in map format (if ParametersSchema is not set)
 	Parameters map[string]ToolParameter
 	Function   func(args map[string]interface{}) (string, error)

@@ -13,7 +13,6 @@ import (
 	"github.com/manusa/ai-cli/pkg/ai"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
-	"github.com/manusa/ai-cli/pkg/tools/fs"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -53,6 +52,16 @@ func (s *BaseSuite) Repaint() {
 func (s *BaseSuite) SetupTest() {
 	_ = os.Setenv("TEA_STANDARD_RENDERER", "true")
 	s.Llm = &test.ChatModel{}
+	toolsProvider := test.NewToolsProvider("test-tools-provider", test.WithToolsAvailable())
+	toolsProvider.Tools = []*api.Tool{
+		{
+			Name:        "file_list",
+			Description: "A test tool",
+			Function: func(args map[string]interface{}) (string, error) {
+				return "file1.txt, file2.txt, file3.txt", nil
+			},
+		},
+	}
 	aiAgent := ai.New(&test.InferenceProvider{
 		BasicInferenceProvider: api.BasicInferenceProvider{
 			BasicInferenceAttributes: api.BasicInferenceAttributes{
@@ -60,7 +69,7 @@ func (s *BaseSuite) SetupTest() {
 			},
 		},
 		Llm: s.Llm,
-	}, []*api.Tool{fs.FileList})
+	}, []api.ToolsProvider{toolsProvider})
 	ctx := config.WithConfig(s.T().Context(), config.New())
 	if err := aiAgent.Run(ctx); err != nil {
 		s.T().Fatalf("failed to run AI: %v", err)
