@@ -118,9 +118,9 @@ func mcpClientTools(ctx context.Context, mcpClients []*client.Client) (tools []t
 				// https://github.com/cloudwego/eino-ext/issues/436
 				if result.IsError {
 					if result.Meta == nil {
-						result.Meta = make(map[string]interface{})
+						result.Meta = &m3lmcp.Meta{AdditionalFields: make(map[string]interface{})}
 					}
-					result.Meta["error"] = true
+					result.Meta.AdditionalFields["error"] = true
 					result.IsError = false
 				}
 				return result, nil
