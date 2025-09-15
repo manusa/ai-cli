@@ -19,7 +19,7 @@ require (
 	github.com/cloudwego/eino-ext/components/tool/mcp v0.0.4
 	github.com/google/jsonschema-go v0.2.1-0.20250825175020-748c325cec76
 	github.com/google/uuid v1.6.0
-	github.com/mark3labs/mcp-go v0.36.0
+	github.com/mark3labs/mcp-go v0.39.1
 	github.com/modelcontextprotocol/go-sdk v0.4.0
 	github.com/muesli/termenv v0.16.0
 	github.com/spf13/afero v1.14.0
