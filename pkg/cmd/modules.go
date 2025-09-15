@@ -12,4 +12,7 @@ import (
 	_ "github.com/manusa/ai-cli/pkg/tools/kubernetes"
 	_ "github.com/manusa/ai-cli/pkg/tools/playwright"
 	_ "github.com/manusa/ai-cli/pkg/tools/postgresql"
+
+	_ "github.com/feloy/browsers-mcp-server/pkg/browsers/chrome"
+	_ "github.com/feloy/browsers-mcp-server/pkg/browsers/firefox"
 )

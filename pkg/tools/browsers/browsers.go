@@ -3,6 +3,7 @@ package browsers
 import (
 	"context"
 
+	browserslib "github.com/feloy/browsers-mcp-server/pkg/browsers"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/tools"
@@ -26,6 +27,12 @@ func (p *Provider) Initialize(ctx context.Context) {
 	// TODO: probably move to features.Discover orchestration
 	if cfg := config.GetConfig(ctx); cfg != nil {
 		p.ToolsParameters = cfg.ToolsParameters(p.Attributes().Name())
+	}
+
+	detectedBrowsers := browserslib.GetBrowsers()
+	if len(detectedBrowsers) == 0 {
+		p.IsAvailableReason = "no browsers detected"
+		return
 	}
 
 	var err error
