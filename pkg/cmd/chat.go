@@ -23,6 +23,8 @@ type ChatCmdOptions struct {
 
 	features              *features.Features
 	enabledToolsProviders []api.ToolsProvider
+
+	Logger
 }
 
 func NewChatCmdOptions() *ChatCmdOptions {
@@ -36,6 +38,10 @@ func NewChatCmd() *cobra.Command {
 		Short: "Chat with model",
 		Long:  "Start an interactive chat with an AI model",
 		RunE: func(cmd *cobra.Command, args []string) error {
+
+			o.initLogger()
+			defer o.disposeLogger()
+
 			// Reuse k8s cli complete,validate,run pattern: https://github.com/kubernetes/sample-cli-plugin/blob/7922d71292adb0b472d54d7e03e8daa6eeb46576/pkg/cmd/ns.go
 			if err := o.Complete(cmd, args); err != nil {
 				return err
@@ -61,6 +67,8 @@ func NewChatCmd() *cobra.Command {
 	_ = cmd.Flags().MarkHidden("tools")
 	cmd.Flags().BoolVar(&o.notools, "notools", false, "Do not use tools")
 	_ = cmd.Flags().MarkHidden("notools")
+
+	o.initLoggerFlags(cmd)
 	return cmd
 }
 
