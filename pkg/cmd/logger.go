@@ -8,15 +8,15 @@ import (
 )
 
 type Logger struct {
-	noLogs    bool
-	logFile   string
-	logLevel  string
-	logWriter *os.File
+	logEnabled bool
+	logFile    string
+	logLevel   string
+	logWriter  *os.File
 }
 
 func (o *Logger) initLoggerFlags(cmd *cobra.Command) {
-	cmd.Flags().BoolVar(&o.noLogs, "no-logs", false, "disable writing logs to a file")
-	_ = cmd.Flags().MarkHidden("no-logs")
+	cmd.Flags().BoolVar(&o.logEnabled, "log-enabled", false, "enable writing logs to a file")
+	_ = cmd.Flags().MarkHidden("log-enabled")
 	cmd.Flags().StringVar(&o.logFile, "log-file", "./ai-cli.log", "Write Logs to file, ./ai-cli.log by default")
 	_ = cmd.Flags().MarkHidden("log-file")
 	cmd.Flags().StringVar(&o.logLevel, "log-level", "warn", "Log level to use (debug, info, warn, error), warn by default")
@@ -26,7 +26,7 @@ func (o *Logger) initLoggerFlags(cmd *cobra.Command) {
 func (o *Logger) initLogger() {
 	log.SetReportCaller(true)
 
-	if o.logFile == "" || o.noLogs {
+	if o.logFile == "" || !o.logEnabled {
 		log.SetOutput(os.Stderr)
 		log.SetLevel(log.FatalLevel)
 		return
