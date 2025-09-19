@@ -42,27 +42,6 @@ type ModelsList struct {
 	} `json:"data"`
 }
 
-func (p *Provider) GetModels(_ context.Context) ([]string, error) {
-	resp, err := http.Get(p.baseURL() + "/v1/models")
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = resp.Body.Close() }()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	modelsList := ModelsList{}
-	if err = json.Unmarshal(body, &modelsList); err != nil {
-		return nil, err
-	}
-	modelsNames := make([]string, len(modelsList.Data))
-	for i, m := range modelsList.Data {
-		modelsNames[i] = m.Id
-	}
-	return modelsNames, nil
-}
-
 func (p *Provider) Initialize(ctx context.Context) {
 	// TODO: probably move to features.Discover orchestration
 	if cfg := config.GetConfig(ctx); cfg != nil {
@@ -90,13 +69,13 @@ func (p *Provider) Initialize(ctx context.Context) {
 		return
 	}
 
-	p.Available = true
 	if isBaseURLConfigured {
 		p.IsAvailableReason = fmt.Sprintf("ollama is accessible at %s defined by the %s environment variable", baseURL, ollamaHostEnvVar)
 	} else {
 		p.IsAvailableReason = fmt.Sprintf("ollama is accessible at %s", baseURL)
 	}
-	p.ProviderModels, err = p.GetModels(ctx)
+
+	p.ProviderModels, err = p.getModels()
 	var selectedModel string
 	for _, preferredModel := range preferredModels {
 		if err == nil && slices.Contains(p.ProviderModels, preferredModel) {
@@ -104,6 +83,11 @@ func (p *Provider) Initialize(ctx context.Context) {
 			break
 		}
 	}
+	if p.Model == nil && selectedModel == "" {
+		p.IsAvailableReason = fmt.Sprintf("%s but no preferred models (%s) are served", p.IsAvailableReason, strings.Join(preferredModels, ", "))
+		return
+	}
+	p.Available = true
 	if p.Model == nil {
 		p.Model = &selectedModel
 	}
@@ -114,6 +98,27 @@ func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel
 		BaseURL: p.baseURL(),
 		Model:   *p.Model,
 	})
+}
+
+func (p *Provider) getModels() ([]string, error) {
+	resp, err := http.Get(p.baseURL() + "/v1/models")
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	modelsList := ModelsList{}
+	if err = json.Unmarshal(body, &modelsList); err != nil {
+		return nil, err
+	}
+	modelsNames := make([]string, len(modelsList.Data))
+	for i, m := range modelsList.Data {
+		modelsNames[i] = m.Id
+	}
+	return modelsNames, nil
 }
 
 func (p *Provider) baseURL() string {
