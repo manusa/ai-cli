@@ -51,12 +51,12 @@ clean: ## Clean up all build artifacts
 
 .PHONY: build
 build: clean tidy format lint ## Build the project
-	go build $(COMMON_BUILD_ARGS) -o $(BINARY_NAME)$(if $(findstring windows,$(shell go env GOOS)),.exe,) ./cmd
+	go build $(COMMON_BUILD_ARGS) -o $(BINARY_NAME)$(if $(findstring windows,$(shell go env GOOS)),.exe,) ./cmd/ai-cli
 
 .PHONY: build-all-platforms
 build-all-platforms: clean tidy format lint ## Build the project for all platforms
 	$(foreach os,$(OSES),$(foreach arch,$(ARCHS), \
-		GOOS=$(os) GOARCH=$(arch) go build $(COMMON_BUILD_ARGS) -o $(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,) ./cmd; \
+		GOOS=$(os) GOARCH=$(arch) go build $(COMMON_BUILD_ARGS) -o $(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,) ./cmd/ai-cli; \
 	))
 
 .PHONY: test
