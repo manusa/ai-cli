@@ -27,23 +27,6 @@ type ramalamaProcess struct {
 	Labels map[string]string
 }
 
-func (p *Provider) GetModels(_ context.Context) ([]string, error) {
-	cmd := exec.Command(p.getRamalamaBinaryName(), "ps", "--format", "json")
-	output, err := cmd.Output()
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(output, &p.processes)
-	if err != nil {
-		return nil, err
-	}
-	models := make([]string, 0, len(p.processes))
-	for _, process := range p.processes {
-		models = append(models, process.Labels["ai.ramalama.model"])
-	}
-	return models, nil
-}
-
 func (p *Provider) Initialize(ctx context.Context) {
 	// TODO: probably move to features.Discover orchestration
 	if cfg := config.GetConfig(ctx); cfg != nil {
@@ -54,7 +37,7 @@ func (p *Provider) Initialize(ctx context.Context) {
 		p.IsAvailableReason = "ramalama is not installed"
 		return
 	}
-	models, err := p.GetModels(ctx)
+	models, err := p.getModels()
 	if err != nil || len(models) == 0 {
 		p.IsAvailableReason = "ramalama is installed but no models are served"
 		return
@@ -77,6 +60,23 @@ func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel
 		BaseURL: baseURL,
 		Model:   *p.Model,
 	})
+}
+
+func (p *Provider) getModels() ([]string, error) {
+	cmd := exec.Command(p.getRamalamaBinaryName(), "ps", "--format", "json")
+	output, err := cmd.Output()
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(output, &p.processes)
+	if err != nil {
+		return nil, err
+	}
+	models := make([]string, 0, len(p.processes))
+	for _, process := range p.processes {
+		models = append(models, process.Labels["ai.ramalama.model"])
+	}
+	return models, nil
 }
 
 func (p *Provider) baseURL(model string) (string, error) {
