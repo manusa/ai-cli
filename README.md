@@ -47,6 +47,25 @@ uvx python-ai-cli@latest chat
 uvx python-ai-cli@latest discover
 ```
 
+### Go (Golang) environment available
+
+If you have Go installed, you can install the CLI by running:
+
+```bash
+go install github.com/manusa/ai-cli/cmd/ai-cli@latest
+```
+
+After installation, make sure your `$GOPATH/bin` is in your system's `PATH` to run the `ai-cli` command directly from your terminal.
+
+```bash
+# Show the available commands
+ai-cli help
+# Start a TUI-based chat session
+ai-cli chat
+# Discover available tools and providers
+ai-cli discover
+```
+
 ### Manual installation
 
 You can also install the CLI manually by downloading a binary compatible with your OS from the [latest release](https://github.com/manusa/ai-cli/releases/latest).
