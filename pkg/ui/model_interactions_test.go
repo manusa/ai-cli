@@ -2,6 +2,7 @@ package ui
 
 import (
 	"errors"
+	"regexp"
 	"runtime"
 	"strings"
 	"testing"
@@ -43,11 +44,12 @@ func (s *ModelInteractionsSuite) TestErrorMessage() {
 		})
 		s.TM.Send(tea.KeyPressMsg{Code: tea.KeyEnter})
 
-		expectedViewport := "" +
-			" 👤 Hello Alex\r\r\n" +
-			" ❗ [NodeRunError] error generating response\r\r\n"
+		expectedViewportRegex := "(?m).*" +
+			" 👤 Hello Alex[^\\n]+.*\n" +
+			" ❗ \\[NodeRunError\\] error generating response[^\\n]+\n" +
+			".*"
 		teatest.WaitFor(s.T(), s.TM.Output(), func(b []byte) bool {
-			return strings.Contains(string(b), expectedViewport)
+			return regexp.MustCompile(expectedViewportRegex).Match(b)
 		})
 	})
 }
@@ -76,15 +78,16 @@ func (s *ModelInteractionsSuite) TestToolMessage() {
 		})
 		s.TM.Send(tea.KeyPressMsg{Code: tea.KeyEnter})
 
-		expectedViewport := "" +
-			" 👤 Hello Alex\r\r\n" +
-			"    ┌──────────────┐\r\r\n" +
-			"    │ 🔧 file_list │\r\r\n" +
-			"    └──────────────┘\r\r\n" +
-			" 🤖 Here is the list of files"
+		expectedViewportRegex := "(?m).*" +
+			" 👤 Hello Alex[^\\n]+\n" +
+			"    ┌──────────────┐[^\\n]+\n" +
+			"    │ 🔧 file_list │[^\\n]+\n" +
+			"    └──────────────┘[^\\n]+\n" +
+			" 🤖 Here is the list of files" +
+			".*"
 		teatest.WaitFor(s.T(), s.TM.Output(), func(b []byte) bool {
 			s.Repaint()
-			return strings.Contains(string(b), expectedViewport)
+			return regexp.MustCompile(expectedViewportRegex).Match(b)
 		})
 	})
 }

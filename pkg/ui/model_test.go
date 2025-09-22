@@ -3,6 +3,7 @@ package ui
 import (
 	"io"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -171,29 +172,31 @@ func (s *ModelSuite) TestViewport() {
 	})
 	s.TM.Send(tea.KeyPressMsg{Code: tea.KeyEnter})
 	s.Run("AI notification scrolls viewport to bottom", func() {
-		expectedViewport := "" +
-			"    18\r\r\n" +
-			"    19\r\r\n" +
-			"    20\r\r\n" +
-			" 🤖 AI is not running, this  \r\r\n" +
-			"    is a test                \r\r\n"
+		expectedViewportRegex := "(?m).*" +
+			"    18[^\\n]+\n" +
+			"    19[^\\n]+\n" +
+			"    20[^\\n]+\n" +
+			" 🤖 AI is not running, this  [^\\n]+\n" +
+			"    is a test                [^\\n]+\n" +
+			".*"
 		s.Repaint()
 		teatest.WaitFor(s.T(), s.TM.Output(), func(b []byte) bool {
-			return strings.Contains(string(b), expectedViewport) &&
+			return regexp.MustCompile(expectedViewportRegex).Match(b) &&
 				!strings.Contains(string(b), "👤 1")
 		})
 	})
 	s.Run("PgUp scrolls viewport one page up", func() {
 		s.TM.Send(tea.KeyPressMsg{Code: tea.KeyPgUp})
 
-		expectedViewport := "" +
-			" 👤 1\r\r\n" +
-			"    2\r\r\n" +
-			"    3\r\r\n" +
-			"    4\r\r\n"
+		expectedViewportRegex := "(?m).*" +
+			" 👤 1[^\\n]+\n" +
+			"    2[^\\n]+\n" +
+			"    3[^\\n]+\n" +
+			"    4[^\\n]+\n" +
+			".*"
 		s.Repaint()
 		teatest.WaitFor(s.T(), s.TM.Output(), func(b []byte) bool {
-			return strings.Contains(string(b), expectedViewport) &&
+			return regexp.MustCompile(expectedViewportRegex).Match(b) &&
 				!strings.Contains(string(b), "🤖")
 		})
 	})

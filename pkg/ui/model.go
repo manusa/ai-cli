@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/v2/cursor"
@@ -14,6 +15,7 @@ import (
 	"github.com/manusa/ai-cli/pkg/ai"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/ui/components/footer"
+	"github.com/manusa/ai-cli/pkg/ui/components/scrollbar"
 	"github.com/manusa/ai-cli/pkg/ui/context"
 	"github.com/manusa/ai-cli/pkg/ui/styles"
 	"github.com/manusa/ai-cli/pkg/version"
@@ -23,15 +25,17 @@ import (
 const (
 	minWidth                  = 30
 	minHeight                 = 10
+	chatPaddingRight          = 1
 	composerPaddingHorizontal = 1
 )
 
 type Model struct {
-	context  *context.ModelContext
-	viewport viewport.Model
-	spinner  spinner.Model
-	composer textarea.Model
-	footer   tea.ViewModel
+	context   *context.ModelContext
+	viewport  viewport.Model
+	scrollbar scrollbar.Vertical
+	spinner   spinner.Model
+	composer  textarea.Model
+	footer    tea.ViewModel
 }
 
 func NewModel(ai *ai.Ai) *Model {
@@ -41,11 +45,12 @@ func NewModel(ai *ai.Ai) *Model {
 		Theme:   styles.DefaultTheme(termenv.HasDarkBackground()),
 	}
 	m := &Model{
-		context:  ctx,
-		viewport: viewport.New(viewport.WithWidth(0), viewport.WithHeight(0)),
-		spinner:  spinner.New(spinner.WithSpinner(spinner.Points)),
-		composer: textarea.New(),
-		footer:   footer.NewModel(ctx),
+		context:   ctx,
+		viewport:  viewport.New(viewport.WithWidth(0), viewport.WithHeight(0)),
+		scrollbar: scrollbar.NewVertical(ctx),
+		spinner:   spinner.New(spinner.WithSpinner(spinner.Points)),
+		composer:  textarea.New(),
+		footer:    footer.New(ctx),
 	}
 	m.viewport.KeyMap = ViewportKeyMap()
 	m.composer.SetHeight(2)
@@ -69,6 +74,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmds []tea.Cmd
 	var cmd tea.Cmd
 	session := m.context.Ai.Session()
+	updateViewport := true
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
@@ -76,6 +82,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "enter":
 			return m.handleEnter()
+		}
+		if key := msg.Key(); (key.Code == tea.KeyUp || key.Code == tea.KeyDown) && m.composer.LineCount() > 1 {
+			updateViewport = false
 		}
 	case tea.WindowSizeMsg:
 		m.context.Width = msg.Width
@@ -102,8 +111,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	cmds = append(cmds, m.composer.Focus())
-	m.viewport, cmd = m.viewport.Update(msg)
-	cmds = append(cmds, cmd)
+	if updateViewport {
+		m.viewport, cmd = m.viewport.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 	if !session.IsRunning() {
 		// Ignore input while AI is running
 		m.composer, cmd = m.composer.Update(msg)
@@ -120,14 +131,22 @@ func (m Model) View() string {
 			Render("Terminal size is too small.\n" +
 				"Minimum size is " + fmt.Sprintf("%dx%d.", minWidth, minHeight))
 	}
+	// Base
 	view := strings.Builder{}
 	view.WriteString(m.viewport.View() + "\n")
-	if m.context.Ai.Session().IsRunning() {
-		view.WriteString(center.Render(m.spinner.View()) + "\n")
-	}
 	view.WriteString(center.Render(m.composer.View()) + "\n")
 	view.WriteString(m.footer.View())
-	return view.String()
+	layers := []*lipgloss.Layer{lipgloss.NewLayer(view.String()).Z(0)}
+	// Scrollbar
+	layers = append(layers, lipgloss.NewLayer(m.scrollbar.View()).X(m.context.Width-m.scrollbar.Width()).Y(0).Z(1))
+	// Spinner
+	if m.context.Ai.Session().IsRunning() {
+		spinner := m.spinner.View()
+		xOffset := int(math.Floor(float64(m.context.Width-lipgloss.Width(spinner)) / 2.0))
+		yOffset := m.viewport.Height() - 1
+		layers = append(layers, lipgloss.NewLayer(m.spinner.View()).X(xOffset).Y(yOffset).Z(2))
+	}
+	return lipgloss.NewCanvas(layers...).Render()
 }
 
 func (m Model) handleEnter() (Model, tea.Cmd) {
@@ -165,13 +184,10 @@ func (m Model) renderMessages() string {
 }
 
 func adjustViewportSize(m *Model) {
-	spinnerHeight := 0
-	if m.context.Ai.Session().IsRunning() {
-		spinnerHeight = lipgloss.Height(m.spinner.View())
-	}
 	composerHeight := m.composer.Height() + m.composer.Styles().Focused.Base.GetVerticalFrameSize()
-	m.viewport.SetWidth(m.context.Width)
-	m.viewport.SetHeight(m.context.Height - spinnerHeight - composerHeight - lipgloss.Height(m.footer.View()))
+	m.viewport.SetWidth(m.context.Width - m.scrollbar.Width() - chatPaddingRight)
+	m.viewport.SetHeight(m.context.Height - composerHeight - lipgloss.Height(m.footer.View()))
+	m.scrollbar.SetHeight(m.viewport.Height(), m.viewport.VisibleLineCount(), m.viewport.TotalLineCount(), m.viewport.YOffset())
 }
 
 func emoji(messageType api.MessageType) string {
