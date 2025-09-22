@@ -8,17 +8,21 @@ import (
 	"github.com/manusa/ai-cli/pkg/ui/context"
 )
 
-type Model struct {
+type Footer interface {
+	tea.ViewModel
+}
+
+type model struct {
 	ctx *context.ModelContext
 }
 
-var _ tea.ViewModel = &Model{}
+var _ Footer = (*model)(nil)
 
-func NewModel(ctx *context.ModelContext) Model {
-	return Model{ctx: ctx}
+func New(ctx *context.ModelContext) Footer {
+	return model{ctx: ctx}
 }
 
-func (m Model) View() string {
+func (m model) View() string {
 	style := lipgloss.NewStyle().
 		Background(m.ctx.Theme.FooterBackground).
 		Foreground(m.ctx.Theme.FooterText).

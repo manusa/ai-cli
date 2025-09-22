@@ -124,7 +124,8 @@ func (o *ChatCmdOptions) Run(cmd *cobra.Command) error {
 	p := tea.NewProgram(
 		ui.NewModel(aiAgent),
 		tea.WithAltScreen(),
-		tea.WithMouseCellMotion(),
+		//https://github.com/charmbracelet/bubbletea/issues/162
+		//tea.WithMouseCellMotion(), // When enabled, highlighting, text selection, etc. won't work
 		tea.WithReportFocus(),
 	)
 	// Agent-UI synchronization
