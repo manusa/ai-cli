@@ -10,6 +10,8 @@ type Session struct {
 	running           bool
 }
 
+var _ api.Session = (*Session)(nil)
+
 func (s *Session) HasMessages() bool {
 	return len(s.messages) > 0 || s.error != nil || (s.IsRunning() && s.messageInProgress.Text != "")
 }

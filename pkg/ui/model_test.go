@@ -274,10 +274,16 @@ func (s *ModelSuite) TestFooter() {
 			return strings.HasSuffix(string(b), " 0.0.0 ")
 		})
 	})
-	s.Repaint()
 	s.Run("Footer displays inference provider name", func() {
+		s.Repaint()
 		teatest.WaitFor(s.T(), s.TM.Output(), func(b []byte) bool {
-			return strings.Contains(string(b), "inference-provider")
+			return strings.Contains(string(b), "🧠 inference-provider")
+		})
+	})
+	s.Run("Footer displays tools provider count", func() {
+		s.Repaint()
+		teatest.WaitFor(s.T(), s.TM.Output(), func(b []byte) bool {
+			return strings.Contains(string(b), "🛠️ 1")
 		})
 	})
 }

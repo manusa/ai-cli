@@ -65,7 +65,7 @@ func (s *AiMcpSuite) TestSetupAgentAddsMcpTools() {
 		receivedTools = tools
 		return s.Llm, nil
 	}
-	s.Ai.Input <- api.NewUserMessage("Hello AItana! I'm sending some MCP tools.")
+	s.Ai.Input() <- api.NewUserMessage("Hello AItana! I'm sending some MCP tools.")
 	s.Require().Eventually(func() bool { return len(receivedTools) > 0 }, 10*time.Second, 100, "Expected LLM to be called with tools")
 	s.Run("Tools includes MCP Server tools", func() {
 		s.True(slices.ContainsFunc(receivedTools, func(t *schema.ToolInfo) bool { return t.Name == "test-func" }), "Expected to find MCP 'test-func' tool in received tools")
