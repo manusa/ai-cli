@@ -5,6 +5,7 @@ import (
 	"slices"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/log"
 	"github.com/manusa/ai-cli/pkg/ai"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
@@ -101,6 +102,7 @@ func (o *ChatCmdOptions) Complete(cmd *cobra.Command, _ []string) error {
 		if !useTool(toolProvider.Attributes().Name(), o.notools, o.tools) {
 			continue
 		}
+		log.Debug("using tool provider", "name", toolProvider.Attributes().Name())
 		o.enabledToolsProviders = append(o.enabledToolsProviders, toolProvider)
 	}
 	return nil

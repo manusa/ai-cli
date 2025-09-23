@@ -9,6 +9,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/charmbracelet/log"
 	"github.com/cloudwego/eino/callbacks"
 	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/components/tool"
@@ -153,7 +154,12 @@ func (a *Ai) prompt(ctx context.Context, userInput api.Message) {
 		a.schemaMessages(),
 		agent.WithComposeOptions(
 			compose.WithCallbacks(callbackutils.NewHandlerHelper().Tool(&callbackutils.ToolCallbackHandler{
+				OnStart: func(ctx context.Context, info *callbacks.RunInfo, input *tool.CallbackInput) context.Context {
+					log.Debug("calling tool", "name", info.Name, "input", input.ArgumentsInJSON)
+					return ctx
+				},
 				OnEnd: func(ctx context.Context, info *callbacks.RunInfo, output *tool.CallbackOutput) context.Context {
+					log.Debug("called tool", "name", info.Name, "response", output.Response)
 					a.appendMessage(api.NewToolMessage(output.Response, info.Name))
 					return ctx
 				},
