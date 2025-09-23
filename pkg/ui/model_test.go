@@ -202,6 +202,39 @@ func (s *ModelSuite) TestViewport() {
 	})
 }
 
+func (s *ModelSuite) TestScrollbar() {
+	s.Run("Scrollbar not shown when content fits", func() {
+		teatest.WaitFor(s.T(), s.TM.Output(), func(b []byte) bool {
+			return strings.Contains(string(b), "Welcome to the AI CLI!") && !strings.Contains(string(b), "▲")
+		})
+	})
+	s.TM.Send(tea.WindowSizeMsg{Width: 30, Height: 10})
+	s.TM.Type("1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11\n12\n13\n14\n15\n16\n17\n18\n19\n20")
+	teatest.WaitFor(s.T(), s.TM.Output(), func(b []byte) bool {
+		return strings.Contains(string(b), "│20                        │") // clear buffer
+	})
+	s.TM.Send(tea.KeyPressMsg{Code: tea.KeyEnter})
+	s.Run("Scrollbar shown when content exceeds viewport", func() {
+		s.Repaint()
+		teatest.WaitFor(s.T(), s.TM.Output(), func(b []byte) bool {
+			return strings.Contains(string(b), "▲") && strings.Contains(string(b), "▼")
+		})
+	})
+	s.Run("Scrollbar thumb size and position are correct", func() {
+		expectedScrollbarRegex := "(?m).*" +
+			".+▲\r\r\n" +
+			".+\u2002\r\r\n" +
+			".+\u2002\r\r\n" +
+			".+\u2002\r\r\n" +
+			".+▼\r\r\n" +
+			".*"
+		s.Repaint()
+		teatest.WaitFor(s.T(), s.TM.Output(), func(b []byte) bool {
+			return regexp.MustCompile(expectedScrollbarRegex).Match(b)
+		})
+	})
+}
+
 func (s *ModelSuite) TestComposer() {
 	s.Run("Composer shows placeholder text", func() {
 		teatest.WaitFor(s.T(), s.TM.Output(), func(b []byte) bool {
