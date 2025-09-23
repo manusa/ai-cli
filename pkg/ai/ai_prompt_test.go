@@ -39,7 +39,7 @@ func (s *AiPromptSuite) WaitForRunToComplete() {
 }
 
 func (s *AiPromptSuite) TestInput_SendsPrompt() {
-	s.Ai.Input <- api.NewUserMessage("Hello AItana!")
+	s.Ai.Input() <- api.NewUserMessage("Hello AItana!")
 
 	s.WaitForRunToComplete()
 	s.Run("Stores input prompt as user message in session as first message", func() {
@@ -53,7 +53,7 @@ func (s *AiPromptSuite) TestInput_SendsPrompt_SetUpAgentError() {
 	s.Llm.WithToolsFunc = func(tools []*schema.ToolInfo) (model.ToolCallingChatModel, error) {
 		return s.Llm, errors.New("error setting up tools")
 	}
-	s.Ai.Input <- api.NewUserMessage("I will trigger an error when setting up the prompt")
+	s.Ai.Input() <- api.NewUserMessage("I will trigger an error when setting up the prompt")
 	s.WaitForRunToComplete()
 	s.Run("Sets error message in session if agent setup fails", func() {
 		s.GreaterOrEqual(len(s.Ai.Session().Messages()), 1)
@@ -67,7 +67,7 @@ func (s *AiPromptSuite) TestInput_SendsPrompt_ReceivesAssistantMessage() {
 			schema.AssistantMessage("Hello, I am AItana!", nil),
 		}), nil
 	}
-	s.Ai.Input <- api.NewUserMessage("Hello AItana!")
+	s.Ai.Input() <- api.NewUserMessage("Hello AItana!")
 
 	s.WaitForRunToComplete()
 	s.Run("Stores assistant message in session ", func() {
@@ -83,7 +83,7 @@ func (s *AiPromptSuite) TestInput_SendsPrompt_ReceivesAssistantStreamedMessage()
 			schema.AssistantMessage("I am AItana!", nil),
 		}), nil
 	}
-	s.Ai.Input <- api.NewUserMessage("Hello AItana!")
+	s.Ai.Input() <- api.NewUserMessage("Hello AItana!")
 
 	s.WaitForRunToComplete()
 	s.Run("Stores streamed assistant message in session (concat)", func() {
@@ -105,11 +105,11 @@ func (s *AiPromptSuite) TestInput_SendsPrompt_WithSessionMessages() {
 		invocation++
 		return ret, nil
 	}
-	s.Ai.Input <- api.NewUserMessage("Hello AItana!")
+	s.Ai.Input() <- api.NewUserMessage("Hello AItana!")
 	s.WaitForRunToComplete()
-	s.Ai.Input <- api.NewUserMessage("Help me save the world")
+	s.Ai.Input() <- api.NewUserMessage("Help me save the world")
 	s.WaitForRunToComplete()
-	s.Ai.Input <- api.NewUserMessage("Thank you!")
+	s.Ai.Input() <- api.NewUserMessage("Thank you!")
 	s.WaitForRunToComplete()
 
 	s.Run("Sends previous session messages as context to LLM", func() {

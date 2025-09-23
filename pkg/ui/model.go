@@ -38,7 +38,7 @@ type Model struct {
 	footer    tea.ViewModel
 }
 
-func NewModel(ai *ai.Ai) *Model {
+func NewModel(ai api.Ai) *Model {
 	ctx := &context.ModelContext{
 		Ai:      ai,
 		Version: version.Version,
@@ -167,7 +167,7 @@ func (m Model) handleEnter() (Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 	m.composer.Reset()
-	m.context.Ai.Input <- api.NewUserMessage(v)
+	m.context.Ai.Input() <- api.NewUserMessage(v)
 	m.viewport.GotoBottom()
 	return m, nil
 }

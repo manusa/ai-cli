@@ -30,13 +30,15 @@ type Ai struct {
 	toolsProviders    []api.ToolsProvider
 	tools             []tool.BaseTool
 	mcpClients        []*client.Client
-	Input             chan api.Message
+	input             chan api.Message
 	Output            chan Notification
 	session           *Session
 	sessionMutex      sync.RWMutex
 
 	llm model.ToolCallingChatModel
 }
+
+var _ api.Ai = (*Ai)(nil)
 
 func New(inferenceProvider api.InferenceProvider, toolsProviders []api.ToolsProvider) *Ai {
 	session := &Session{}
@@ -46,7 +48,7 @@ func New(inferenceProvider api.InferenceProvider, toolsProviders []api.ToolsProv
 	return &Ai{
 		inferenceProvider: inferenceProvider,
 		toolsProviders:    toolsProviders,
-		Input:             make(chan api.Message),
+		input:             make(chan api.Message),
 		Output:            make(chan Notification),
 		session:           session,
 		sessionMutex:      sync.RWMutex{},
@@ -57,7 +59,19 @@ func (a *Ai) InferenceAttributes() api.InferenceAttributes {
 	return a.inferenceProvider.Attributes()
 }
 
-func (a *Ai) Session() *Session {
+func (a *Ai) ToolCount() int {
+	count := 0
+	if a.tools != nil {
+		count += len(a.tools)
+	}
+	return count
+}
+
+func (a *Ai) Input() chan api.Message {
+	return a.input
+}
+
+func (a *Ai) Session() api.Session {
 	a.sessionMutex.RLock()
 	defer a.sessionMutex.RUnlock()
 	sessionShallowCopy := *a.session
@@ -123,7 +137,7 @@ func (a *Ai) Run(ctx context.Context) (err error) {
 			select {
 			case <-ctx.Done():
 				return
-			case userInput := <-a.Input:
+			case userInput := <-a.Input():
 				a.prompt(ctx, userInput)
 			}
 		}
