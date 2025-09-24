@@ -9,15 +9,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/charmbracelet/log"
-	"github.com/cloudwego/eino/callbacks"
-	"github.com/cloudwego/eino/components/model"
 	"github.com/cloudwego/eino/components/tool"
-	"github.com/cloudwego/eino/compose"
-	"github.com/cloudwego/eino/flow/agent"
-	"github.com/cloudwego/eino/flow/agent/react"
 	"github.com/cloudwego/eino/schema"
-	callbackutils "github.com/cloudwego/eino/utils/callbacks"
 	"github.com/google/uuid"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/mark3labs/mcp-go/client"
@@ -28,14 +21,14 @@ type Notification struct{}
 type Ai struct {
 	inferenceProvider api.InferenceProvider
 	toolsProviders    []api.ToolsProvider
-	tools             []tool.BaseTool
+	tools             *ToolManager
 	mcpClients        []*client.Client
 	input             chan api.Message
 	Output            chan Notification
 	session           *Session
 	sessionMutex      sync.RWMutex
 
-	llm model.ToolCallingChatModel
+	llm *DynamicToolCallingChatModel
 }
 
 var _ api.Ai = (*Ai)(nil)
@@ -60,11 +53,10 @@ func (a *Ai) InferenceAttributes() api.InferenceAttributes {
 }
 
 func (a *Ai) ToolCount() int {
-	count := 0
-	if a.tools != nil {
-		count += len(a.tools)
+	if a.tools == nil {
+		return 0
 	}
-	return count
+	return a.tools.ToolCount()
 }
 
 func (a *Ai) Input() chan api.Message {
@@ -114,6 +106,7 @@ func (a *Ai) setRunning(running bool) {
 // Reset resets the AI session, keeping the system prompt intact.
 func (a *Ai) Reset() {
 	a.sessionMutex.Lock()
+	a.tools.EnabledToolsReset()
 	defer a.sessionMutex.Unlock()
 	a.session = &Session{
 		systemPrompt: a.session.SystemPrompt(),
@@ -123,15 +116,16 @@ func (a *Ai) Reset() {
 
 func (a *Ai) Run(ctx context.Context) (err error) {
 	// Inference Provider (LLM)
-	a.llm, err = a.inferenceProvider.GetInference(ctx)
+	a.llm, err = NewDynamicToolCallingChatModel(a.inferenceProvider.GetInference(ctx))
 	if err != nil {
 		return fmt.Errorf("failed to get inference: %w", err)
 	}
 	// Tools Providers + MCP
-	a.tools = make([]tool.BaseTool, 0)
-	a.tools = append(a.tools, toInvokableTools(ctx, a.toolsProviders)...)
+	tools := make([]tool.InvokableTool, 0)
+	tools = append(tools, toInvokableTools(ctx, a.toolsProviders)...)
 	a.mcpClients = startMcpClients(ctx, a.toolsProviders)
-	a.tools = append(a.tools, mcpClientTools(ctx, a.mcpClients)...)
+	tools = append(tools, mcpClientTools(ctx, a.mcpClients)...)
+	a.tools = NewToolManager(ctx, tools)
 	go func() {
 		for {
 			select {
@@ -156,29 +150,14 @@ func (a *Ai) prompt(ctx context.Context, userInput api.Message) {
 	defer func() { a.setRunning(false) }()
 	a.setError(nil) // Clear previous error
 	a.appendMessage(userInput)
-	reactAgent, err := a.setUpAgent(ctx)
+	reActAgent, err := NewReActAgent(ctx, a)
 	if err != nil {
 		a.setError(err)
 		a.setRunning(false)
 		return
 	}
 	// Send PROMPT
-	stream, err := reactAgent.Stream(
-		ctx,
-		a.schemaMessages(),
-		agent.WithComposeOptions(
-			compose.WithCallbacks(callbackutils.NewHandlerHelper().Tool(&callbackutils.ToolCallbackHandler{
-				OnStart: func(ctx context.Context, info *callbacks.RunInfo, input *tool.CallbackInput) context.Context {
-					log.Debug("calling tool", "name", info.Name, "input", input.ArgumentsInJSON)
-					return ctx
-				},
-				OnEnd: func(ctx context.Context, info *callbacks.RunInfo, output *tool.CallbackOutput) context.Context {
-					log.Debug("called tool", "name", info.Name, "response", output.Response)
-					a.appendMessage(api.NewToolMessage(output.Response, info.Name))
-					return ctx
-				},
-			}).Handler())),
-	)
+	stream, err := reActAgent.Stream(ctx)
 	if err != nil {
 		a.setError(err)
 		a.setRunning(false)
@@ -230,27 +209,4 @@ func (a *Ai) schemaMessages() []*schema.Message {
 		}
 	}
 	return schemaMessages
-}
-
-func (a *Ai) setUpAgent(ctx context.Context) (*react.Agent, error) {
-	toolInfos := make([]*schema.ToolInfo, 0, len(a.tools))
-	for _, it := range a.tools {
-		toolInfo, err := it.Info(ctx)
-		if err != nil {
-			return nil, err
-		}
-		toolInfos = append(toolInfos, toolInfo)
-	}
-	llmWithTools, err := a.llm.WithTools(toolInfos)
-	if err != nil {
-		return nil, err
-	}
-	return react.NewAgent(ctx, &react.AgentConfig{
-		ToolCallingModel: llmWithTools,
-		MaxStep:          10,
-		ToolsConfig: compose.ToolsNodeConfig{
-			Tools:               a.tools,
-			ExecuteSequentially: true,
-		},
-	})
 }

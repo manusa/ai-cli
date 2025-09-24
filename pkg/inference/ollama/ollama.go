@@ -23,9 +23,15 @@ var (
 	// DefaultBaseURL is the default base URL for the Ollama API (Exposed for testing purposes)
 	DefaultBaseURL  = "http://localhost:11434"
 	preferredModels = []string{
-		"llama3.2:3b",
-		"granite3.3:latest",
-		"mistral:7b",
+		"gpt-oss:20b",                   // ✅ Works extremely well, but is slow
+		"llama3.2:3b",                   // ❌ Can't enable tools, confuses parameters of the different tools available
+		"llama3.1:8b",                   // Manages to enable tools, but hallucinates tool outputs.
+		"qwen3:4b-instruct-2507-q4_K_M", // With No Thinking (which is required) won't execute tools (seems error in ollama)
+		"qwen3:8b",                      // With No Thinking (which is required) won't execute tools (seems error in ollama)
+		"mistral:7b",                    // ❌ Doesn't perform tool calls
+		"deepseek-r1:8b",                // ❌ Doesn't support tool calls ??? https://github.com/ollama/ollama/issues/8517 https://github.com/ollama/ollama/issues/10912
+		"deepseek-r1:7b",                // ❌ Doesn't support tool calls ???
+		"granite3.3:latest",             // ❌ Doesn't work at all
 	}
 )
 
@@ -97,6 +103,7 @@ func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel
 	return ollama.NewChatModel(ctx, &ollama.ChatModelConfig{
 		BaseURL: p.baseURL(),
 		Model:   *p.Model,
+		//Thinking: &ollamaapi.ThinkValue{Value: false},
 	})
 }
 

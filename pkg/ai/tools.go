@@ -19,6 +19,8 @@ type invokableTool struct {
 	function func(args map[string]interface{}) (string, error)
 }
 
+var _ tool.InvokableTool = &invokableTool{}
+
 func (i invokableTool) Info(_ context.Context) (*schema.ToolInfo, error) {
 	return i.toolInfo, nil
 }
@@ -34,9 +36,6 @@ func (i invokableTool) InvokableRun(_ context.Context, argumentsInJSON string, _
 	return i.function(args)
 }
 
-var _ tool.BaseTool = &invokableTool{}
-var _ tool.InvokableTool = &invokableTool{}
-
 func toType(t api.ToolParameterType) schema.DataType {
 	switch t {
 	case api.String:
@@ -45,8 +44,8 @@ func toType(t api.ToolParameterType) schema.DataType {
 	return schema.Object
 }
 
-func toInvokableTools(ctx context.Context, toolsProviders []api.ToolsProvider) (tools []tool.BaseTool) {
-	tools = make([]tool.BaseTool, 0)
+func toInvokableTools(ctx context.Context, toolsProviders []api.ToolsProvider) (tools []tool.InvokableTool) {
+	tools = make([]tool.InvokableTool, 0)
 	for _, provider := range toolsProviders {
 		for _, t := range provider.GetTools(ctx) {
 			params := make(map[string]*schema.ParameterInfo, len(t.Parameters))
@@ -59,7 +58,7 @@ func toInvokableTools(ctx context.Context, toolsProviders []api.ToolsProvider) (
 			}
 
 			toolInfo := &schema.ToolInfo{
-				Name:        t.Name,
+				Name:        provider.Attributes().Name() + "_" + t.Name,
 				Desc:        t.Description,
 				ParamsOneOf: schema.NewParamsOneOfByParams(params),
 			}
@@ -109,8 +108,8 @@ func stopMcpClients(mcpClients []*client.Client) {
 	}
 }
 
-func mcpClientTools(ctx context.Context, mcpClients []*client.Client) (tools []tool.BaseTool) {
-	tools = make([]tool.BaseTool, 0)
+func mcpClientTools(ctx context.Context, mcpClients []*client.Client) (tools []tool.InvokableTool) {
+	tools = make([]tool.InvokableTool, 0)
 	for _, mcpClient := range mcpClients {
 		baseTools, err := mcp.GetTools(ctx, &mcp.Config{
 			Cli: mcpClient,
@@ -130,7 +129,9 @@ func mcpClientTools(ctx context.Context, mcpClients []*client.Client) (tools []t
 			// TODO: log error
 			continue
 		}
-		tools = append(tools, baseTools...)
+		for _, bt := range baseTools {
+			tools = append(tools, bt.(tool.InvokableTool))
+		}
 	}
 	return tools
 }
