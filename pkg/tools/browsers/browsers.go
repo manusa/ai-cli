@@ -55,7 +55,7 @@ var instance = &Provider{
 		BasicToolsAttributes: api.BasicToolsAttributes{
 			BasicFeatureAttributes: api.BasicFeatureAttributes{
 				FeatureName:        "browsers",
-				FeatureDescription: "Provides access to browsers",
+				FeatureDescription: "Provides access to browser metadata such as bookmarks, search history, and so on",
 			},
 		},
 	},

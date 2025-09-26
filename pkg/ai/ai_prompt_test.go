@@ -23,7 +23,7 @@ func (s *AiPromptSuite) SetupTest() {
 	s.Llm = &test.ChatModel{}
 	s.Ai = New(
 		test.NewInferenceProvider("inference-provider", test.WithInferenceAvailable(), test.WithInferenceLlm(s.Llm)),
-		[]api.ToolsProvider{test.NewToolsProvider("test-tools-provider", test.WithToolsAvailable())},
+		[]api.ToolsProvider{test.NewToolsProvider("test-toolManager-provider", test.WithToolsAvailable())},
 	)
 	if err := s.Ai.Run(config.WithConfig(s.T().Context(), config.New())); err != nil {
 		s.T().Fatalf("failed to run AI: %v", err)
@@ -51,13 +51,13 @@ func (s *AiPromptSuite) TestInput_SendsPrompt() {
 
 func (s *AiPromptSuite) TestInput_SendsPrompt_SetUpAgentError() {
 	s.Llm.WithToolsFunc = func(tools []*schema.ToolInfo) (model.ToolCallingChatModel, error) {
-		return s.Llm, errors.New("error setting up tools")
+		return s.Llm, errors.New("error setting up toolManager")
 	}
 	s.Ai.Input() <- api.NewUserMessage("I will trigger an error when setting up the prompt")
 	s.WaitForRunToComplete()
 	s.Run("Sets error message in session if agent setup fails", func() {
 		s.GreaterOrEqual(len(s.Ai.Session().Messages()), 1)
-		s.Contains(s.Ai.Session().Messages(), api.NewErrorMessage("error setting up tools"))
+		s.Contains(s.Ai.Session().Messages(), api.NewErrorMessage("error setting up toolManager"))
 	})
 }
 

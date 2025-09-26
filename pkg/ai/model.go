@@ -45,6 +45,7 @@ func (m *DynamicToolCallingChatModel) Stream(ctx context.Context, input []*schem
 }
 
 func (m *DynamicToolCallingChatModel) WithTools(tools []*schema.ToolInfo) (model.ToolCallingChatModel, error) {
-	m.delegate, _ = m.delegate.WithTools(tools)
-	return m, nil
+	var err error
+	m.delegate, err = m.delegate.WithTools(tools)
+	return m, err
 }

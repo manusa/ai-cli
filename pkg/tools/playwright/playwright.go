@@ -9,7 +9,7 @@ import (
 )
 
 // TODO: Centralize version management elsewhere
-const version = "0.0.36"
+const version = "0.0.40"
 
 type Provider struct {
 	api.BasicToolsProvider
@@ -42,8 +42,10 @@ var instance = &Provider{
 	BasicToolsProvider: api.BasicToolsProvider{
 		BasicToolsAttributes: api.BasicToolsAttributes{
 			BasicFeatureAttributes: api.BasicFeatureAttributes{
-				FeatureName:        "playwright",
-				FeatureDescription: "Automate and interact with web browsers using Playwright.",
+				FeatureName: "playwright",
+				FeatureDescription: "Enables web browsing capabilities through Playwright. " +
+					"Opening web pages, opening URLs, interacting with elements inside the browser, extracting snapshots, and scraping information from web pages. " +
+					"Support for multiple tabs and many other browser options",
 			},
 		},
 	},

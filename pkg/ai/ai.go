@@ -9,11 +9,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/schema"
 	"github.com/google/uuid"
 	"github.com/manusa/ai-cli/pkg/api"
-	"github.com/mark3labs/mcp-go/client"
 )
 
 type Notification struct{}
@@ -21,8 +19,8 @@ type Notification struct{}
 type Ai struct {
 	inferenceProvider api.InferenceProvider
 	toolsProviders    []api.ToolsProvider
-	tools             *ToolManager
-	mcpClients        []*client.Client
+	toolManager       *ToolManager
+	mcpClients        []*ToolsProviderMcpClient
 	input             chan api.Message
 	Output            chan Notification
 	session           *Session
@@ -52,11 +50,18 @@ func (a *Ai) InferenceAttributes() api.InferenceAttributes {
 	return a.inferenceProvider.Attributes()
 }
 
-func (a *Ai) ToolCount() int {
-	if a.tools == nil {
+func (a *Ai) ToolEnabledCount() int {
+	if a.toolManager == nil {
 		return 0
 	}
-	return a.tools.ToolCount()
+	return a.toolManager.ToolEnabledCount()
+}
+
+func (a *Ai) ToolCount() int {
+	if a.toolManager == nil {
+		return 0
+	}
+	return a.toolManager.ToolCount()
 }
 
 func (a *Ai) Input() chan api.Message {
@@ -106,7 +111,7 @@ func (a *Ai) setRunning(running bool) {
 // Reset resets the AI session, keeping the system prompt intact.
 func (a *Ai) Reset() {
 	a.sessionMutex.Lock()
-	a.tools.EnabledToolsReset()
+	a.toolManager.EnabledToolsReset()
 	defer a.sessionMutex.Unlock()
 	a.session = &Session{
 		systemPrompt: a.session.SystemPrompt(),
@@ -121,11 +126,11 @@ func (a *Ai) Run(ctx context.Context) (err error) {
 		return fmt.Errorf("failed to get inference: %w", err)
 	}
 	// Tools Providers + MCP
-	tools := make([]tool.InvokableTool, 0)
+	tools := make([]ToolManagerTool, 0)
 	tools = append(tools, toInvokableTools(ctx, a.toolsProviders)...)
-	a.mcpClients = startMcpClients(ctx, a.toolsProviders)
-	tools = append(tools, mcpClientTools(ctx, a.mcpClients)...)
-	a.tools = NewToolManager(ctx, tools)
+	a.mcpClients = StartMcpClients(ctx, a.toolsProviders)
+	tools = append(tools, ToMcpTools(ctx, a.mcpClients)...)
+	a.toolManager = NewToolManager(a.toolsProviders, tools)
 	go func() {
 		for {
 			select {
@@ -140,7 +145,7 @@ func (a *Ai) Run(ctx context.Context) (err error) {
 }
 
 func (a *Ai) Close() {
-	stopMcpClients(a.mcpClients)
+	StopMcpClients(a.mcpClients)
 }
 
 // Prompt sends a prompt to the AI model.

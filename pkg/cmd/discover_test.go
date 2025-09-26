@@ -64,7 +64,7 @@ func (s *DiscoverTestSuite) TestOutputText() {
 			"    Reason: filesystem is accessible\n" +
 			"Not Available Tools Providers:\n" +
 			"  - browsers\n" +
-			"    Description: Provides access to browsers\n" +
+			"    Description: Provides access to browser metadata such as bookmarks, search history, and so on\n" +
 			"    Reason: no browsers detected\n" +
 			"  - github\n" +
 			"    Description: Provides access to GitHub Platform. Provides the ability to to read repositories and code files, manage issues and PRs, analyze code, and automate workflows.\n" +
@@ -73,7 +73,7 @@ func (s *DiscoverTestSuite) TestOutputText() {
 			"    Description: Provides access to Kubernetes clusters, allowing management and interaction with cluster resources.\n" +
 			"    Reason: no suitable MCP settings found for the Kubernetes MCP server\n" +
 			"  - playwright\n" +
-			"    Description: Automate and interact with web browsers using Playwright.\n" +
+			"    Description: Enables web browsing capabilities through Playwright. Opening web pages, opening URLs, interacting with elements inside the browser, extracting snapshots, and scraping information from web pages. Support for multiple tabs and many other browser options\n" +
 			"    Reason: npx command not found\n" +
 			"  - postgresql\n" +
 			"    Description: Provides access to a PostgreSQL database, allowing execution of SQL queries and retrieval of data.\n" +
@@ -101,10 +101,10 @@ func (s *DiscoverTestSuite) TestOutputJson() {
 			`"tools":[` +
 			`{"description":"Provides access to the local filesystem, allowing listing of files and directories.","name":"fs","reason":"filesystem is accessible"}],` +
 			`"toolsNotAvailable":[` +
-			`{"description":"Provides access to browsers","name":"browsers","reason":"no browsers detected"},` +
+			`{"description":"Provides access to browser metadata such as bookmarks, search history, and so on","name":"browsers","reason":"no browsers detected"},` +
 			`{"description":"Provides access to GitHub Platform. Provides the ability to to read repositories and code files, manage issues and PRs, analyze code, and automate workflows.","name":"github","reason":"GITHUB_PERSONAL_ACCESS_TOKEN is not set"},` +
 			`{"description":"Provides access to Kubernetes clusters, allowing management and interaction with cluster resources.","name":"kubernetes","reason":"no suitable MCP settings found for the Kubernetes MCP server"},` +
-			`{"description":"Automate and interact with web browsers using Playwright.","name":"playwright","reason":"npx command not found"},` +
+			`{"description":"Enables web browsing capabilities through Playwright. Opening web pages, opening URLs, interacting with elements inside the browser, extracting snapshots, and scraping information from web pages. Support for multiple tabs and many other browser options","name":"playwright","reason":"npx command not found"},` +
 			`{"description":"Provides access to a PostgreSQL database, allowing execution of SQL queries and retrieval of data.","name":"postgresql","reason":"no suitable MCP settings found for the PostgreSQL MCP server"}` +
 			`]}`
 		s.JSONEq(expectedOutput, output, "Expected JSON output does not match")

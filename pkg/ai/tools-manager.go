@@ -3,64 +3,70 @@ package ai
 import (
 	"context"
 	"fmt"
-	"maps"
-	"slices"
 	"strings"
 
 	"github.com/cloudwego/eino/components/tool"
 	"github.com/cloudwego/eino/schema"
+	"github.com/manusa/ai-cli/pkg/api"
 )
 
-type ToolManager struct {
-	availableTools map[string]tool.InvokableTool
-	enabledTools   map[string]tool.InvokableTool
-	enableTool     *invokableTool
+type ToolManagerTool interface {
+	tool.InvokableTool
+	tool.BaseTool
+	ToolsProvider() api.ToolsProvider
+	ToolInfo() *schema.ToolInfo
 }
 
-func NewToolManager(ctx context.Context, availableTools []tool.InvokableTool) *ToolManager {
-	availableToolsMap := make(map[string]tool.InvokableTool, len(availableTools))
+type ToolManager struct {
+	availableTools []ToolManagerTool
+	enabledTools   map[string]ToolManagerTool
+	enableTool     ToolManagerTool
+}
+
+func NewToolManager(toolsProviders []api.ToolsProvider, availableTools []ToolManagerTool) *ToolManager {
+	toolsetNames := make([]string, 0, len(toolsProviders))
 	toolNameParameter := strings.Builder{}
-	toolNameParameter.WriteString("The name of the tool or tools to enable.\n")
-	toolNameParameter.WriteString("You can enable multiple tools by separating their names with commas.\n")
-	toolNameParameter.WriteString("You can pick the tools from the following list (xml):\n<tools>\n")
-	for _, t := range availableTools {
-		info, err := t.Info(ctx)
-		if err != nil {
-			continue
-		}
-		availableToolsMap[info.Name] = t
-		toolNameParameter.WriteString(fmt.Sprintf(`<tool name="%s">%s</tool>`, info.Name, info.Desc) + "\n")
+	toolNameParameter.WriteString("The name or names of the toolsets to enable.\n")
+	toolNameParameter.WriteString("You can enable multiple toolsets separating their names with commas.\n")
+	toolNameParameter.WriteString("You can pick the toolsets from the following list (xml):\n")
+	toolNameParameter.WriteString("<toolsets>\n")
+	for _, t := range toolsProviders {
+		toolsetNames = append(toolsetNames, t.Attributes().Name())
+		toolNameParameter.WriteString(fmt.Sprintf(`<toolset name="%s">%s</tool>`, t.Attributes().Name(), t.Attributes().Description()) + "\n")
 	}
-	toolNameParameter.WriteString("\n</tools>")
+	toolNameParameter.WriteString("\n</toolsets>")
 	toolManager := &ToolManager{
-		availableTools: availableToolsMap,
-		enabledTools:   make(map[string]tool.InvokableTool),
+		availableTools: availableTools,
+		enabledTools:   make(map[string]ToolManagerTool),
 	}
 	toolManager.enableTool = &invokableTool{
 		toolInfo: &schema.ToolInfo{
-			Name: "tool_enable",
-			Desc: "Enable a tool for the current session.",
+			Name: "toolset_enable",
+			Desc: "Enable a toolset for the current session.",
 			ParamsOneOf: schema.NewParamsOneOfByParams(map[string]*schema.ParameterInfo{
-				"tool_names": {
+				"toolset_names": {
 					Type:     schema.String,
 					Desc:     toolNameParameter.String(),
 					Required: true,
-					Enum:     slices.Collect(maps.Keys(toolManager.availableTools)),
+					Enum:     toolsetNames,
 				},
 			}),
 		},
-		function: toolManager.toolEnable,
+		function: toolManager.toolsetEnable,
 	}
-	toolManager.availableTools[toolManager.enableTool.toolInfo.Name] = toolManager.enableTool
 	return toolManager
 }
 
-func (t *ToolManager) ToolCount() int {
+func (t *ToolManager) ToolEnabledCount() int {
 	return len(t.enabledTools)
 }
 
+func (t *ToolManager) ToolCount() int {
+	return len(t.availableTools)
+}
+
 func (t *ToolManager) EnabledToolsReset() {
-	t.enabledTools = make(map[string]tool.InvokableTool)
+	t.enabledTools = make(map[string]ToolManagerTool)
 }
 
 func (t *ToolManager) EnabledTools() []tool.BaseTool {
@@ -76,30 +82,35 @@ func (t *ToolManager) InvokeTool(ctx context.Context, name, input string) (strin
 	if enabledTool, exists := t.enabledTools[name]; exists {
 		return enabledTool.InvokableRun(ctx, input)
 	}
-	if _, exists := t.availableTools[name]; exists {
-		return fmt.Sprintf("Tool '%s' is not enabled. You can enable it by calling the 'tool_enable' tool first.", name), nil
-	}
+	// TODO: Report the toolset the tool belongs to, and suggest enabling it
+	//if _, exists := t.availableTools[name]; exists {
+	//	return fmt.Sprintf("Tool '%s' is not enabled. You can enable it by calling the 'tool_enable' tool first.", name), nil
+	//}
 	return fmt.Sprintf("Tool '%s' not found.", name), nil
 }
 
-func (t *ToolManager) toolEnable(args map[string]interface{}) (string, error) {
-	toolNames, ok := args["tool_names"].(string)
+func (t *ToolManager) toolsetEnable(args map[string]interface{}) (string, error) {
+	toolsetNames, ok := args["toolset_names"].(string)
 	if !ok {
-		return "Invalid tool names.", nil
+		return "Invalid toolset names.", nil
 	}
 	sb := strings.Builder{}
-	for _, toolName := range strings.Split(toolNames, ",") {
-		toolName = strings.TrimSpace(toolName)
-		if _, exists := t.enabledTools[toolName]; exists {
-			sb.WriteString(fmt.Sprintf("Tool '%s' was already enabled.", toolName))
-			continue
+	for _, toolsetName := range strings.Split(toolsetNames, ",") {
+		toolsetName = strings.TrimSpace(toolsetName)
+		for _, availableTool := range t.availableTools {
+			// The built-in enable tool does not have a provider
+			if availableTool.ToolsProvider() != nil && availableTool.ToolsProvider().Attributes().Name() != toolsetName {
+				continue
+			}
+			toolName := availableTool.ToolInfo().Name
+			if _, exists := t.enabledTools[toolName]; exists {
+				// TODO: probably not necessary
+				//sb.WriteString(fmt.Sprintf("Tool '%s' was already enabled.", toolName))
+				continue
+			}
+			t.enabledTools[toolName] = availableTool
 		}
-		if _, exists := t.availableTools[toolName]; !exists {
-			sb.WriteString(fmt.Sprintf("Tool '%s' not found.", toolName))
-			continue
-		}
-		t.enabledTools[toolName] = t.availableTools[toolName]
-		sb.WriteString(fmt.Sprintf("Tool '%s' enabled.", toolName))
+		sb.WriteString(fmt.Sprintf("Toolset '%s' enabled.", toolsetName))
 	}
 	return sb.String(), nil
 }

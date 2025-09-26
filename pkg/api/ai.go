@@ -2,6 +2,7 @@ package api
 
 type Ai interface {
 	InferenceAttributes() InferenceAttributes
+	ToolEnabledCount() int
 	ToolCount() int
 	Reset()
 	Session() Session
