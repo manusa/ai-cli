@@ -109,7 +109,7 @@ func (s *OllamaTestSuite) TestInitializeWithCompatibleServerMissingModel() {
 			s.False(instance.IsAvailable())
 		})
 		s.Run("shows reason", func() {
-			s.Equal(fmt.Sprintf("ollama is accessible at %s defined by the OLLAMA_HOST environment variable but no preferred models (llama3.2:3b, granite3.3:latest, mistral:7b) are served", s.MockServer.URL()), instance.Reason())
+			s.Equal(fmt.Sprintf("ollama is accessible at %s defined by the OLLAMA_HOST environment variable but no preferred models (gpt-oss:20b, llama3.2:3b, llama3.1:8b) are served", s.MockServer.URL()), instance.Reason())
 		})
 		s.Run("has models", func() {
 			s.Len(instance.Models(), 2)
@@ -128,7 +128,7 @@ func (s *OllamaTestSuite) TestInitializeWithCompatibleServerMissingModel() {
 					`"models":["model-1", "model-2"],`+
 					`"name":"ollama",`+
 					`"public":false,`+
-					fmt.Sprintf(`"reason":"ollama is accessible at %s defined by the OLLAMA_HOST environment variable but no preferred models (llama3.2:3b, granite3.3:latest, mistral:7b) are served"`, s.MockServer.URL())+
+					fmt.Sprintf(`"reason":"ollama is accessible at %s defined by the OLLAMA_HOST environment variable but no preferred models (gpt-oss:20b, llama3.2:3b, llama3.1:8b) are served"`, s.MockServer.URL())+
 					`}`, string(data))
 			})
 		})

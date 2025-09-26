@@ -283,7 +283,7 @@ func (s *ModelSuite) TestFooter() {
 	s.Run("Footer displays tools provider count", func() {
 		s.Repaint()
 		teatest.WaitFor(s.T(), s.TM.Output(), func(b []byte) bool {
-			return strings.Contains(string(b), "🛠️ 1")
+			return strings.Contains(string(b), "🛠 0/1")
 		})
 	})
 }

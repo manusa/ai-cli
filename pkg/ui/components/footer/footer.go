@@ -1,7 +1,7 @@
 package footer
 
 import (
-	"strconv"
+	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea/v2"
@@ -28,8 +28,8 @@ func (m model) View() string {
 		Background(m.ctx.Theme.FooterBackground).
 		Foreground(m.ctx.Theme.FooterText).
 		Padding(0, 1)
-	left := style.Render("🧠", m.ctx.Ai.InferenceAttributes().Name(),
-		"🛠️", strconv.Itoa(m.ctx.Ai.ToolCount()))
+	left := style.Render(fmt.Sprintf("🧠 %s", m.ctx.Ai.InferenceAttributes().Name()),
+		fmt.Sprintf("🛠 %d/%d", m.ctx.Ai.ToolEnabledCount(), m.ctx.Ai.ToolCount()))
 	version := style.Render(m.ctx.Version)
 	spacerWidth := m.ctx.Width - lipgloss.Width(left) - lipgloss.Width(version)
 	if spacerWidth < 0 {

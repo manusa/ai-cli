@@ -34,7 +34,10 @@ func (s *PlaywrightTestSuite) TestFeatureAttributes() {
 		s.Equal("playwright", instance.FeatureName)
 	})
 	s.Run("has feature description", func() {
-		s.Equal("Automate and interact with web browsers using Playwright.", instance.FeatureDescription)
+		s.Equal("Enables web browsing capabilities through Playwright. "+
+			"Opening web pages, opening URLs, interacting with elements inside the browser, extracting snapshots, and scraping information from web pages. "+
+			"Support for multiple tabs and many other browser options",
+			instance.FeatureDescription)
 	})
 }
 
@@ -64,7 +67,7 @@ func (s *PlaywrightTestSuite) TestInitializeWithNodeAndDesktop() {
 	})
 	s.Run("sets MCP settings", func() {
 		s.Equal("npx", feats.Tools[0].(*Provider).McpSettings.Command)
-		s.Equal([]string{"-y", "@playwright/mcp@0.0.36"}, feats.Tools[0].(*Provider).McpSettings.Args)
+		s.Equal([]string{"-y", "@playwright/mcp@0.0.40"}, feats.Tools[0].(*Provider).McpSettings.Args)
 	})
 }
 
@@ -76,7 +79,7 @@ func (s *PlaywrightTestSuite) TestInitializeWithNodeAndNoDesktop() {
 	s.Require().Empty(feats.ToolsNotAvailable)
 	s.Run("sets MCP settings with headless", func() {
 		s.Equal("npx", feats.Tools[0].(*Provider).McpSettings.Command)
-		s.Equal([]string{"-y", "@playwright/mcp@0.0.36", "--headless"}, feats.Tools[0].(*Provider).McpSettings.Args)
+		s.Equal([]string{"-y", "@playwright/mcp@0.0.40", "--headless"}, feats.Tools[0].(*Provider).McpSettings.Args)
 	})
 }
 

@@ -20,7 +20,7 @@ const (
 	DefaultMaxSteps = 50
 )
 
-// ReActAgent is an agent that uses the ReAct framework to interact with the user and tools.
+// ReActAgent is an agent that uses the ReAct framework to interact with the user and toolManager.
 // Currently, it's just wrapping around the standard react.Agent, but we might eventually want to fully implement
 // our own agent to have more control over the process and graph chain.
 type ReActAgent struct {
@@ -34,7 +34,7 @@ func NewReActAgent(ctx context.Context, ai *Ai) (agent *ReActAgent, err error) {
 		ToolCallingModel: ai.llm,
 		MaxStep:          DefaultMaxSteps,
 		ToolsConfig: compose.ToolsNodeConfig{
-			Tools:               ai.tools.EnabledTools(),
+			Tools:               ai.toolManager.EnabledTools(),
 			ExecuteSequentially: true,
 			UnknownToolsHandler: agent.unknownToolHandler,
 		},
@@ -45,24 +45,24 @@ func NewReActAgent(ctx context.Context, ai *Ai) (agent *ReActAgent, err error) {
 	return
 }
 
-// unknownToolHandler is called when the model tries to call a tool that is not in the list of available tools.
+// unknownToolHandler is called when the model tries to call a tool that is not in the list of available toolManager.
 // This is a workaround because graph tool declarations are immutable after the graph is created and compiled.
 // The model might be actually calling a tool that was enabled after the graph was created (hence not unknown).
 //
-// The only issue is that standard callbacks are not called for unknown tools, so we manually call them here.
+// The only issue is that standard callbacks are not called for unknown toolManager, so we manually call them here.
 func (r *ReActAgent) unknownToolHandler(ctx context.Context, name, input string) (string, error) {
 	r.OnToolCallStart(ctx, &callbacks.RunInfo{Name: name}, &tool.CallbackInput{ArgumentsInJSON: input})
 	defer r.OnToolCallEnd(ctx, &callbacks.RunInfo{Name: name}, &tool.CallbackOutput{})
-	return r.ai.tools.InvokeTool(ctx, name, input)
+	return r.ai.toolManager.InvokeTool(ctx, name, input)
 }
 
 func (r *ReActAgent) OnChatModelStart(ctx context.Context, runInfo *callbacks.RunInfo, input *model.CallbackInput) context.Context {
-	// Reload the tools if the model is a DynamicToolCallingChatModel
+	// Reload the toolManager if the model is a DynamicToolCallingChatModel
 	// Enables dynamic tool reloading by replacing the delegate (immutable) model inside DynamicToolCallingChatModel
 	if runInfo.Type != reflect.TypeOf(DynamicToolCallingChatModel{}).Name() {
 		return ctx
 	}
-	_ = r.ai.llm.ReloadTools(ctx, r.ai.tools.EnabledTools())
+	_ = r.ai.llm.ReloadTools(ctx, r.ai.toolManager.EnabledTools())
 	return ctx
 }
 
