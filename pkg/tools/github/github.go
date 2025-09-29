@@ -2,7 +2,6 @@ package kubernetes
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
@@ -21,59 +20,32 @@ const (
 	accessTokenEnvVar = "GITHUB_PERSONAL_ACCESS_TOKEN"
 )
 
-var (
-	supportedMcpSettings = map[string]api.McpSettings{
-		"podman": {
-			Type:    api.McpTypeStdio,
-			Command: "podman",
-			Args: []string{
-				"run",
-				"-i",
-				"--rm",
-				"-e",
-				accessTokenEnvVar,
-				"--entrypoint",
-				"/server/github-mcp-server",
-				"ghcr.io/github/github-mcp-server",
-				"stdio",
-			},
-		},
-	}
-)
-
 func (p *Provider) Initialize(ctx context.Context) {
 	// TODO: probably move to features.Discover orchestration
 	if cfg := config.GetConfig(ctx); cfg != nil {
 		p.ToolsParameters = cfg.ToolsParameters(p.Attributes().Name())
 	}
 
-	hasAccessToken := os.Getenv(accessTokenEnvVar) != ""
-	if !hasAccessToken {
+	accessToken := os.Getenv(accessTokenEnvVar)
+	if accessToken == "" {
 		p.IsAvailableReason = fmt.Sprintf("%s is not set", accessTokenEnvVar)
 		return
 	}
 
-	var err error
-	p.McpSettings, err = findBestMcpServerSettings(*p.ReadOnly)
-	if err != nil {
-		p.IsAvailableReason = err.Error()
-		return
+	headers := map[string]string{
+		"Authorization":  "Bearer " + accessToken,
+		"X-MCP-Toolsets": "context,actions,issues,notifications,pull_requests,repos,users",
 	}
-
+	if *p.ReadOnly {
+		headers["X-MCP-Readonly"] = "true"
+	}
+	p.IsAvailableReason = fmt.Sprintf("%s is set", accessTokenEnvVar)
 	p.Available = true
-	p.IsAvailableReason = fmt.Sprintf("%s is set and has suitable MCP settings", accessTokenEnvVar)
-}
-
-func findBestMcpServerSettings(readOnly bool) (*api.McpSettings, error) {
-	for command, settings := range supportedMcpSettings {
-		if config.CommandExists(command) {
-			if readOnly {
-				settings.Args = append(settings.Args, "--read-only")
-			}
-			return &settings, nil
-		}
+	p.McpSettings = &api.McpSettings{
+		Type:    api.McpTypeStreamableHttp,
+		Url:     "https://api.githubcopilot.com/mcp/",
+		Headers: headers,
 	}
-	return nil, errors.New("no suitable MCP settings found for the Github MCP server")
 }
 
 var instance = &Provider{
@@ -81,7 +53,7 @@ var instance = &Provider{
 		BasicToolsAttributes: api.BasicToolsAttributes{
 			BasicFeatureAttributes: api.BasicFeatureAttributes{
 				FeatureName:        "github",
-				FeatureDescription: "Provides access to GitHub repositories, issues, pull requests, and more.",
+				FeatureDescription: "Provides access to GitHub Platform. Provides the ability to to read repositories and code files, manage issues and PRs, analyze code, and automate workflows.",
 			},
 		},
 	},

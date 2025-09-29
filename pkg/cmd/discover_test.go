@@ -67,7 +67,7 @@ func (s *DiscoverTestSuite) TestOutputText() {
 			"    Description: Provides access to browsers\n" +
 			"    Reason: no browsers detected\n" +
 			"  - github\n" +
-			"    Description: Provides access to GitHub repositories, issues, pull requests, and more.\n" +
+			"    Description: Provides access to GitHub Platform. Provides the ability to to read repositories and code files, manage issues and PRs, analyze code, and automate workflows.\n" +
 			"    Reason: GITHUB_PERSONAL_ACCESS_TOKEN is not set\n" +
 			"  - kubernetes\n" +
 			"    Description: Provides access to Kubernetes clusters, allowing management and interaction with cluster resources.\n" +
@@ -102,7 +102,7 @@ func (s *DiscoverTestSuite) TestOutputJson() {
 			`{"description":"Provides access to the local filesystem, allowing listing of files and directories.","name":"fs","reason":"filesystem is accessible"}],` +
 			`"toolsNotAvailable":[` +
 			`{"description":"Provides access to browsers","name":"browsers","reason":"no browsers detected"},` +
-			`{"description":"Provides access to GitHub repositories, issues, pull requests, and more.","name":"github","reason":"GITHUB_PERSONAL_ACCESS_TOKEN is not set"},` +
+			`{"description":"Provides access to GitHub Platform. Provides the ability to to read repositories and code files, manage issues and PRs, analyze code, and automate workflows.","name":"github","reason":"GITHUB_PERSONAL_ACCESS_TOKEN is not set"},` +
 			`{"description":"Provides access to Kubernetes clusters, allowing management and interaction with cluster resources.","name":"kubernetes","reason":"no suitable MCP settings found for the Kubernetes MCP server"},` +
 			`{"description":"Automate and interact with web browsers using Playwright.","name":"playwright","reason":"npx command not found"},` +
 			`{"description":"Provides access to a PostgreSQL database, allowing execution of SQL queries and retrieval of data.","name":"postgresql","reason":"no suitable MCP settings found for the PostgreSQL MCP server"}` +
