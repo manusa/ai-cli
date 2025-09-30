@@ -7,9 +7,12 @@ toolchain go1.24.6
 require (
 	github.com/BurntSushi/toml v1.5.0
 	github.com/adrg/xdg v0.5.3
+	github.com/charmbracelet/bubbles v0.21.0
 	github.com/charmbracelet/bubbles/v2 v2.0.0-beta.1.0.20250716191546-1e2ffbbcf5c5
+	github.com/charmbracelet/bubbletea v1.3.4
 	github.com/charmbracelet/bubbletea/v2 v2.0.0-beta.4.0.20250813213544-5cc219db8892
 	github.com/charmbracelet/glamour/v2 v2.0.0-20250811143442-a27abb32f018
+	github.com/charmbracelet/lipgloss v1.1.0
 	github.com/charmbracelet/lipgloss/v2 v2.0.0-beta.3.0.20250721205738-ea66aa652ee0
 	github.com/charmbracelet/log v0.4.2
 	github.com/charmbracelet/x/exp/teatest/v2 v2.0.0-20250821175832-f235fab04313
@@ -45,7 +48,6 @@ require (
 	github.com/bytedance/sonic v1.14.0 // indirect
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
 	github.com/charmbracelet/colorprofile v0.3.2 // indirect
-	github.com/charmbracelet/lipgloss v1.1.0 // indirect
 	github.com/charmbracelet/ultraviolet v0.0.0-20250813213450-50737e162af5 // indirect
 	github.com/charmbracelet/x/ansi v0.10.1 // indirect
 	github.com/charmbracelet/x/cellbuf v0.0.14-0.20250811133356-e0c5dbe5ea4a // indirect
@@ -59,6 +61,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dlclark/regexp2 v1.11.4 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/erikgeiser/coninput v0.0.0-20211004153227-1c3628e74d0f // indirect
 	github.com/evanphx/json-patch v0.5.2 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
 	github.com/getkin/kin-openapi v0.118.0 // indirect
@@ -82,12 +85,14 @@ require (
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-isatty v0.0.20 // indirect
+	github.com/mattn/go-localereader v0.0.1 // indirect
 	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/meguminnnnnnnnn/go-openai v0.0.0-20250821095446-07791bea23a0 // indirect
 	github.com/microcosm-cc/bluemonday v1.0.27 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
+	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/nikolalohinski/gonja v1.5.3 // indirect
@@ -99,6 +104,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
+	github.com/sahilm/fuzzy v0.1.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/slongfield/pyfmt v0.0.0-20220222012616-ea85ff4c361f // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect

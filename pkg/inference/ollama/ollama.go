@@ -142,6 +142,25 @@ func (p *Provider) isBaseURLConfigured() bool {
 	return os.Getenv(ollamaHostEnvVar) != ""
 }
 
+func (p *Provider) InstallHelp() (help string, needRestart bool) {
+	return fmt.Sprintf(`The following steps need to be done to be able to use Ollama:
+- download Ollama from https://ollama.com/download and install it
+- start Ollama
+- either:
+  - from the GUI, select a model and start a chat, this will automatically download the model
+  - or, from a terminal, run "ollama pull modelName"
+- preferred models are: %s`, strings.Join(preferredModels, ", ")), false
+}
+
+func (p *Provider) InstallModelHelp() string {
+	return fmt.Sprintf(`You need to have a model downloaded and available in Ollama to use it:
+- start Ollama
+- either:
+  - from the GUI, select a model and start a chat, this will automatically download the model
+  - or, from a terminal, run "ollama pull modelName"
+- preferred models are: %s`, strings.Join(preferredModels, ", "))
+}
+
 var instance = &Provider{
 	api.BasicInferenceProvider{
 		BasicInferenceAttributes: api.BasicInferenceAttributes{
