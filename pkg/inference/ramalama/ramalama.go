@@ -48,7 +48,6 @@ func (p *Provider) Initialize(ctx context.Context) {
 	if p.Model == nil {
 		p.Model = &p.ProviderModels[0]
 	}
-
 }
 
 func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel, error) {
@@ -102,6 +101,17 @@ func (p *Provider) getRamalamaBinaryName() string {
 		return "ramalama.exe"
 	}
 	return "ramalama"
+}
+
+func (p *Provider) InstallHelp() (help string, needRestart bool) {
+	return `The following steps need to be done to be able to use ramalama:
+- install ramalama, the instructions are available at https://ramalama.ai/#install
+- pull a model with "ramalama pull modelName"
+- start an inference service with "ramalama serve modelName"`, false
+}
+
+func (p *Provider) InstallModelHelp() string {
+	return "TODO how to install model for ramalama"
 }
 
 var instance = &Provider{

@@ -92,6 +92,20 @@ func (p *Provider) baseURL() string {
 	return defaultBaseURL
 }
 
+func (p *Provider) InstallHelp() (help string, needRestart bool) {
+	return `The following steps need to be done to be able to use LM Studio
+- download LM Studio from https://lmstudio.ai/download and install it
+- start LM Studio
+- search and download a model (from the main page or from the search page)
+- go to the "Local Server" page, be sure that the server port is 1234 and click the "Start Server" button`, false
+}
+
+func (p *Provider) InstallModelHelp() string {
+	return `You need to have a model downloaded and available in LM Studio to use it.
+- search and download a model (from the main page or from the search page)
+- go to the "Local Server" page, be sure that the server port is 1234 and click the "Start Server" button`
+}
+
 var instance = &Provider{
 	BasicInferenceProvider: api.BasicInferenceProvider{
 		BasicInferenceAttributes: api.BasicInferenceAttributes{

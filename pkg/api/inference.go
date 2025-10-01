@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/cloudwego/eino/components/model"
 )
@@ -9,9 +10,12 @@ import (
 type InferenceProvider interface {
 	Feature[InferenceAttributes]
 	GetInference(ctx context.Context) (model.ToolCallingChatModel, error)
+	GetModel(ctx context.Context) (string, error)
 	// Models returns the list of supported models by the inference provider
 	Models() []string
 	SystemPrompt() string
+	InstallHelp() (help string, needRestart bool)
+	InstallModelHelp() string
 }
 
 type InferenceAttributes interface {
@@ -54,6 +58,13 @@ func (p *BasicInferenceProvider) Models() []string {
 
 func (p *BasicInferenceProvider) SystemPrompt() string {
 	return ""
+}
+
+func (p *BasicInferenceProvider) GetModel(ctx context.Context) (string, error) {
+	if p.Model == nil {
+		return "", fmt.Errorf("no model found")
+	}
+	return *p.Model, nil
 }
 
 type BasicInferenceAttributes struct {

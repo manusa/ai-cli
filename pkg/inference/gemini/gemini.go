@@ -17,6 +17,10 @@ type Provider struct {
 	api.BasicInferenceProvider
 }
 
+var (
+	defaultModel = "gemini-2.0-flash"
+)
+
 var _ api.InferenceProvider = &Provider{}
 
 func (p *Provider) Initialize(ctx context.Context) {
@@ -29,7 +33,8 @@ func (p *Provider) Initialize(ctx context.Context) {
 	p.Available = cfg.GoogleApiKey() != ""
 	if p.Available {
 		p.IsAvailableReason = "GEMINI_API_KEY is set"
-		p.ProviderModels = []string{"gemini-2.0-flash"}
+		p.ProviderModels = []string{defaultModel}
+		p.Model = &defaultModel
 	} else {
 		p.IsAvailableReason = "GEMINI_API_KEY is not set"
 	}
@@ -43,7 +48,7 @@ func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
-	return gemini.NewChatModel(ctx, &gemini.Config{Client: geminiCli, Model: "gemini-2.0-flash"})
+	return gemini.NewChatModel(ctx, &gemini.Config{Client: geminiCli, Model: defaultModel})
 }
 
 func (p *Provider) SystemPrompt() string {
@@ -83,6 +88,18 @@ Today is %s.
 - **URL Extraction:** When the user provides a URL, it might be incomplete, try to infer the complete URL (e.g. prepend the protocol 'https://').
 
 	`, time.Now().Format("January 2, 2006"))
+}
+
+func (p *Provider) InstallHelp() (help string, needRestart bool) {
+	return `To access Gemini, you need to define the GEMINI_API_KEY environment variable with your personal Gemini API key.
+- get your API key from Google AI Studio (https://aistudio.google.com/api-keys), or from your company.
+- define the GEMINI_API_KEY environment variable:
+    export GEMINI_API_KEY=your-api-key
+- after defining the environment variable, you can restart the CLI to continue the setup.`, true
+}
+
+func (p *Provider) InstallModelHelp() string {
+	return `No model found for gemini. This is not expected.`
 }
 
 var instance = &Provider{
