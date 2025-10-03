@@ -21,6 +21,7 @@ require (
 	github.com/feloy/browsers-mcp-server v0.0.4
 	github.com/google/jsonschema-go v0.3.0
 	github.com/google/uuid v1.6.0
+	github.com/keybase/go-keychain v0.0.1
 	github.com/modelcontextprotocol/go-sdk v0.8.0
 	github.com/muesli/termenv v0.16.0
 	github.com/spf13/afero v1.14.0
