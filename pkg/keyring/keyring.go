@@ -1,19 +1,16 @@
 package keyring
 
-import "github.com/keybase/go-keychain"
+var provider Keyring = &fallbackKeyring{}
 
-const (
-	service = "com.redhat.ai-cli"
-)
-
-func GetKey(key string) (string, error) {
-	password, err := keychain.GetGenericPassword(service, key, "", "")
-	return string(password), err
+type Keyring interface {
+	SetKey(key, value string) error
+	GetKey(key string) (string, error)
 }
 
 func SetKey(key, value string) error {
-	item := keychain.NewGenericPassword(service, key, "", []byte(value), "")
-	item.SetSynchronizable(keychain.SynchronizableNo)
-	item.SetAccessible(keychain.AccessibleWhenUnlocked)
-	return keychain.AddItem(item)
+	return provider.SetKey(key, value)
+}
+
+func GetKey(key string) (string, error) {
+	return provider.GetKey(key)
 }

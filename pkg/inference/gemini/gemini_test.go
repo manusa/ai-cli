@@ -10,6 +10,7 @@ import (
 
 	"github.com/manusa/ai-cli/internal/test"
 	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/keyring"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -20,6 +21,7 @@ type GeminiTestSuite struct {
 }
 
 func (s *GeminiTestSuite) SetupTest() {
+	keyring.MockInit()
 	s.originalEnv = os.Environ()
 	os.Clearenv()
 	s.ctx = config.WithConfig(s.T().Context(), config.New())
