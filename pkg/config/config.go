@@ -1,8 +1,6 @@
 package config
 
 import (
-	"os"
-
 	"github.com/manusa/ai-cli/pkg/api"
 )
 
@@ -30,9 +28,7 @@ type Config struct {
 	InferenceConfig InferenceConfig `toml:"inferences,omitempty"`
 	toolsConfig     ToolsConfig     `toml:"tools,omitempty"`
 
-	policies     *api.Policies // TODO: should be removed in favor of ToolsConfig and InferenceConfig above
-	googleApiKey string        // TODO: will likely be removed
-	geminiModel  string        // TODO: will likely be removed
+	policies *api.Policies // TODO: should be removed in favor of ToolsConfig and InferenceConfig above
 }
 
 // New creates a new configuration with defaults
@@ -44,8 +40,6 @@ type Config struct {
 //	3) The merged configuration is restricted/enforced by the policies Config.Enforce
 func New() *Config {
 	return &Config{
-		googleApiKey: os.Getenv("GEMINI_API_KEY"),
-		geminiModel:  "gemini-2.0-flash",
 		InferenceConfig: InferenceConfig{
 			InferenceParameters: api.InferenceParameters{
 				// By default, all inference providers are enabled
@@ -64,14 +58,6 @@ func New() *Config {
 			Provider: make(map[string]api.ToolsParameters),
 		},
 	}
-}
-
-func (c *Config) GoogleApiKey() string {
-	return c.googleApiKey
-}
-
-func (c *Config) GeminiModel() string {
-	return c.geminiModel
 }
 
 func (c *Config) Inference() *string {
