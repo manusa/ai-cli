@@ -51,7 +51,7 @@ func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel
 }
 
 func (p *Provider) getApiKey() string {
-	if key, err := keyring.GetKey(API_KEY_ENV_VAR); err == nil {
+	if key, err := keyring.GetKey(API_KEY_ENV_VAR); err == nil && len(key) > 0 {
 		return key
 	}
 	return os.Getenv(API_KEY_ENV_VAR)

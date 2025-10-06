@@ -2,18 +2,26 @@ package keyring
 
 import "errors"
 
-type mockProvider struct{}
+type mockProvider struct {
+	keys map[string]string
+}
 
 var _ Keyring = &mockProvider{}
 
 func (k *mockProvider) GetKey(key string) (string, error) {
-	return "", errors.New("not implemented")
+	if value, ok := k.keys[key]; ok {
+		return value, nil
+	}
+	return "", errors.New("key not found")
 }
 
 func (k *mockProvider) SetKey(key, value string) error {
-	return errors.New("not implemented")
+	k.keys[key] = value
+	return nil
 }
 
 func MockInit() {
-	provider = &mockProvider{}
+	provider = &mockProvider{
+		keys: make(map[string]string),
+	}
 }
