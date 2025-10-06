@@ -12,6 +12,7 @@ import (
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference"
 	"github.com/manusa/ai-cli/pkg/keyring"
+	"github.com/manusa/ai-cli/pkg/ui/components/password_input"
 	"google.golang.org/genai"
 )
 
@@ -21,6 +22,10 @@ type Provider struct {
 
 const (
 	API_KEY_ENV_VAR = "GEMINI_API_KEY"
+)
+
+var (
+	defaultModel = "gemini-2.0-flash"
 )
 
 var _ api.InferenceProvider = &Provider{}
@@ -34,7 +39,8 @@ func (p *Provider) Initialize(ctx context.Context) {
 	p.Available = p.getApiKey() != ""
 	if p.Available {
 		p.IsAvailableReason = fmt.Sprintf("%s is set", API_KEY_ENV_VAR)
-		p.ProviderModels = []string{"gemini-2.0-flash"}
+		p.ProviderModels = []string{defaultModel}
+		p.Model = &defaultModel
 	} else {
 		p.IsAvailableReason = fmt.Sprintf("%s is not set", API_KEY_ENV_VAR)
 	}
@@ -47,7 +53,7 @@ func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
-	return gemini.NewChatModel(ctx, &gemini.Config{Client: geminiCli, Model: "gemini-2.0-flash"})
+	return gemini.NewChatModel(ctx, &gemini.Config{Client: geminiCli, Model: defaultModel})
 }
 
 func (p *Provider) getApiKey() string {
@@ -96,6 +102,17 @@ Today is %s.
 	`, time.Now().Format("January 2, 2006"))
 }
 
+func (p *Provider) InstallHelp() error {
+	fmt.Printf("To access Gemini, you need to have a Gemini API key.\n")
+	fmt.Printf("Get your API key from Google AI Studio (https://aistudio.google.com/api-keys), or from your company.\n")
+	fmt.Printf("Paste your API key below:\n")
+	apiKey, err := password_input.Prompt()
+	if err != nil {
+		return err
+	}
+	return keyring.SetKey(API_KEY_ENV_VAR, apiKey)
+}
+
 var instance = &Provider{
 	api.BasicInferenceProvider{
 		BasicInferenceAttributes: api.BasicInferenceAttributes{
@@ -103,8 +120,9 @@ var instance = &Provider{
 				FeatureName:        "gemini",
 				FeatureDescription: "Google Gemini inference provider",
 			},
-			LocalAttr:  false,
-			PublicAttr: true,
+			LocalAttr:         false,
+			PublicAttr:        true,
+			SupportsSetupAttr: true,
 		},
 	},
 }

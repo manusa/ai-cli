@@ -92,6 +92,10 @@ func (p *Provider) baseURL() string {
 	return defaultBaseURL
 }
 
+func (p *Provider) InstallHelp() error {
+	return nil
+}
+
 var instance = &Provider{
 	BasicInferenceProvider: api.BasicInferenceProvider{
 		BasicInferenceAttributes: api.BasicInferenceAttributes{
