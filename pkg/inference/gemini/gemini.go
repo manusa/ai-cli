@@ -3,6 +3,7 @@ package gemini
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/cloudwego/eino-ext/components/model/gemini"
@@ -10,12 +11,17 @@ import (
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference"
+	"github.com/manusa/ai-cli/pkg/keyring"
 	"google.golang.org/genai"
 )
 
 type Provider struct {
 	api.BasicInferenceProvider
 }
+
+const (
+	API_KEY_ENV_VAR = "GEMINI_API_KEY"
+)
 
 var _ api.InferenceProvider = &Provider{}
 
@@ -25,25 +31,30 @@ func (p *Provider) Initialize(ctx context.Context) {
 		p.InferenceParameters = cfg.InferenceParameters(p.Attributes().Name())
 	}
 
-	cfg := config.GetConfig(ctx)
-	p.Available = cfg.GoogleApiKey() != ""
+	p.Available = p.getApiKey() != ""
 	if p.Available {
-		p.IsAvailableReason = "GEMINI_API_KEY is set"
+		p.IsAvailableReason = fmt.Sprintf("%s is set", API_KEY_ENV_VAR)
 		p.ProviderModels = []string{"gemini-2.0-flash"}
 	} else {
-		p.IsAvailableReason = "GEMINI_API_KEY is not set"
+		p.IsAvailableReason = fmt.Sprintf("%s is not set", API_KEY_ENV_VAR)
 	}
 }
 
 func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel, error) {
-	cfg := config.GetConfig(ctx)
 	geminiCli, err := genai.NewClient(ctx, &genai.ClientConfig{
-		APIKey: cfg.GoogleApiKey(),
+		APIKey: p.getApiKey(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 	return gemini.NewChatModel(ctx, &gemini.Config{Client: geminiCli, Model: "gemini-2.0-flash"})
+}
+
+func (p *Provider) getApiKey() string {
+	if key, err := keyring.GetKey(API_KEY_ENV_VAR); err == nil && len(key) > 0 {
+		return key
+	}
+	return os.Getenv(API_KEY_ENV_VAR)
 }
 
 func (p *Provider) SystemPrompt() string {

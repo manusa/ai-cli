@@ -10,6 +10,7 @@ import (
 
 	"github.com/manusa/ai-cli/internal/test"
 	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/keyring"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -20,6 +21,7 @@ type GeminiTestSuite struct {
 }
 
 func (s *GeminiTestSuite) SetupTest() {
+	keyring.MockInit()
 	s.originalEnv = os.Environ()
 	os.Clearenv()
 	s.ctx = config.WithConfig(s.T().Context(), config.New())
@@ -29,6 +31,8 @@ func (s *GeminiTestSuite) TearDownTest() {
 }
 
 func (s *GeminiTestSuite) TestInitializeWithNoAPIKey() {
+	// assert that an empty key stored in the ring is not taken into consideration
+	_ = keyring.SetKey("GEMINI_API_KEY", "")
 	instance.Initialize(s.ctx)
 	s.Run("when GEMINI_API_KEY is not set, is not available", func() {
 		s.False(instance.IsAvailable())
@@ -59,9 +63,41 @@ func (s *GeminiTestSuite) TestInitializeWithNoAPIKey() {
 }
 
 func (s *GeminiTestSuite) TestInitializeWithAPIKey() {
+	// assert that an empty key stored in the ring is not taken into consideration
+	_ = keyring.SetKey("GEMINI_API_KEY", "")
 	_ = os.Setenv("GEMINI_API_KEY", "A_VALID_KEY")
-	ctxWithApiKey := config.WithConfig(s.ctx, config.New())
-	instance.Initialize(ctxWithApiKey)
+	instance.Initialize(s.ctx)
+	s.Run("when GEMINI_API_KEY is set, is available", func() {
+		s.True(instance.IsAvailable())
+	})
+	s.Run("when GEMINI_API_KEY is set, shows reason", func() {
+		s.Equal("GEMINI_API_KEY is set", instance.Reason())
+	})
+	s.Run("when GEMINI_API_KEY is set, has models", func() {
+		s.Len(instance.Models(), 1)
+		s.Contains(instance.Models(), "gemini-2.0-flash")
+	})
+	s.Run("when GEMINI_API_KEY is set, marshaled JSON shows availability fields", func() {
+		data, err := json.Marshal(instance)
+		s.Run("does not return an error", func() {
+			s.Nil(err)
+		})
+		s.Run("returns expected JSON", func() {
+			s.JSONEq(`{`+
+				`"description":"Google Gemini inference provider",`+
+				`"local":false,`+
+				`"models":["gemini-2.0-flash"],`+
+				`"name":"gemini",`+
+				`"public":true,`+
+				`"reason":"GEMINI_API_KEY is set"`+
+				`}`, string(data))
+		})
+	})
+}
+
+func (s *GeminiTestSuite) TestInitializeWithAPIKeyFromKeyring() {
+	_ = keyring.SetKey("GEMINI_API_KEY", "A_VALID_KEY")
+	instance.Initialize(s.ctx)
 	s.Run("when GEMINI_API_KEY is set, is available", func() {
 		s.True(instance.IsAvailable())
 	})
