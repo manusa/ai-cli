@@ -19,6 +19,10 @@ type Provider struct {
 	api.BasicInferenceProvider
 }
 
+const (
+	API_KEY_ENV_VAR = "GEMINI_API_KEY"
+)
+
 var _ api.InferenceProvider = &Provider{}
 
 func (p *Provider) Initialize(ctx context.Context) {
@@ -29,10 +33,10 @@ func (p *Provider) Initialize(ctx context.Context) {
 
 	p.Available = p.getApiKey() != ""
 	if p.Available {
-		p.IsAvailableReason = "GEMINI_API_KEY is set"
+		p.IsAvailableReason = fmt.Sprintf("%s is set", API_KEY_ENV_VAR)
 		p.ProviderModels = []string{"gemini-2.0-flash"}
 	} else {
-		p.IsAvailableReason = "GEMINI_API_KEY is not set"
+		p.IsAvailableReason = fmt.Sprintf("%s is not set", API_KEY_ENV_VAR)
 	}
 }
 
@@ -47,10 +51,10 @@ func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel
 }
 
 func (p *Provider) getApiKey() string {
-	if key, err := keyring.GetKey("GEMINI_API_KEY"); err == nil {
+	if key, err := keyring.GetKey(API_KEY_ENV_VAR); err == nil {
 		return key
 	}
-	return os.Getenv("GEMINI_API_KEY")
+	return os.Getenv(API_KEY_ENV_VAR)
 }
 
 func (p *Provider) SystemPrompt() string {
