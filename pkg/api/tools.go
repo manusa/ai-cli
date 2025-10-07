@@ -13,6 +13,7 @@ type ToolsProvider interface {
 	GetMcpSettings() *McpSettings
 	// GetTools returns the list of built-in, native, available tools
 	GetTools(ctx context.Context) []*Tool
+	InstallHelp() error
 }
 
 type ToolsAttributes interface {
@@ -54,6 +55,10 @@ func (p *BasicToolsProvider) GetMcpSettings() *McpSettings {
 }
 
 func (p *BasicToolsProvider) GetTools(_ context.Context) []*Tool {
+	return nil
+}
+
+func (p *BasicToolsProvider) InstallHelp() error {
 	return nil
 }
 

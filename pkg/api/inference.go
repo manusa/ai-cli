@@ -23,8 +23,6 @@ type InferenceAttributes interface {
 	Local() bool
 	// Public indicates if the inference provider is public (e.g. OpenAI, Gemini) or private (e.g. Enterprise internal)
 	Public() bool
-	// SupportsSetup indicates if the inference provider supports setup
-	SupportsSetup() bool
 }
 
 type InferenceParameters struct {
@@ -61,6 +59,10 @@ func (p *BasicInferenceProvider) SystemPrompt() string {
 	return ""
 }
 
+func (a *BasicInferenceProvider) InstallHelp() error {
+	return nil
+}
+
 func (p *BasicInferenceProvider) GetModel(ctx context.Context) (string, error) {
 	if p.Model == nil {
 		return "", fmt.Errorf("no model found")
@@ -70,9 +72,8 @@ func (p *BasicInferenceProvider) GetModel(ctx context.Context) (string, error) {
 
 type BasicInferenceAttributes struct {
 	BasicFeatureAttributes
-	LocalAttr         bool `json:"local"`
-	PublicAttr        bool `json:"public"`
-	SupportsSetupAttr bool `json:"-"`
+	LocalAttr  bool `json:"local"`
+	PublicAttr bool `json:"public"`
 }
 
 func (a *BasicInferenceAttributes) Local() bool {
@@ -81,8 +82,4 @@ func (a *BasicInferenceAttributes) Local() bool {
 
 func (a *BasicInferenceAttributes) Public() bool {
 	return a.PublicAttr
-}
-
-func (a *BasicInferenceAttributes) SupportsSetup() bool {
-	return a.SupportsSetupAttr
 }

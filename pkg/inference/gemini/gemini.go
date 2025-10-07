@@ -119,10 +119,10 @@ var instance = &Provider{
 			BasicFeatureAttributes: api.BasicFeatureAttributes{
 				FeatureName:        "gemini",
 				FeatureDescription: "Google Gemini inference provider",
+				SupportsSetupAttr:  true,
 			},
-			LocalAttr:         false,
-			PublicAttr:        true,
-			SupportsSetupAttr: true,
+			LocalAttr:  false,
+			PublicAttr: true,
 		},
 	},
 }

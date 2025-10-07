@@ -103,10 +103,6 @@ func (p *Provider) getRamalamaBinaryName() string {
 	return "ramalama"
 }
 
-func (p *Provider) InstallHelp() error {
-	return nil
-}
-
 var instance = &Provider{
 	api.BasicInferenceProvider{
 		BasicInferenceAttributes: api.BasicInferenceAttributes{
