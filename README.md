@@ -88,4 +88,4 @@ You can also install the CLI manually by downloading a binary compatible with yo
 
 ### Cursor MCP servers configuration
 
-<img alt="ai-cli MCP config demo" width="800" src="docs/demo.mcp-config.gif" />
+<img alt="ai-cli MCP config demo" src="docs/demo.mcp-config.gif" />
