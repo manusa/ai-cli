@@ -15,6 +15,7 @@ ai-cli is a command-line interface (CLI) tool that lets you go from zero to AI-p
 - **Policies**: set rules for AI interactions and tool usage
 - **Discovery**: find and use **inference providers** and **tools** automatically
 - **Configure AI-powered editors***: help configure standard AI-powered editors with discovered tools
+- **Setup environment**: setup environemnt with necessary credentials, etc
 - **Extensible**: add plugins to extend functionality
 - **Multi-model support**: support for different LLM inference providers (Google Gemini, LMStudio, Ollama, Ramalama) 
 
@@ -89,3 +90,7 @@ You can also install the CLI manually by downloading a binary compatible with yo
 ### Cursor MCP servers configuration
 
 <img alt="ai-cli MCP config demo" src="docs/demo.mcp-config.gif" />
+
+### Setup
+
+<img alt="ai-cli setup demo" src="docs/demo.setup.gif" />
