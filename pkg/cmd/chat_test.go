@@ -3,6 +3,7 @@ package cmd
 import (
 	"testing"
 
+	"github.com/manusa/ai-cli/pkg/keyring"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
 )
@@ -13,6 +14,7 @@ type ChatTestSuite struct {
 }
 
 func (s *ChatTestSuite) SetupTest() {
+	keyring.MockInit()
 	s.rootCmd = NewAiCli()
 }
 

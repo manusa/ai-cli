@@ -7,6 +7,7 @@ import (
 	"github.com/manusa/ai-cli/internal/test"
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/inference/ollama"
+	"github.com/manusa/ai-cli/pkg/keyring"
 	"github.com/spf13/afero"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/suite"
@@ -19,6 +20,7 @@ type DiscoverTestSuite struct {
 }
 
 func (s *DiscoverTestSuite) SetupTest() {
+	keyring.MockInit()
 	// Get the tmpdir before cleaning the environment
 	// to avoid error on Windows
 	tmpdir := s.T().TempDir()

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/cloudwego/eino/components/model"
 )
@@ -9,9 +10,11 @@ import (
 type InferenceProvider interface {
 	Feature[InferenceAttributes]
 	GetInference(ctx context.Context) (model.ToolCallingChatModel, error)
+	GetModel(ctx context.Context) (string, error)
 	// Models returns the list of supported models by the inference provider
 	Models() []string
 	SystemPrompt() string
+	InstallHelp() error
 }
 
 type InferenceAttributes interface {
@@ -20,6 +23,8 @@ type InferenceAttributes interface {
 	Local() bool
 	// Public indicates if the inference provider is public (e.g. OpenAI, Gemini) or private (e.g. Enterprise internal)
 	Public() bool
+	// SupportsSetup indicates if the inference provider supports setup
+	SupportsSetup() bool
 }
 
 type InferenceParameters struct {
@@ -56,10 +61,18 @@ func (p *BasicInferenceProvider) SystemPrompt() string {
 	return ""
 }
 
+func (p *BasicInferenceProvider) GetModel(ctx context.Context) (string, error) {
+	if p.Model == nil {
+		return "", fmt.Errorf("no model found")
+	}
+	return *p.Model, nil
+}
+
 type BasicInferenceAttributes struct {
 	BasicFeatureAttributes
-	LocalAttr  bool `json:"local"`
-	PublicAttr bool `json:"public"`
+	LocalAttr         bool `json:"local"`
+	PublicAttr        bool `json:"public"`
+	SupportsSetupAttr bool `json:"-"`
 }
 
 func (a *BasicInferenceAttributes) Local() bool {
@@ -68,4 +81,8 @@ func (a *BasicInferenceAttributes) Local() bool {
 
 func (a *BasicInferenceAttributes) Public() bool {
 	return a.PublicAttr
+}
+
+func (a *BasicInferenceAttributes) SupportsSetup() bool {
+	return a.SupportsSetupAttr
 }

@@ -48,7 +48,6 @@ func (p *Provider) Initialize(ctx context.Context) {
 	if p.Model == nil {
 		p.Model = &p.ProviderModels[0]
 	}
-
 }
 
 func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel, error) {
@@ -102,6 +101,10 @@ func (p *Provider) getRamalamaBinaryName() string {
 		return "ramalama.exe"
 	}
 	return "ramalama"
+}
+
+func (p *Provider) InstallHelp() error {
+	return nil
 }
 
 var instance = &Provider{
