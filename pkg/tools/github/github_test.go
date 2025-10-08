@@ -8,6 +8,7 @@ import (
 	"github.com/manusa/ai-cli/pkg/config"
 	"github.com/manusa/ai-cli/pkg/features"
 	"github.com/manusa/ai-cli/pkg/inference"
+	"github.com/manusa/ai-cli/pkg/keyring"
 	"github.com/manusa/ai-cli/pkg/policies"
 	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/stretchr/testify/suite"
@@ -19,6 +20,7 @@ type GithubTestSuite struct {
 }
 
 func (s *GithubTestSuite) SetupTest() {
+	keyring.MockInit()
 	instance.Available = false
 	s.originalEnv = os.Environ()
 	os.Clearenv()
