@@ -142,10 +142,6 @@ func (p *Provider) isBaseURLConfigured() bool {
 	return os.Getenv(ollamaHostEnvVar) != ""
 }
 
-func (p *Provider) InstallHelp() error {
-	return nil
-}
-
 var instance = &Provider{
 	api.BasicInferenceProvider{
 		BasicInferenceAttributes: api.BasicInferenceAttributes{

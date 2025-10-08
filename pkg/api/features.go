@@ -21,12 +21,15 @@ type FeatureAttributes interface {
 	Name() string
 	// Description of the feature
 	Description() string
+	// SupportsSetup indicates if the inference provider supports setup
+	SupportsSetup() bool
 }
 
 type BasicFeatureAttributes struct {
 	FeatureAttributes  `json:"-"`
 	FeatureName        string `json:"name"`
 	FeatureDescription string `json:"description"`
+	SupportsSetupAttr  bool   `json:"-"`
 }
 
 func (a *BasicFeatureAttributes) Name() string {
@@ -35,6 +38,10 @@ func (a *BasicFeatureAttributes) Name() string {
 
 func (a *BasicFeatureAttributes) Description() string {
 	return a.FeatureDescription
+}
+
+func (a *BasicFeatureAttributes) SupportsSetup() bool {
+	return a.SupportsSetupAttr
 }
 
 type IsFeatureEnabled[a FeatureAttributes] func(feature Feature[a]) bool
