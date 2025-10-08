@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/v2/list"
 	"github.com/charmbracelet/log"
 
+	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/features"
 	"github.com/manusa/ai-cli/pkg/ui/components/selector"
 )
@@ -40,9 +41,11 @@ func Run(ctx context.Context) error {
 				return err
 			}
 			if stop {
+				displayTools(discoveredFeatures.Tools)
 				break
 			}
 		} else {
+			displayTools(discoveredFeatures.Tools)
 			break
 		}
 	}
@@ -109,4 +112,16 @@ func selectToolProvider(ctx context.Context) (stop bool, err error) {
 	}
 
 	return false, nil
+}
+
+func displayTools(tools []api.ToolsProvider) {
+	fmt.Printf("✅ The following tools providers will be used:\n")
+	for _, tool := range tools {
+		supportsSetup := tool.Attributes().SupportsSetup()
+		setup := "(no setup needed)"
+		if supportsSetup {
+			setup = "(setup done)"
+		}
+		fmt.Printf("  - %s %s\n", tool.Attributes().Name(), setup)
+	}
 }
