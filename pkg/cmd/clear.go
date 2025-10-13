@@ -20,8 +20,7 @@ func NewClearCmdOptions() *ClearCmdOptions {
 	return &ClearCmdOptions{}
 }
 
-// NewDiscoverCmd creates a new command to discover AI capabilities for the current system
-// TODO: rename to "capabilities" or "features"?
+// NewClearCmd creates a new command to clear the secrets stored during setup
 func NewClearCmd() *cobra.Command {
 	o := NewClearCmdOptions()
 	cmd := &cobra.Command{
