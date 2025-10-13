@@ -14,6 +14,7 @@ type ToolsProvider interface {
 	// GetTools returns the list of built-in, native, available tools
 	GetTools(ctx context.Context) []*Tool
 	InstallHelp() error
+	Clear(ctx context.Context) (bool, error)
 }
 
 type ToolsAttributes interface {
@@ -60,6 +61,10 @@ func (p *BasicToolsProvider) GetTools(_ context.Context) []*Tool {
 
 func (p *BasicToolsProvider) InstallHelp() error {
 	return nil
+}
+
+func (p *BasicToolsProvider) Clear(ctx context.Context) (done bool, err error) {
+	return false, nil
 }
 
 type BasicToolsAttributes struct {

@@ -20,6 +20,14 @@ func (k *mockProvider) SetKey(key, value string) error {
 	return nil
 }
 
+func (k *mockProvider) DeleteKey(key string) (bool, error) {
+	if _, ok := k.keys[key]; !ok {
+		return false, nil
+	}
+	delete(k.keys, key)
+	return true, nil
+}
+
 func MockInit() {
 	provider = &mockProvider{
 		keys: make(map[string]string),

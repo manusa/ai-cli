@@ -52,6 +52,33 @@ func Run(ctx context.Context) error {
 	return nil
 }
 
+func ClearAll(ctx context.Context) error {
+	discoveredFeatures := features.Discover(ctx)
+	for _, inference := range append(discoveredFeatures.InferencesNotAvailable, discoveredFeatures.Inferences...) {
+		if inference.Attributes().SupportsSetup() {
+			done, err := inference.Clear(ctx)
+			if err != nil {
+				return err
+			}
+			if done {
+				fmt.Printf("✅ The setup for %q inference provider has been cleared\n", inference.Attributes().Name())
+			}
+		}
+	}
+	for _, tool := range append(discoveredFeatures.ToolsNotAvailable, discoveredFeatures.Tools...) {
+		if tool.Attributes().SupportsSetup() {
+			done, err := tool.Clear(ctx)
+			if err != nil {
+				return err
+			}
+			if done {
+				fmt.Printf("✅ The setup for %q tools provider has been cleared\n", tool.Attributes().Name())
+			}
+		}
+	}
+	return nil
+}
+
 func selectInferenceProvider(ctx context.Context) error {
 	discoveredFeatures := features.Discover(ctx)
 	inferenceNames := []list.Item{}

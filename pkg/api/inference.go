@@ -15,6 +15,7 @@ type InferenceProvider interface {
 	Models() []string
 	SystemPrompt() string
 	InstallHelp() error
+	Clear(ctx context.Context) (bool, error)
 }
 
 type InferenceAttributes interface {
@@ -61,6 +62,10 @@ func (p *BasicInferenceProvider) SystemPrompt() string {
 
 func (a *BasicInferenceProvider) InstallHelp() error {
 	return nil
+}
+
+func (p *BasicInferenceProvider) Clear(ctx context.Context) (done bool, err error) {
+	return false, nil
 }
 
 func (p *BasicInferenceProvider) GetModel(ctx context.Context) (string, error) {

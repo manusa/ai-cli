@@ -98,6 +98,10 @@ func (p *Provider) InstallHelp() error {
 	}
 }
 
+func (p *Provider) Clear(ctx context.Context) (done bool, err error) {
+	return keyring.DeleteKey(accessTokenEnvVar)
+}
+
 var instance = &Provider{
 	BasicToolsProvider: api.BasicToolsProvider{
 		BasicToolsAttributes: api.BasicToolsAttributes{
