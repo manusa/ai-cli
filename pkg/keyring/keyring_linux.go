@@ -80,6 +80,10 @@ func (k *linuxKeychain) SetKey(key, value string) error {
 	return err
 }
 
+func (k *linuxKeychain) DeleteKey(key string) (bool, error) {
+	return false, errors.New("not implemented")
+}
+
 func init() {
 	provider = &linuxKeychain{}
 }

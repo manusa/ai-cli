@@ -30,6 +30,17 @@ func (k *macOSXKeychain) SetKey(key, value string) error {
 	return keychain.AddItem(item)
 }
 
+func (k *macOSXKeychain) DeleteKey(key string) (done bool, err error) {
+	password, err := keychain.GetGenericPassword(service, key, "", "")
+	if err != nil {
+		return false, err
+	}
+	if password == nil {
+		return false, nil
+	}
+	return true, keychain.DeleteGenericPasswordItem(service, key)
+}
+
 func init() {
 	provider = &macOSXKeychain{}
 }

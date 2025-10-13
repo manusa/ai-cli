@@ -5,6 +5,7 @@ var provider Keyring = &fallbackKeyring{}
 type Keyring interface {
 	SetKey(key, value string) error
 	GetKey(key string) (string, error)
+	DeleteKey(key string) (done bool, err error)
 }
 
 func SetKey(key, value string) error {
@@ -13,4 +14,8 @@ func SetKey(key, value string) error {
 
 func GetKey(key string) (string, error) {
 	return provider.GetKey(key)
+}
+
+func DeleteKey(key string) (bool, error) {
+	return provider.DeleteKey(key)
 }

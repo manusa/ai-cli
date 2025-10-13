@@ -113,6 +113,10 @@ func (p *Provider) InstallHelp() error {
 	return keyring.SetKey(API_KEY_ENV_VAR, apiKey)
 }
 
+func (p *Provider) Clear(ctx context.Context) (bool, error) {
+	return keyring.DeleteKey(API_KEY_ENV_VAR)
+}
+
 var instance = &Provider{
 	api.BasicInferenceProvider{
 		BasicInferenceAttributes: api.BasicInferenceAttributes{

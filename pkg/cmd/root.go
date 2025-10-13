@@ -15,6 +15,7 @@ func NewAiCli() *cobra.Command {
 	cmd.AddCommand(NewChatCmd())
 	cmd.AddCommand(NewDiscoverCmd())
 	cmd.AddCommand(NewSetupCmd())
+	cmd.AddCommand(NewClearCmd())
 	cmd.AddCommand(NewVersionCmd())
 
 	return cmd
