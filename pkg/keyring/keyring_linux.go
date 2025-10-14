@@ -81,7 +81,30 @@ func (k *linuxKeychain) SetKey(key, value string) error {
 }
 
 func (k *linuxKeychain) DeleteKey(key string) (bool, error) {
-	return false, errors.New("not implemented")
+	srv, err := secretservice.NewService()
+	if err != nil {
+		return false, err
+	}
+	collection := secretservice.DefaultCollection
+	items, err := srv.SearchCollection(collection, map[string]string{
+		"key":     key,
+		"service": service,
+	})
+	if err != nil {
+		return false, err
+	}
+	if len(items) == 0 {
+		return false, nil
+	}
+	if len(items) > 1 {
+		return false, errors.New("more than one password found, should not happen")
+	}
+
+	err = srv.DeleteItem(items[0])
+	if err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func init() {
