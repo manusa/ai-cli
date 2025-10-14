@@ -28,6 +28,7 @@ CLEAN_TARGETS += '$(BINARY_NAME)'
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),$(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,)))
 CLEAN_TARGETS += $(foreach os,$(OSES),$(foreach arch,$(ARCHS),./npm/$(NPM_PACKAGE)-$(os)-$(arch)/))
 CLEAN_TARGETS += ./npm/$(NPM_PACKAGE)/.npmrc ./npm/$(NPM_PACKAGE)/LICENSE ./npm/$(NPM_PACKAGE)/package.json ./npm/$(NPM_PACKAGE)/README.md
+CLEAN_TARGETS += $(BINARY_NAME)-darwin-*.tar.gz $(BINARY_NAME)-linux-*.tar.gz $(BINARY_NAME)-windows-*.zip
 
 
 # GIT_TAG_VERSION should not append the -dirty flag
@@ -58,6 +59,24 @@ build-all-platforms: clean tidy format lint ## Build the project for all platfor
 	$(foreach os,$(OSES),$(foreach arch,$(ARCHS), \
 		GOOS=$(os) GOARCH=$(arch) go build $(COMMON_BUILD_ARGS) -o $(BINARY_NAME)-$(os)-$(arch)$(if $(findstring windows,$(os)),.exe,) ./cmd/ai-cli; \
 	))
+
+.PHONY: compress-binaries
+compress-binaries: ## Compress binaries for distribution (.tar.gz for *nix, .zip for Windows)
+	@echo "Compressing binaries..."
+	@for os in darwin linux; do \
+		for arch in $(ARCHS); do \
+			if [ -f $(BINARY_NAME)-$$os-$$arch ]; then \
+				tar -czf $(BINARY_NAME)-$$os-$$arch.tar.gz $(BINARY_NAME)-$$os-$$arch; \
+				echo "Created $(BINARY_NAME)-$$os-$$arch.tar.gz"; \
+			fi; \
+		done; \
+	done
+	@for arch in $(ARCHS); do \
+		if [ -f $(BINARY_NAME)-windows-$$arch.exe ]; then \
+			zip -q $(BINARY_NAME)-windows-$$arch.zip $(BINARY_NAME)-windows-$$arch.exe; \
+			echo "Created $(BINARY_NAME)-windows-$$arch.zip"; \
+		fi; \
+	done
 
 .PHONY: test
 test: ## Run the tests

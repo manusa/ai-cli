@@ -10,3 +10,7 @@ npm/**/*
 /ai-cli-linux-arm64
 /ai-cli-windows-amd64.exe
 /ai-cli-windows-arm64.exe
+
+# Compressed release artifacts
+/ai-cli-*.tar.gz
+/ai-cli-*.zip
