@@ -10,6 +10,7 @@ import (
 	"github.com/charmbracelet/bubbles/v2/list"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/containers"
 	"github.com/manusa/ai-cli/pkg/keyring"
 	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/manusa/ai-cli/pkg/ui/components/password_input"
@@ -77,7 +78,7 @@ func (p *Provider) Initialize(ctx context.Context) {
 		return
 	}
 
-	if os.Getenv(databaseUriEnvVar) == "" {
+	if p.getDatabaseURI() == "" {
 		p.IsAvailableReason = fmt.Sprintf("%s is not set and %s is not set", databaseUriEnvVar, pgPasswordEnvVar)
 	} else {
 		p.IsAvailableReason = fmt.Sprintf("%s is not set with postgresql schema and %s is not set", databaseUriEnvVar, pgPasswordEnvVar)
@@ -101,7 +102,7 @@ func (p *Provider) findBestMcpServerSettings(readOnly bool) (*api.McpSettings, e
 			}
 
 			// Get or build URI
-			if databaseUri := os.Getenv(databaseUriEnvVar); !strings.HasPrefix(databaseUri, "postgresql://") && os.Getenv(pgPasswordEnvVar) != "" {
+			if databaseUri := p.getDatabaseURI(); !strings.HasPrefix(databaseUri, "postgresql://") && os.Getenv(pgPasswordEnvVar) != "" {
 				uri := fmt.Sprintf(
 					"postgresql://%s:%s@%s:%s/%s",
 					p.getEnvVarValueOrDefault(pgUserEnvVar, defaultPgUser),
@@ -111,6 +112,8 @@ func (p *Provider) findBestMcpServerSettings(readOnly bool) (*api.McpSettings, e
 					p.getEnvVarValueOrDefault(pgDatabaseEnvVar, defaultPgDatabase),
 				)
 				settings.Env = append(settings.Env, fmt.Sprintf("%s=%s", databaseUriEnvVar, uri))
+			} else if databaseUri := p.getDatabaseURI(); strings.HasPrefix(databaseUri, "postgresql://") {
+				settings.Env = append(settings.Env, fmt.Sprintf("%s=%s", databaseUriEnvVar, databaseUri))
 			}
 			return &settings, nil
 		}
@@ -127,9 +130,11 @@ func (p *Provider) getEnvVarValueOrDefault(envVar string, defaultValue string) s
 
 func (p *Provider) InstallHelp() error {
 	registerExistingInstance := "Register an existing PostgreSQL instance using complete connection string (postgresql://user:password@host:port/database)"
+	detectExistingInstances := "Detect existing containerized PostgreSQL instances"
 	quit := "Terminate PostgreSQL setup"
 	choices := []list.Item{
 		selector.Item(registerExistingInstance),
+		selector.Item(detectExistingInstances),
 		selector.Item(quit),
 	}
 	for {
@@ -140,11 +145,34 @@ func (p *Provider) InstallHelp() error {
 		switch choice {
 		case registerExistingInstance:
 			fmt.Printf("Paste your connection string below (postgresql://user:password@host:port/database):\n")
-			apiKey, err := password_input.Prompt()
+			uri, err := password_input.Prompt()
 			if err != nil {
 				return err
 			}
-			err = keyring.SetKey(databaseUriEnvVar, apiKey)
+			err = keyring.SetKey(databaseUriEnvVar, uri)
+			if err != nil {
+				return err
+			}
+		case detectExistingInstances:
+			instances, err := p.detectExistingInstances()
+			if err != nil {
+				return err
+			}
+			instance, err := p.selectInstance(instances)
+			if err != nil {
+				return err
+			}
+			prefix := "POSTGRES_"
+			environmentVariables, err := containers.GetContainerEnvironmentVariables(instance.ID, &prefix)
+			if err != nil {
+				return err
+			}
+			portMapped, err := containers.GetContainerPortMapping(instance.ID, p.getFirstNotEmpty(environmentVariables["POSTGRES_PORT"], defaultPgPort), "tcp")
+			if err != nil {
+				return err
+			}
+			uri := p.getContainerURI(environmentVariables, portMapped)
+			err = keyring.SetKey(databaseUriEnvVar, uri)
 			if err != nil {
 				return err
 			}
@@ -152,6 +180,48 @@ func (p *Provider) InstallHelp() error {
 			return nil
 		}
 	}
+}
+
+func (p *Provider) getContainerURI(environmentVariables map[string]string, portMapped string) string {
+	pgUser := p.getFirstNotEmpty(environmentVariables["POSTGRES_USER"], defaultPgUser)
+	pgPassword := environmentVariables["POSTGRES_PASSWORD"]
+	pgDatabase := p.getFirstNotEmpty(environmentVariables["POSTGRES_DB"], environmentVariables["POSTGRES_USER"], defaultPgDatabase)
+	return fmt.Sprintf(
+		"postgresql://%s:%s@localhost:%s/%s",
+		pgUser, pgPassword, portMapped, pgDatabase,
+	)
+}
+
+func (p *Provider) getFirstNotEmpty(values ...string) string {
+	for _, value := range values {
+		if value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func (p *Provider) detectExistingInstances() ([]containers.Container, error) {
+	return containers.ListContainers(containers.ListContainersFilters{
+		Images: []string{"postgres"},
+	})
+}
+
+func (p *Provider) selectInstance(instances []containers.Container) (containers.Container, error) {
+	choices := []list.Item{}
+	for _, instance := range instances {
+		choices = append(choices, selector.Item(instance.Name))
+	}
+	choice, err := selector.Select("Please select an existing PostgreSQL instance:", choices)
+	if err != nil {
+		return containers.Container{}, err
+	}
+	for _, instance := range instances {
+		if instance.Name == choice {
+			return instance, nil
+		}
+	}
+	return containers.Container{}, fmt.Errorf("instance %s not found", choice)
 }
 
 func (p *Provider) Clear(ctx context.Context) (done bool, err error) {
