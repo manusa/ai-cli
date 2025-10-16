@@ -15,6 +15,8 @@ var FileSystem afero.Fs = afero.NewOsFs()
 var Os = runtime.GOOS
 var LookPath = exec.LookPath
 
+var ExecCommand = exec.Command
+
 // CommandExists checks if a command exists in the system's PATH
 func CommandExists(cmd string) bool {
 	_, err := LookPath(cmd)

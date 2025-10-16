@@ -6,6 +6,7 @@ import (
 
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/keyring"
 )
 
 func TestIsAvailable(t *testing.T) {
@@ -30,7 +31,7 @@ func TestIsAvailable(t *testing.T) {
 			available:         true,
 			reason:            "DATABASE_URI is set with postgresql schema",
 			mcpServerSettings: &api.McpSettings{Type: api.McpTypeStdio, Command: "uvx", Args: []string{"postgres-mcp", "--access-mode=unrestricted"}},
-			finalDatabaseUri:  "", // not explicitly set, as already set by the caller
+			finalDatabaseUri:  "DATABASE_URI=postgresql://localhost:5432/test",
 		},
 		{
 			name:              "available via password",
@@ -79,6 +80,7 @@ func TestIsAvailable(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
+			keyring.MockInit()
 			//  make uvx available
 			config.LookPath = func(file string) (string, error) {
 				if file == "uvx" {
