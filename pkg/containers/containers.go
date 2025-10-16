@@ -3,9 +3,8 @@ package containers
 import (
 	"encoding/json"
 	"fmt"
+	"os/exec"
 	"strings"
-
-	"github.com/manusa/ai-cli/pkg/config"
 )
 
 type Container struct {
@@ -27,6 +26,15 @@ type ListContainersFilters struct {
 	Images []string
 }
 
+type commandExecutor interface {
+	Output() ([]byte, error)
+	// Other methods of the exec.Cmd struct could be added
+}
+
+var shellCommandFunc = func(name string, arg ...string) commandExecutor {
+	return exec.Command(name, arg...)
+}
+
 func ListContainers(filters ListContainersFilters) ([]Container, error) {
 	args := []string{"container", "list", "--format", "{{.ID}} {{.Names}}"}
 	if len(filters.Images) > 0 {
@@ -34,7 +42,7 @@ func ListContainers(filters ListContainersFilters) ([]Container, error) {
 			args = append(args, "--filter", fmt.Sprintf("ancestor=%s", image))
 		}
 	}
-	cmd := config.ExecCommand(command, args...)
+	cmd := shellCommandFunc(command, args...)
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to list containers: %w", err)
@@ -57,7 +65,7 @@ func ListContainers(filters ListContainersFilters) ([]Container, error) {
 
 func GetContainerEnvironmentVariables(id string, prefix *string) (map[string]string, error) {
 	args := []string{"container", "inspect", id, "--format", "{{range .Config.Env}}{{.}}\n{{end}}"}
-	cmd := config.ExecCommand(command, args...)
+	cmd := shellCommandFunc(command, args...)
 	fmt.Printf("cmd/args: %s %v\n", command, args)
 	output, err := cmd.Output()
 	if err != nil {
@@ -79,7 +87,7 @@ func GetContainerEnvironmentVariables(id string, prefix *string) (map[string]str
 
 func GetContainerPortMapping(id string, port string, protocol string) (string, error) {
 	args := []string{"container", "inspect", id, "--format", "{{json .NetworkSettings.Ports}}"}
-	cmd := config.ExecCommand(command, args...)
+	cmd := shellCommandFunc(command, args...)
 	output, err := cmd.Output()
 	if err != nil {
 		return "", fmt.Errorf("failed to get container port mapping: %w", err)

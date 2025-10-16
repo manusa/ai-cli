@@ -1,12 +1,17 @@
 package containers
 
 import (
-	"os/exec"
 	"reflect"
 	"testing"
-
-	"github.com/manusa/ai-cli/pkg/config"
 )
+
+type MockCommand struct {
+	OutputBytes []byte
+}
+
+func (m *MockCommand) Output() ([]byte, error) {
+	return m.OutputBytes, nil
+}
 
 func TestListContainers(t *testing.T) {
 	tests := []struct {
@@ -45,21 +50,17 @@ func TestListContainers(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
+			origShellCommandFunc := shellCommandFunc
+			defer func() { shellCommandFunc = origShellCommandFunc }()
+
 			var capturedCommand string
 			var capturedArgs []string
-
-			// Mock exec.Command to capture the arguments
-			config.ExecCommand = func(name string, arg ...string) *exec.Cmd {
+			shellCommandFunc = func(name string, args ...string) commandExecutor {
 				capturedCommand = name
-				capturedArgs = arg
-				// Return a mock command that produces empty output
-				return exec.Command("echo", tt.commandResult)
+				capturedArgs = args
+				return &MockCommand{OutputBytes: []byte(tt.commandResult)}
 			}
-
-			// Restore the original function after the test
-			defer func() {
-				config.ExecCommand = exec.Command
-			}()
 
 			// Call the function under test
 			output, err := ListContainers(tt.filters)
@@ -119,21 +120,16 @@ func TestGetContainerEnvironmentVariables(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			origShellCommandFunc := shellCommandFunc
+			defer func() { shellCommandFunc = origShellCommandFunc }()
+
 			var capturedCommand string
 			var capturedArgs []string
-
-			// Mock exec.Command to capture the arguments
-			config.ExecCommand = func(name string, arg ...string) *exec.Cmd {
+			shellCommandFunc = func(name string, args ...string) commandExecutor {
 				capturedCommand = name
-				capturedArgs = arg
-				// Return a mock command that produces empty output
-				return exec.Command("echo", tt.commandResult)
+				capturedArgs = args
+				return &MockCommand{OutputBytes: []byte(tt.commandResult)}
 			}
-
-			// Restore the original function after the test
-			defer func() {
-				config.ExecCommand = exec.Command
-			}()
 
 			// Call the function under test
 			output, err := GetContainerEnvironmentVariables(tt.id, tt.prefix)
@@ -186,21 +182,16 @@ func TestGetContainerPortMapping(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			origShellCommandFunc := shellCommandFunc
+			defer func() { shellCommandFunc = origShellCommandFunc }()
+
 			var capturedCommand string
 			var capturedArgs []string
-
-			// Mock exec.Command to capture the arguments
-			config.ExecCommand = func(name string, arg ...string) *exec.Cmd {
+			shellCommandFunc = func(name string, args ...string) commandExecutor {
 				capturedCommand = name
-				capturedArgs = arg
-				// Return a mock command that produces empty output
-				return exec.Command("echo", tt.commandResult)
+				capturedArgs = args
+				return &MockCommand{OutputBytes: []byte(tt.commandResult)}
 			}
-
-			// Restore the original function after the test
-			defer func() {
-				config.ExecCommand = exec.Command
-			}()
 
 			output, err := GetContainerPortMapping(tt.id, tt.port, tt.protocol)
 			if capturedCommand != command {
