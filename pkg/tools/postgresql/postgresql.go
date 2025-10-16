@@ -7,9 +7,13 @@ import (
 	"os"
 	"strings"
 
+	"github.com/charmbracelet/bubbles/v2/list"
 	"github.com/manusa/ai-cli/pkg/api"
 	"github.com/manusa/ai-cli/pkg/config"
+	"github.com/manusa/ai-cli/pkg/keyring"
 	"github.com/manusa/ai-cli/pkg/tools"
+	"github.com/manusa/ai-cli/pkg/ui/components/password_input"
+	"github.com/manusa/ai-cli/pkg/ui/components/selector"
 )
 
 type Provider struct {
@@ -61,7 +65,7 @@ func (p *Provider) Initialize(ctx context.Context) {
 		return
 	}
 
-	if available := strings.HasPrefix(os.Getenv(databaseUriEnvVar), "postgresql://"); available {
+	if available := strings.HasPrefix(p.getDatabaseURI(), "postgresql://"); available {
 		p.Available = true
 		p.IsAvailableReason = fmt.Sprintf("%s is set with postgresql schema", databaseUriEnvVar)
 		return
@@ -78,6 +82,13 @@ func (p *Provider) Initialize(ctx context.Context) {
 	} else {
 		p.IsAvailableReason = fmt.Sprintf("%s is not set with postgresql schema and %s is not set", databaseUriEnvVar, pgPasswordEnvVar)
 	}
+}
+
+func (p *Provider) getDatabaseURI() string {
+	if key, err := keyring.GetKey(databaseUriEnvVar); err == nil && len(key) > 0 {
+		return key
+	}
+	return os.Getenv(databaseUriEnvVar)
 }
 
 func (p *Provider) findBestMcpServerSettings(readOnly bool) (*api.McpSettings, error) {
@@ -114,12 +125,46 @@ func (p *Provider) getEnvVarValueOrDefault(envVar string, defaultValue string) s
 	return defaultValue
 }
 
+func (p *Provider) InstallHelp() error {
+	registerExistingInstance := "Register an existing PostgreSQL instance using complete connection string (postgresql://user:password@host:port/database)"
+	quit := "Terminate PostgreSQL setup"
+	choices := []list.Item{
+		selector.Item(registerExistingInstance),
+		selector.Item(quit),
+	}
+	for {
+		choice, err := selector.Select("Please select a step:", choices)
+		if err != nil {
+			return err
+		}
+		switch choice {
+		case registerExistingInstance:
+			fmt.Printf("Paste your connection string below (postgresql://user:password@host:port/database):\n")
+			apiKey, err := password_input.Prompt()
+			if err != nil {
+				return err
+			}
+			err = keyring.SetKey(databaseUriEnvVar, apiKey)
+			if err != nil {
+				return err
+			}
+		case quit:
+			return nil
+		}
+	}
+}
+
+func (p *Provider) Clear(ctx context.Context) (done bool, err error) {
+	return keyring.DeleteKey(databaseUriEnvVar)
+}
+
 var instance = &Provider{
 	BasicToolsProvider: api.BasicToolsProvider{
 		BasicToolsAttributes: api.BasicToolsAttributes{
 			BasicFeatureAttributes: api.BasicFeatureAttributes{
 				FeatureName:        "postgresql",
 				FeatureDescription: "Provides access to a PostgreSQL database, allowing execution of SQL queries and retrieval of data.",
+				SupportsSetupAttr:  true,
 			},
 		},
 	},
