@@ -35,6 +35,12 @@ var shellCommandFunc = func(name string, arg ...string) commandExecutor {
 	return exec.Command(name, arg...)
 }
 
+type CreateContainerOptions struct {
+	Image           string
+	Env             map[string]string
+	TcpPortBindings map[int]int
+}
+
 func ListContainers(filters ListContainersFilters) ([]Container, error) {
 	args := []string{"container", "list", "--format", "{{.ID}} {{.Names}}"}
 	if len(filters.Images) > 0 {
@@ -66,7 +72,6 @@ func ListContainers(filters ListContainersFilters) ([]Container, error) {
 func GetContainerEnvironmentVariables(id string, prefix *string) (map[string]string, error) {
 	args := []string{"container", "inspect", id, "--format", "{{range .Config.Env}}{{.}}\n{{end}}"}
 	cmd := shellCommandFunc(command, args...)
-	fmt.Printf("cmd/args: %s %v\n", command, args)
 	output, err := cmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get container environment variables: %w", err)
@@ -97,7 +102,6 @@ func GetContainerPortMapping(id string, port string, protocol string) (string, e
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal container port mapping: %w", err)
 	}
-	fmt.Printf("mapping: %+v\n", mapping)
 	key := fmt.Sprintf("%s/%s", port, protocol)
 	if _, ok := mapping[key]; !ok {
 		return "", fmt.Errorf("port mapping not found for %s", key)
@@ -106,4 +110,21 @@ func GetContainerPortMapping(id string, port string, protocol string) (string, e
 		return "", fmt.Errorf("port mapping not found for %s", key)
 	}
 	return mapping[key][0].HostPort, nil
+}
+
+func CreateContainer(options CreateContainerOptions) (string, error) {
+	args := []string{"container", "run", "-d", "--rm"}
+	for key, value := range options.Env {
+		args = append(args, "--env", fmt.Sprintf("%s=%s", key, value))
+	}
+	for port, hostPort := range options.TcpPortBindings {
+		args = append(args, "-p", fmt.Sprintf("%d:%d", hostPort, port))
+	}
+	args = append(args, options.Image)
+	cmd := shellCommandFunc(command, args...)
+	output, err := cmd.Output()
+	if err != nil {
+		return "", fmt.Errorf("failed to create container: %w", err)
+	}
+	return string(output), nil
 }
