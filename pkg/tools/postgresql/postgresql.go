@@ -15,6 +15,7 @@ import (
 	"github.com/manusa/ai-cli/pkg/tools"
 	"github.com/manusa/ai-cli/pkg/ui/components/password_input"
 	"github.com/manusa/ai-cli/pkg/ui/components/selector"
+	"github.com/manusa/ai-cli/pkg/utils"
 )
 
 type Provider struct {
@@ -131,10 +132,12 @@ func (p *Provider) getEnvVarValueOrDefault(envVar string, defaultValue string) s
 func (p *Provider) InstallHelp() error {
 	registerExistingInstance := "Register an existing PostgreSQL instance using complete connection string (postgresql://user:password@host:port/database)"
 	detectExistingInstances := "Detect existing containerized PostgreSQL instances"
+	createNewInstance := "Create a new containerized PostgreSQL instance"
 	quit := "Terminate PostgreSQL setup"
 	choices := []list.Item{
 		selector.Item(registerExistingInstance),
 		selector.Item(detectExistingInstances),
+		selector.Item(createNewInstance),
 		selector.Item(quit),
 	}
 	for {
@@ -173,6 +176,32 @@ func (p *Provider) InstallHelp() error {
 			}
 			uri := p.getContainerURI(environmentVariables, portMapped)
 			err = keyring.SetKey(databaseUriEnvVar, uri)
+			if err != nil {
+				return err
+			}
+		case createNewInstance:
+			envvars := map[string]string{
+				"POSTGRES_USER":     "user",
+				"POSTGRES_PASSWORD": utils.GenerateRandomPassword(8),
+			}
+			localPort, err := utils.GetFreePort()
+			if err != nil {
+				return err
+			}
+			_, err = containers.CreateContainer(containers.CreateContainerOptions{
+				Image: "postgres",
+				Env:   envvars,
+				TcpPortBindings: map[int]int{
+					5432: localPort,
+				},
+			})
+			if err != nil {
+				return err
+			}
+			uri := p.getContainerURI(envvars, fmt.Sprintf("%d", localPort))
+			err = keyring.SetKey(databaseUriEnvVar, uri)
+			fmt.Printf("✅ A new PostgreSQL instance has been created\n")
+			fmt.Printf("✅ The connection string of the new instance has been saved in the keyring\n")
 			if err != nil {
 				return err
 			}
