@@ -123,7 +123,6 @@ MAIN_PACKAGE_JSON=./npm/$(NPM_PACKAGE)/package.json
 .PHONY: npm-copy-project-files
 npm-copy-project-files: npm-copy-binaries ## Copy the project files to the main npm package and generate all package.json files
 	cp README.md LICENSE ./npm/$(NPM_PACKAGE)/
-	@echo '//registry.npmjs.org/:_authToken=$(NPM_TOKEN)' > ./npm/$(NPM_PACKAGE)/.npmrc
 	@echo '{"name": "$(NPM_PACKAGE)",' > $(MAIN_PACKAGE_JSON)
 	@echo '"version": "$(GIT_TAG_VERSION)",' >> $(MAIN_PACKAGE_JSON)
 	@echo '"description": "AI CLI is a command line interface for AI services.",' >> $(MAIN_PACKAGE_JSON)
@@ -143,10 +142,10 @@ npm-copy-project-files: npm-copy-binaries ## Copy the project files to the main 
 	@echo '"repository": {"type": "git", "url": "git+https://github.com/manusa/ai-cli.git"}' >> $(MAIN_PACKAGE_JSON)
 	@echo '}' >> $(MAIN_PACKAGE_JSON)
 	$(foreach os,$(OSES),$(foreach arch,$(ARCHS), \
-		echo '//registry.npmjs.org/:_authToken=$(NPM_TOKEN)' > ./npm/$(NPM_PACKAGE)-$(os)-$(arch)/.npmrc; \
 		OS_PACKAGE_JSON=./npm/$(NPM_PACKAGE)-$(os)-$(arch)/package.json; \
 		echo '{"name": "$(NPM_PACKAGE)-$(os)-$(arch)",' > $$OS_PACKAGE_JSON; \
 		echo '"version": "$(GIT_TAG_VERSION)",' >> $$OS_PACKAGE_JSON; \
+		echo '"repository": {"type": "git", "url": "git+https://github.com/manusa/ai-cli.git"},' >> $$OS_PACKAGE_JSON; \
 		echo '"os": ["$(os)"],' >> $$OS_PACKAGE_JSON; \
 		NPM_ARCH="$(arch)"; \
 		if [ "$$NPM_ARCH" = "amd64" ]; then NPM_ARCH="x64"; fi; \
@@ -159,10 +158,10 @@ npm-publish: npm-copy-project-files ## Publish the npm packages
 	$(foreach os,$(OSES),$(foreach arch,$(ARCHS), \
 		DIRNAME="$(NPM_PACKAGE)-$(os)-$(arch)"; \
 		cd npm/$$DIRNAME; \
-		npm publish; \
+		npm publish --tag latest; \
 		cd ../..; \
 	))
-	cd npm/$(NPM_PACKAGE) && npm publish
+	cd npm/$(NPM_PACKAGE) && npm publish --tag latest
 
 .PHONY: python-publish
 python-publish: ## Publish the python packages
