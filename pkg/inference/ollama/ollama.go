@@ -81,22 +81,28 @@ func (p *Provider) Initialize(ctx context.Context) {
 		p.IsAvailableReason = fmt.Sprintf("ollama is accessible at %s", baseURL)
 	}
 
+	// Model selection
+	// User-provided model configuration
+	if p.Model != nil {
+		return
+	}
 	p.ProviderModels, err = p.getModels()
-	var selectedModel string
+	if len(p.ProviderModels) == 0 {
+		p.IsAvailableReason = fmt.Sprintf("ollama is accessible at %s but no models are served", baseURLMessage)
+		return
+	}
+	// Try to select from preferred models
 	for _, preferredModel := range preferredModels {
 		if err == nil && slices.Contains(p.ProviderModels, preferredModel) {
-			selectedModel = preferredModel
+			p.Model = &preferredModel
 			break
 		}
 	}
-	if p.Model == nil && selectedModel == "" {
-		p.IsAvailableReason = fmt.Sprintf("%s but no preferred models (%s) are served", p.IsAvailableReason, strings.Join(preferredModels, ", "))
-		return
+	// Fallback: select the first available model
+	if p.Model == nil {
+		p.Model = &p.ProviderModels[0]
 	}
 	p.Available = true
-	if p.Model == nil {
-		p.Model = &selectedModel
-	}
 }
 
 func (p *Provider) GetInference(ctx context.Context) (model.ToolCallingChatModel, error) {
