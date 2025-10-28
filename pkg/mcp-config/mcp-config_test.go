@@ -48,9 +48,9 @@ func (s *McpConfigTestSuite) TestSaveNewFile() {
 	})
 }
 
-func (s *McpConfigTestSuite) TestSaveStdout() {
-	s.Run("Save outputs to stdoutif config file exists", func() {
-		err := createFile(config.FileSystem, "/path/to/config", "content before")
+func (s *McpConfigTestSuite) TestSaveExisting() {
+	s.Run("Save updates the file if an empty config file exists", func() {
+		err := createFile(config.FileSystem, "/path/to/config", "previous content")
 		s.NoError(err)
 		out, errOut, err := captureStdouts(func() error { return Save(&TestProvider{}, nil) })
 		s.NoError(err)
@@ -60,11 +60,12 @@ func (s *McpConfigTestSuite) TestSaveStdout() {
 		content, err := readFile(config.FileSystem, "/path/to/config")
 		s.NoError(err)
 		// content should not have changed
-		s.Equal("content before", string(content))
-		s.Equal("MCP config file /path/to/config already exists, outputting config to stdout\n", errOut)
-		s.Equal("a config\n", out)
+		s.Equal("a config", string(content))
+		s.Equal("MCP config file /path/to/config has been updated\n", out)
+		s.Equal("", errOut)
 	})
 }
+
 func TestMcpConfig(t *testing.T) {
 	suite.Run(t, new(McpConfigTestSuite))
 }
